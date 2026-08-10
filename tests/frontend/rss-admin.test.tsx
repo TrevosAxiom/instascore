@@ -6,9 +6,10 @@ import { adminAuth, renderApp, testApi } from './test-utils';
 
 describe('RSS administration', () => {
   it('uploads a CSV file and reports its import result', async () => {
-    const importRssCsv = vi.fn((_file: File) =>
-      Promise.resolve({ imported: 2, skipped: 1, errors: [], fatalError: '' }),
-    );
+    const importRssCsv = vi.fn((_file: File) => {
+      void _file;
+      return Promise.resolve({ imported: 2, skipped: 1, errors: [], fatalError: '' });
+    });
     renderApp(<AppRoutes loginUrl="/wp-login.php" />, {
       route: '/admin/rss',
       auth: adminAuth,

@@ -2,7 +2,7 @@
 Contributors: instascore
 Requires at least: 6.6
 Requires PHP: 8.2
-Stable tag: 0.18.1
+Stable tag: 0.18.2
 License: GPL-2.0-or-later
 
 WordPress backend and React application shell for InstaScore.
@@ -13,8 +13,11 @@ See README.md for the shortcode, development server and production build steps.
 
 == Changelog ==
 
-= 0.18.1 =
+= 0.18.2 =
 * Added the complete paginated news archive, RSS CSV administration, OneSignal settings, and default sports news feeds.
+
+= 0.18.1 =
+* Unreleased build superseded by 0.18.2.
 
 = 0.18.0 =
 * Repaired direct SPA routing, replaced demonstration data, and redesigned public and administration workflows for production usability.
