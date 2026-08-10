@@ -164,7 +164,9 @@ export function LiveScoresBoard({ initialSport }: { initialSport?: string }) {
   useEffect(() => {
     if (!pwa.standalone) return;
     void pwa.setBadge(counts.live);
-    return () => { void pwa.setBadge(); };
+    return () => {
+      void pwa.setBadge();
+    };
   }, [counts.live, pwa]);
 
   return (

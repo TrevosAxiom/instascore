@@ -1,0 +1,53 @@
+name: Release plugin
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name }}
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.9.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Validate release version
+        shell: bash
+        run: |
+          tag_version="${GITHUB_REF_NAME#v}"
+          plugin_version="$(sed -n 's/^ \* Version: //p' instascore-platform.php | head -n 1)"
+          constant_version="$(sed -n "s/^define( 'INSTASCORE_PLATFORM_VERSION', '\([^']*\)' );/\1/p" instascore-platform.php)"
+          test "$tag_version" = "$plugin_version"
+          test "$tag_version" = "$constant_version"
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm check
+
+      - name: Build installable plugin ZIP
+        shell: bash
+        run: |
+          package_root="release/instascore-platform"
+          mkdir -p "$package_root"
+          cp -R includes templates dist public "$package_root/"
+          cp instascore-platform.php uninstall.php readme.txt README.md "$package_root/"
+          cd release
+          zip -qr "instascore-platform-${GITHUB_REF_NAME}.zip" instascore-platform
+
+      - name: Attach ZIP to the GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release/instascore-platform-${{ github.event.release.tag_name }}.zip
+          fail_on_unmatched_files: true

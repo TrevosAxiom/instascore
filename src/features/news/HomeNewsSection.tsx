@@ -102,7 +102,11 @@ export function HomeNewsSection() {
                 <Chip
                   size="small"
                   color="primary"
-                  label={item.categories[0]?.slug === 'football' ? 'Soccer' : (item.categories[0]?.name ?? 'News')}
+                  label={
+                    item.categories[0]?.slug === 'football'
+                      ? 'Soccer'
+                      : (item.categories[0]?.name ?? 'News')
+                  }
                   sx={{ mb: 1 }}
                 />
                 <Typography variant={index === 0 ? 'h4' : 'h6'} fontWeight={950}>

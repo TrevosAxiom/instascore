@@ -77,15 +77,22 @@ export function MorePage() {
           <CardContent>
             <Stack spacing={2}>
               <div>
-                <Typography variant="h5" fontWeight={950}>Native app controls</Typography>
+                <Typography variant="h5" fontWeight={950}>
+                  Native app controls
+                </Typography>
                 <Typography sx={{ color: 'rgba(255,245,214,.72)', mt: 0.5 }}>
                   InstaScore is running standalone with device capabilities enabled.
                 </Typography>
               </div>
               <Stack direction="row" gap={1} flexWrap="wrap">
-                <Chip label={pwa.online ? 'Online' : 'Offline cache'} color={pwa.online ? 'success' : 'warning'} />
+                <Chip
+                  label={pwa.online ? 'Online' : 'Offline cache'}
+                  color={pwa.online ? 'success' : 'warning'}
+                />
                 {pwa.nativeCapabilities.push && <Chip label="Push ready" color="primary" />}
-                {pwa.serviceWorkerRegistered && <Chip label="Offline engine ready" color="primary" />}
+                {pwa.serviceWorkerRegistered && (
+                  <Chip label="Offline engine ready" color="primary" />
+                )}
               </Stack>
               <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
                 {pwa.nativeCapabilities.share && (
@@ -102,7 +109,12 @@ export function MorePage() {
                     {pwa.wakeLockActive ? 'Allow screen to sleep' : 'Keep screen awake'}
                   </Button>
                 )}
-                <Button component={RouterLink} to="/notifications" variant="outlined" sx={{ color: '#fff5d6', borderColor: '#f3c643' }}>
+                <Button
+                  component={RouterLink}
+                  to="/notifications"
+                  variant="outlined"
+                  sx={{ color: '#fff5d6', borderColor: '#f3c643' }}
+                >
                   Notification controls
                 </Button>
               </Stack>

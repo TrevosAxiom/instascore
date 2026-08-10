@@ -10,7 +10,26 @@ pull a tested commit without installing Node.js or building frontend assets in p
 `node_modules/`, development-only Composer dependencies in `vendor/`, test output, local
 environment files and logs remain ignored.
 
-## Local release workflow
+## Release-driven WordPress updates
+
+Normal pushes never publish a WordPress plugin update. WordPress checks only the latest
+published GitHub Release in `TrevosAxiom/instascore` and ignores unreleased commits, draft
+releases and prereleases.
+
+To publish an update:
+
+1. Update both the plugin header `Version` and `INSTASCORE_PLATFORM_VERSION` in
+   `instascore-platform.php`.
+2. Commit and push the tested code to `main`.
+3. Create a Git tag matching that version, for example `v0.19.0`.
+4. Publish a GitHub Release from that tag with meaningful release notes.
+5. The release workflow validates the versions, runs the full checks, builds the frontend
+   and attaches `instascore-platform-v0.19.0.zip` to the Release.
+
+Only after that asset exists will WordPress offer the version through **Plugins → Updates**.
+The update metadata is cached for six hours to stay within GitHub's public API allowance.
+
+## Local development workflow
 
 1. Make plugin changes locally.
 2. Run `pnpm check` and review the generated `dist/` changes.

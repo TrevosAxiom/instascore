@@ -12,10 +12,7 @@ describe('App shell', () => {
     expect(screen.getByRole('navigation', { name: 'Primary navigation' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'InstaScore home' })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /^Flag$/i })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: /^Soccer$/i })).toHaveAttribute(
-      'aria-selected',
-      'true',
-    );
+    expect(screen.getByRole('tab', { name: /^Soccer$/i })).toHaveAttribute('aria-selected', 'true');
 
     fireEvent.click(screen.getByRole('tab', { name: /Basketball/i }));
     expect(await screen.findByText('Lagos Hoops')).toBeInTheDocument();

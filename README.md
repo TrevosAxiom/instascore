@@ -50,4 +50,10 @@ pnpm check
 pnpm test:e2e
 ```
 
+## Releases
+
+Routine pushes do not trigger plugin updates. Installable WordPress updates are published
+only from GitHub Releases whose tag matches the version in `instascore-platform.php`. See
+`DEPLOYMENT.md` for the release, installation and rollback workflow.
+
 See `docs/architecture.md`, `docs/rest-api.md`, `docs/routes-and-screens.md`, and `docs/manual-qa.md` for implementation and verification details.

@@ -42,43 +42,91 @@ export function detectInstallGuide(userAgent = navigator.userAgent): InstallGuid
   }
   if (android && samsung) {
     return {
-      platform: 'android-samsung', label: 'Android · Samsung Internet', installSupported: true, requiresHomepage: true,
-      steps: ['Open InstaScore’s homepage.', 'Tap the menu (☰), then “Add page to”.', 'Choose Home screen and confirm.'],
+      platform: 'android-samsung',
+      label: 'Android · Samsung Internet',
+      installSupported: true,
+      requiresHomepage: true,
+      steps: [
+        'Open InstaScore’s homepage.',
+        'Tap the menu (☰), then “Add page to”.',
+        'Choose Home screen and confirm.',
+      ],
     };
   }
   if (android && firefox) {
     return {
-      platform: 'android-firefox', label: 'Android · Firefox', installSupported: true, requiresHomepage: true,
-      steps: ['Open InstaScore’s homepage.', 'Open the browser menu (⋮).', 'Tap Install or “Add to Home screen” and confirm.'],
+      platform: 'android-firefox',
+      label: 'Android · Firefox',
+      installSupported: true,
+      requiresHomepage: true,
+      steps: [
+        'Open InstaScore’s homepage.',
+        'Open the browser menu (⋮).',
+        'Tap Install or “Add to Home screen” and confirm.',
+      ],
     };
   }
   if (android) {
     return {
-      platform: 'android-chrome', label: 'Android · Chrome or Edge', installSupported: true, requiresHomepage: false,
-      steps: ['Tap Install below when available.', 'Otherwise open the browser menu (⋮).', 'Choose “Install app” and confirm.'],
+      platform: 'android-chrome',
+      label: 'Android · Chrome or Edge',
+      installSupported: true,
+      requiresHomepage: false,
+      steps: [
+        'Tap Install below when available.',
+        'Otherwise open the browser menu (⋮).',
+        'Choose “Install app” and confirm.',
+      ],
     };
   }
   if (firefox) {
     return {
-      platform: 'desktop-firefox', label: 'Desktop · Firefox', installSupported: false, requiresHomepage: false,
-      steps: ['Desktop Firefox does not currently install standard PWAs.', 'Open InstaScore in Chrome, Edge, or Safari to install it as an app.'],
+      platform: 'desktop-firefox',
+      label: 'Desktop · Firefox',
+      installSupported: false,
+      requiresHomepage: false,
+      steps: [
+        'Desktop Firefox does not currently install standard PWAs.',
+        'Open InstaScore in Chrome, Edge, or Safari to install it as an app.',
+      ],
     };
   }
   if (safari) {
     return {
-      platform: 'desktop-safari', label: 'Mac · Safari', installSupported: true, requiresHomepage: true,
-      steps: ['Open InstaScore’s homepage.', 'Choose File → Add to Dock.', 'Confirm the app name and click Add.'],
+      platform: 'desktop-safari',
+      label: 'Mac · Safari',
+      installSupported: true,
+      requiresHomepage: true,
+      steps: [
+        'Open InstaScore’s homepage.',
+        'Choose File → Add to Dock.',
+        'Confirm the app name and click Add.',
+      ],
     };
   }
   if (chrome || edge) {
     return {
-      platform: 'desktop-chromium', label: `Desktop · ${edge ? 'Edge' : 'Chrome'}`, installSupported: true, requiresHomepage: false,
-      steps: ['Click Install below when available.', 'Otherwise select the install icon in the address bar.', 'Confirm “Install InstaScore”.'],
+      platform: 'desktop-chromium',
+      label: `Desktop · ${edge ? 'Edge' : 'Chrome'}`,
+      installSupported: true,
+      requiresHomepage: false,
+      steps: [
+        'Click Install below when available.',
+        'Otherwise select the install icon in the address bar.',
+        'Confirm “Install InstaScore”.',
+      ],
     };
   }
   return {
-    platform: 'other', label: 'This browser', installSupported: true, requiresHomepage: true,
-    steps: ['Open InstaScore’s homepage.', 'Open your browser menu.', 'Choose Install, “Add to Home screen”, or the equivalent option.'],
+    platform: 'other',
+    label: 'This browser',
+    installSupported: true,
+    requiresHomepage: true,
+    steps: [
+      'Open InstaScore’s homepage.',
+      'Open your browser menu.',
+      'Choose Install, “Add to Home screen”, or the equivalent option.',
+    ],
   };
 }
 

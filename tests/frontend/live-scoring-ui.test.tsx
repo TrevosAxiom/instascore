@@ -147,12 +147,13 @@ describe('Live scoring milestone UI', () => {
       },
     });
 
-    expect(await screen.findByText('Lagos Lightning')).toBeInTheDocument();
+    expect((await screen.findAllByText('Lagos Lightning')).length).toBeGreaterThan(0);
     expect(screen.getByText('12')).toBeInTheDocument();
     expect(
       screen.getByRole('status', { name: /Lagos Lightning 12, Abuja Rush 6/i }),
     ).toBeInTheDocument();
-    expect(screen.getByText('Touchdown')).toBeInTheDocument();
+    fireEvent.click(await screen.findByRole('tab', { name: 'Scoring plays' }));
+    expect(await screen.findByText('Touchdown')).toBeInTheDocument();
   });
 
   it('submits optimistic scorekeeper event controls with expected revision', async () => {

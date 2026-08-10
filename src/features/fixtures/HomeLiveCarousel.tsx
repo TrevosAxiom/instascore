@@ -85,125 +85,125 @@ export function HomeLiveCarousel({
 
   return (
     <Stack spacing={0.35}>
-    <Box
-      ref={scrollerRef}
-      aria-label="Live matches carousel"
-      onScroll={(event) => {
-        const scroller = event.currentTarget;
-        const positions = Array.from(scroller.children).map((child) =>
-          Math.abs((child as HTMLElement).offsetLeft - scroller.offsetLeft - scroller.scrollLeft),
-        );
-        const closest = positions.indexOf(Math.min(...positions));
-        if (closest >= 0 && closest !== activePage) setActivePage(closest);
-      }}
-      sx={{
-        display: 'grid',
-        gridAutoFlow: 'column',
-        gridAutoColumns: { xs: '100%', md: 'calc(50% - 6px)' },
-        gap: 1.5,
-        overflowX: 'auto',
-        scrollSnapType: 'x mandatory',
-        pb: 0.5,
-        scrollbarWidth: 'none',
-        '&::-webkit-scrollbar': { display: 'none' },
-      }}
-    >
-      {pages.map((column, index) => (
-        <Stack key={index} spacing={1} sx={{ scrollSnapAlign: 'start' }}>
-          {column.map((match) => (
-            <Paper
-              key={match.id}
-              component={RouterLink}
-              to={match.href}
-              variant="outlined"
-              sx={{
-                display: 'grid',
-                gridTemplateColumns: '58px minmax(0,1fr) auto',
-                alignItems: 'center',
-                gap: 1,
-                px: 1.25,
-                py: 1,
-                borderRadius: 3,
-                color: 'inherit',
-                textDecoration: 'none',
-                '&:hover': { boxShadow: 2 },
-              }}
-            >
-              <Stack spacing={0.25}>
-                <Chip label="LIVE" color="success" size="small" />
-                <Typography variant="caption" textAlign="center" fontWeight={900}>
-                  {match.detail}
-                </Typography>
-              </Stack>
-              <Stack spacing={0.35}>
-                {(
-                  [
-                    [match.homeName, match.homeLogo, match.homeScore],
-                    [match.awayName, match.awayLogo, match.awayScore],
-                  ] as const
-                ).map(([name, logo, score]) => (
-                  <Stack key={name} direction="row" alignItems="center" spacing={0.75}>
-                    <EntityAvatar
-                      entity="team"
-                      src={logo}
-                      alt={`${name} logo`}
-                      sx={{ width: 26, height: 26 }}
-                    />
-                    <Typography noWrap fontWeight={850} sx={{ flex: 1 }}>
-                      {name}
-                    </Typography>
-                    <Typography fontWeight={950}>{score}</Typography>
-                  </Stack>
-                ))}
-              </Stack>
-              <Typography color="text.secondary">›</Typography>
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                noWrap
-                sx={{ gridColumn: '2 / 4' }}
+      <Box
+        ref={scrollerRef}
+        aria-label="Live matches carousel"
+        onScroll={(event) => {
+          const scroller = event.currentTarget;
+          const positions = Array.from(scroller.children).map((child) =>
+            Math.abs((child as HTMLElement).offsetLeft - scroller.offsetLeft - scroller.scrollLeft),
+          );
+          const closest = positions.indexOf(Math.min(...positions));
+          if (closest >= 0 && closest !== activePage) setActivePage(closest);
+        }}
+        sx={{
+          display: 'grid',
+          gridAutoFlow: 'column',
+          gridAutoColumns: { xs: '100%', md: 'calc(50% - 6px)' },
+          gap: 1.5,
+          overflowX: 'auto',
+          scrollSnapType: 'x mandatory',
+          pb: 0.5,
+          scrollbarWidth: 'none',
+          '&::-webkit-scrollbar': { display: 'none' },
+        }}
+      >
+        {pages.map((column, index) => (
+          <Stack key={index} spacing={1} sx={{ scrollSnapAlign: 'start' }}>
+            {column.map((match) => (
+              <Paper
+                key={match.id}
+                component={RouterLink}
+                to={match.href}
+                variant="outlined"
+                sx={{
+                  display: 'grid',
+                  gridTemplateColumns: '58px minmax(0,1fr) auto',
+                  alignItems: 'center',
+                  gap: 1,
+                  px: 1.25,
+                  py: 1,
+                  borderRadius: 3,
+                  color: 'inherit',
+                  textDecoration: 'none',
+                  '&:hover': { boxShadow: 2 },
+                }}
               >
-                {match.competition}
-              </Typography>
-            </Paper>
+                <Stack spacing={0.25}>
+                  <Chip label="LIVE" color="success" size="small" />
+                  <Typography variant="caption" textAlign="center" fontWeight={900}>
+                    {match.detail}
+                  </Typography>
+                </Stack>
+                <Stack spacing={0.35}>
+                  {(
+                    [
+                      [match.homeName, match.homeLogo, match.homeScore],
+                      [match.awayName, match.awayLogo, match.awayScore],
+                    ] as const
+                  ).map(([name, logo, score]) => (
+                    <Stack key={name} direction="row" alignItems="center" spacing={0.75}>
+                      <EntityAvatar
+                        entity="team"
+                        src={logo}
+                        alt={`${name} logo`}
+                        sx={{ width: 26, height: 26 }}
+                      />
+                      <Typography noWrap fontWeight={850} sx={{ flex: 1 }}>
+                        {name}
+                      </Typography>
+                      <Typography fontWeight={950}>{score}</Typography>
+                    </Stack>
+                  ))}
+                </Stack>
+                <Typography color="text.secondary">›</Typography>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  noWrap
+                  sx={{ gridColumn: '2 / 4' }}
+                >
+                  {match.competition}
+                </Typography>
+              </Paper>
+            ))}
+          </Stack>
+        ))}
+      </Box>
+      {pages.length > 1 ? (
+        <Stack direction="row" justifyContent="center" spacing={0.35} aria-label="Live match pages">
+          {pages.map((_page, index) => (
+            <Box
+              key={index}
+              component="button"
+              type="button"
+              aria-label={`Show live matches page ${index + 1}`}
+              aria-current={index === activePage ? 'true' : undefined}
+              onClick={() => selectPage(index)}
+              sx={{
+                width: 18,
+                minWidth: 18,
+                minHeight: '18px !important',
+                height: 18,
+                p: 0,
+                border: 0,
+                bgcolor: 'transparent',
+                cursor: 'pointer',
+                '&::after': {
+                  content: '""',
+                  display: 'block',
+                  width: index === activePage ? 12 : 5,
+                  height: 5,
+                  mx: 'auto',
+                  borderRadius: 99,
+                  bgcolor: index === activePage ? 'primary.main' : 'rgba(7,25,45,.3)',
+                  transition: 'width .2s ease, background-color .2s ease',
+                },
+              }}
+            />
           ))}
         </Stack>
-      ))}
-    </Box>
-    {pages.length > 1 ? (
-      <Stack direction="row" justifyContent="center" spacing={0.35} aria-label="Live match pages">
-        {pages.map((_page, index) => (
-          <Box
-            key={index}
-            component="button"
-            type="button"
-            aria-label={`Show live matches page ${index + 1}`}
-            aria-current={index === activePage ? 'true' : undefined}
-            onClick={() => selectPage(index)}
-            sx={{
-              width: 18,
-              minWidth: 18,
-              minHeight: '18px !important',
-              height: 18,
-              p: 0,
-              border: 0,
-              bgcolor: 'transparent',
-              cursor: 'pointer',
-              '&::after': {
-                content: '""',
-                display: 'block',
-                width: index === activePage ? 12 : 5,
-                height: 5,
-                mx: 'auto',
-                borderRadius: 99,
-                bgcolor: index === activePage ? 'primary.main' : 'rgba(7,25,45,.3)',
-                transition: 'width .2s ease, background-color .2s ease',
-              },
-            }}
-          />
-        ))}
-      </Stack>
-    ) : null}
+      ) : null}
     </Stack>
   );
 }

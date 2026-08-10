@@ -41,10 +41,14 @@ export function InstallAppPage() {
       {!pwa.standalone && (
         <Card variant="outlined">
           <CardContent>
-            <Typography variant="h5" fontWeight={950}>{pwa.installGuide.label}</Typography>
+            <Typography variant="h5" fontWeight={950}>
+              {pwa.installGuide.label}
+            </Typography>
             <Stack component="ol" spacing={1.5} sx={{ pl: 2.5, mb: 0 }}>
               {pwa.installGuide.steps.map((step) => (
-                <Typography component="li" key={step}>{step}</Typography>
+                <Typography component="li" key={step}>
+                  {step}
+                </Typography>
               ))}
             </Stack>
           </CardContent>

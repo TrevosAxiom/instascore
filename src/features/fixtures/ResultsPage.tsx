@@ -26,10 +26,7 @@ export function ResultsPage() {
     queryFn: () => api.getProviderMatches('basketball', 'previous'),
     enabled: !sport || sport === 'basketball',
   });
-  const providerResults = [
-    ...(footballResults.data ?? []),
-    ...(basketballResults.data ?? []),
-  ];
+  const providerResults = [...(footballResults.data ?? []), ...(basketballResults.data ?? [])];
   return (
     <PageScaffold
       eyebrow="Results"

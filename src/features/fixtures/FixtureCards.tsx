@@ -35,7 +35,8 @@ export function FixtureCards({ fixtures }: { fixtures: Fixture[] }) {
               {fixtureTitle(fixture)}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              {publicSportName(fixture.sport)} · {fixture.competition.name} · {fixture.venue?.name ?? 'Venue TBC'}
+              {publicSportName(fixture.sport)} · {fixture.competition.name} ·{' '}
+              {fixture.venue?.name ?? 'Venue TBC'}
             </Typography>
             <Typography variant="caption" color="text.secondary">
               {formatKickoff(fixture)}

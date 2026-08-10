@@ -1,4 +1,15 @@
-import { Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Paper, Stack, Typography } from '@mui/material';
+import {
+  Alert,
+  Box,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Paper,
+  Stack,
+  Typography,
+} from '@mui/material';
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 
@@ -44,7 +55,9 @@ export function InstallHelper() {
       >
         <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1.5}>
           <Box sx={{ minWidth: 0 }}>
-            <Typography fontWeight={950} noWrap>Install InstaScore</Typography>
+            <Typography fontWeight={950} noWrap>
+              Install InstaScore
+            </Typography>
             <Typography variant="caption" color="text.secondary" noWrap>
               {pwa.installGuide.label} · launches from the homepage
             </Typography>
@@ -59,21 +72,29 @@ export function InstallHelper() {
         <DialogTitle>Install on {pwa.installGuide.label}</DialogTitle>
         <DialogContent>
           {!pwa.installGuide.installSupported && (
-            <Alert severity="info" sx={{ mb: 2 }}>Installation is not supported by this browser.</Alert>
+            <Alert severity="info" sx={{ mb: 2 }}>
+              Installation is not supported by this browser.
+            </Alert>
           )}
           <Stack component="ol" spacing={1.5} sx={{ pl: 2.5, mb: 0 }}>
             {pwa.installGuide.steps.map((step) => (
-              <Typography component="li" key={step}>{step}</Typography>
+              <Typography component="li" key={step}>
+                {step}
+              </Typography>
             ))}
           </Stack>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpen(false)}>Close</Button>
           {pwa.installGuide.requiresHomepage && location.pathname !== '/' && (
-            <Button variant="contained" onClick={continueOnHomepage}>Continue on homepage</Button>
+            <Button variant="contained" onClick={continueOnHomepage}>
+              Continue on homepage
+            </Button>
           )}
           {pwa.installAvailable && (
-            <Button variant="contained" onClick={() => void pwa.promptInstall()}>Install now</Button>
+            <Button variant="contained" onClick={() => void pwa.promptInstall()}>
+              Install now
+            </Button>
           )}
         </DialogActions>
       </Dialog>
