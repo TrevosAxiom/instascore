@@ -17,6 +17,7 @@ use InstaScore\Platform\Repositories\MatchClockRepository;
 use InstaScore\Platform\Repositories\MatchEventRepository;
 use InstaScore\Platform\Repositories\PlayerRepository;
 use InstaScore\Platform\Repositories\ScorekeeperAssignmentRepository;
+use InstaScore\Platform\Notifications\NotificationDispatcher;
 use wpdb;
 
 final class ScoringService {
@@ -129,6 +130,7 @@ final class ScoringService {
 			$created = $events->create( $row );
 			( new AuditRepository( $this->database ) )->record( 'match_event', (string) $created['uuid'], 'created', null, $created );
 			$this->database->query( 'COMMIT' );
+			$this->notify_score_event( $fixture_uuid, $created );
 			return $this->snapshot( $fixture, false, $created );
 		} catch ( \Throwable $error ) {
 			$this->database->query( 'ROLLBACK' );
@@ -290,5 +292,14 @@ final class ScoringService {
 			'voided'         => ! empty( $event['voided_at'] ),
 			'createdAt'      => $event['created_at'],
 		);
+	}
+
+	/** @param array<string,mixed> $event */
+	private function notify_score_event( string $fixture_uuid, array $event ): void {
+		try {
+			NotificationDispatcher::create()->score_event( $fixture_uuid, $event );
+		} catch ( \Throwable $error ) {
+			error_log( 'InstaScore notification enqueue failed: ' . $error->getMessage() ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+		}
 	}
 }

@@ -9,6 +9,8 @@ namespace InstaScore\Platform\REST;
 
 use InstaScore\Platform\Notifications\NotificationCategory;
 use InstaScore\Platform\Notifications\OneSignalAdapter;
+use InstaScore\Platform\Notifications\NotificationDispatcher;
+use InstaScore\Platform\Repositories\NotificationJobRepository;
 use InstaScore\Platform\Repositories\NotificationRepository;
 use InstaScore\Platform\Support\Config;
 use InstaScore\Platform\Support\Pwa;
@@ -53,6 +55,18 @@ final class NotificationController {
 		register_rest_route( 'instascore/v1', '/admin/notifications/worker-check', array(
 			'methods'             => 'GET',
 			'callback'            => array( $this, 'worker_check' ),
+			'permission_callback' => array( $this, 'admin' ),
+		) );
+
+		register_rest_route( 'instascore/v1', '/admin/notifications/status', array(
+			'methods'             => 'GET',
+			'callback'            => array( $this, 'status' ),
+			'permission_callback' => array( $this, 'admin' ),
+		) );
+
+		register_rest_route( 'instascore/v1', '/admin/notifications/process', array(
+			'methods'             => 'POST',
+			'callback'            => array( $this, 'process' ),
 			'permission_callback' => array( $this, 'admin' ),
 		) );
 	}
@@ -131,6 +145,25 @@ final class NotificationController {
 				'html404Risk'   => ! is_readable( $root_file ),
 			)
 		);
+	}
+
+	public function status(): WP_REST_Response {
+		global $wpdb;
+		$status = ( new NotificationJobRepository( $wpdb ) )->status();
+		$status['configured'] = '' !== Config::onesignal_app_id() && '' !== Config::onesignal_rest_api_key();
+		$status['disabled'] = Config::notifications_disabled();
+		$status['workerNextAt'] = $this->scheduled_at( 'instascore_notification_worker' );
+		$status['remindersNextAt'] = $this->scheduled_at( 'instascore_notification_reminders' );
+		return Envelope::success( $status );
+	}
+
+	public function process(): WP_REST_Response {
+		return Envelope::success( NotificationDispatcher::create()->process_due( 50 ) );
+	}
+
+	private function scheduled_at( string $hook ): ?string {
+		$timestamp = wp_next_scheduled( $hook );
+		return false === $timestamp ? null : gmdate( 'c', $timestamp );
 	}
 
 	private function repository(): NotificationRepository {

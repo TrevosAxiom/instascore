@@ -110,6 +110,18 @@ export const testApi: ApiClient = {
   syncNotificationSubscription: () => Promise.resolve({ synced: true }),
   followNotificationTarget: () => Promise.resolve({ followed: true }),
   adminTestNotification: () => Promise.resolve({ status: 'disabled' }),
+  getNotificationAdminStatus: () =>
+    Promise.resolve({
+      configured: true,
+      disabled: false,
+      subscriptions: 0,
+      workerNextAt: null,
+      remindersNextAt: null,
+      counts: { queued: 0, processing: 0, retrying: 0, sent: 0, suppressed: 0, failed: 0 },
+      recent: [],
+    }),
+  processNotificationQueue: () =>
+    Promise.resolve({ sent: 0, suppressed: 0, retrying: 0, failed: 0 }),
   getFootballProviderHealth: () =>
     Promise.resolve({
       provider: 'approved_football_provider',

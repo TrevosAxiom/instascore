@@ -64,6 +64,18 @@ final class FixtureRepository extends BaseRepository {
 			$where[] = 'DATE(f.kickoff_at) = %s';
 			$args[]  = sanitize_text_field( (string) $query['date'] );
 		}
+		if ( ! empty( $query['fromUtc'] ) ) {
+			$where[] = 'f.kickoff_at >= %s';
+			$args[]  = sanitize_text_field( (string) $query['fromUtc'] );
+		}
+		if ( ! empty( $query['toUtc'] ) ) {
+			$where[] = 'f.kickoff_at <= %s';
+			$args[]  = sanitize_text_field( (string) $query['toUtc'] );
+		}
+		if ( ! empty( $query['status'] ) ) {
+			$where[] = 'f.status = %s';
+			$args[]  = sanitize_key( (string) $query['status'] );
+		}
 		if ( ! empty( $query['sport'] ) ) {
 			$where[] = 'sp.slug = %s';
 			$args[]  = sanitize_title( (string) $query['sport'] );

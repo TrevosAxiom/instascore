@@ -172,21 +172,42 @@ final class BasketballNormalizer {
 		$scores = $row['scores'] ?? array();
 		$home   = is_array( $scores['home'] ?? null ) ? $scores['home'] : array();
 		$away   = is_array( $scores['away'] ?? null ) ? $scores['away'] : array();
-		$labels = array( 'quarter_1', 'quarter_2', 'quarter_3', 'quarter_4', 'over_time', 'ot2', 'ot3', 'ot4' );
+		$labels = array(
+			array( 'quarter_1', 'q1' ),
+			array( 'quarter_2', 'q2' ),
+			array( 'quarter_3', 'q3' ),
+			array( 'quarter_4', 'q4' ),
+			array( 'over_time', 'ot' ),
+			array( 'ot2' ),
+			array( 'ot3' ),
+			array( 'ot4' ),
+		);
 		$periods = array();
 
-		foreach ( $labels as $index => $label ) {
-			if ( null === ( $home[ $label ] ?? null ) && null === ( $away[ $label ] ?? null ) ) {
+		foreach ( $labels as $index => $aliases ) {
+			$home_value = $this->first_period_value( $home, $aliases );
+			$away_value = $this->first_period_value( $away, $aliases );
+			if ( null === $home_value && null === $away_value ) {
 				continue;
 			}
 			$periods[] = array(
 				'label' => $index < 4 ? 'Q' . ( $index + 1 ) : 'OT' . ( 4 === $index ? '' : (string) ( $index - 3 ) ),
-				'home'  => (int) ( $home[ $label ] ?? 0 ),
-				'away'  => (int) ( $away[ $label ] ?? 0 ),
+				'home'  => (int) ( $home_value ?? 0 ),
+				'away'  => (int) ( $away_value ?? 0 ),
 			);
 		}
 
 		return $periods;
+	}
+
+	/** @param array<string,mixed> $scores @param string[] $aliases */
+	private function first_period_value( array $scores, array $aliases ): mixed {
+		foreach ( $aliases as $alias ) {
+			if ( array_key_exists( $alias, $scores ) && null !== $scores[ $alias ] ) {
+				return $scores[ $alias ];
+			}
+		}
+		return null;
 	}
 
 	/**

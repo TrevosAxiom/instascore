@@ -5,7 +5,7 @@ type OneSignalSdk = {
   login: (externalId: string) => Promise<void>;
   logout: () => Promise<void>;
   Slidedown?: { promptPush: () => Promise<void> };
-  Notifications?: { requestPermission: () => Promise<boolean> };
+  Notifications?: { requestPermission: () => Promise<boolean>; permission?: boolean };
   User?: {
     onesignalId?: string;
     PushSubscription?: { id?: string; optedIn?: boolean };
@@ -90,9 +90,16 @@ export async function promptForPush(settings?: OneSignalSettings) {
   }
   if (sdk.Slidedown?.promptPush) {
     await sdk.Slidedown.promptPush();
-    return true;
+    return Boolean(sdk.User?.PushSubscription?.optedIn || sdk.Notifications?.permission);
   }
   return sdk.Notifications?.requestPermission ? sdk.Notifications.requestPermission() : false;
+}
+
+export async function pushPermissionState(settings?: OneSignalSettings) {
+  if (!('Notification' in window)) return 'unsupported' as const;
+  const sdk = await initializeOneSignal(settings);
+  if (sdk?.User?.PushSubscription?.optedIn) return 'subscribed' as const;
+  return Notification.permission;
 }
 
 export async function readOneSignalSubscription(settings?: OneSignalSettings) {

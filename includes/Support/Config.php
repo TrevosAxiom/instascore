@@ -31,7 +31,8 @@ final class Config {
 	}
 
 	public static function notifications_disabled(): bool {
-		return '1' === self::value( 'INSTASCORE_NOTIFICATIONS_DISABLED', '0' );
+		return (bool) get_option( 'instascore_admin_notification_disable', false )
+			|| '1' === self::value( 'INSTASCORE_NOTIFICATIONS_DISABLED', '0' );
 	}
 
 	public static function notifications_allow_test_fixtures(): bool {

@@ -38,6 +38,7 @@ use InstaScore\Platform\Support\AdminSettings;
 use InstaScore\Platform\Support\PageProvisioner;
 use InstaScore\Platform\Support\PluginUpdater;
 use InstaScore\Platform\Support\NewsProvisioner;
+use InstaScore\Platform\Support\NotificationScheduler;
 use InstaScore\Platform\Support\Pwa;
 use InstaScore\Platform\Support\ProviderScheduler;
 use InstaScore\Platform\Support\RssScheduler;
@@ -73,6 +74,7 @@ final class Bootstrap {
 		add_action( 'init', array( StandingsCommand::class, 'register' ) );
 		add_action( 'init', array( ProviderScheduler::class, 'register' ) );
 		add_action( 'init', array( RssScheduler::class, 'register' ) );
+		add_action( 'init', array( NotificationScheduler::class, 'register' ) );
 		add_action( 'admin_menu', array( AdminSettings::class, 'register_menu' ) );
 		add_action( 'admin_post_instascore_save_settings', array( AdminSettings::class, 'save_settings' ) );
 		add_action( 'admin_post_instascore_run_operation', array( AdminSettings::class, 'run_operation' ) );

@@ -24,6 +24,7 @@ import type {
   LiveMatchState,
   MediaUpload,
   NotificationPreferencesResponse,
+  NotificationAdminStatus,
   NewsItem,
   RssDashboard,
   RssSettings,
@@ -163,6 +164,8 @@ export interface ApiClient {
     status?: 'active' | 'muted';
   }) => Promise<unknown>;
   adminTestNotification: (input: Record<string, unknown>) => Promise<unknown>;
+  getNotificationAdminStatus: () => Promise<NotificationAdminStatus>;
+  processNotificationQueue: () => Promise<Record<string, number>>;
   getFootballProviderHealth: () => Promise<ProviderHealth>;
   syncFootballProvider: (input: {
     syncType: 'competitions' | 'teams' | 'fixtures' | 'live' | 'standings';
@@ -544,6 +547,10 @@ export function createApiClient(settings: BootstrapSettings): ApiClient {
       request('/notifications/follows', { method: 'POST', body: JSON.stringify(input) }),
     adminTestNotification: (input) =>
       request('/admin/notifications/test-send', { method: 'POST', body: JSON.stringify(input) }),
+    getNotificationAdminStatus: () =>
+      request<NotificationAdminStatus>('/admin/notifications/status'),
+    processNotificationQueue: () =>
+      request<Record<string, number>>('/admin/notifications/process', { method: 'POST' }),
     getFootballProviderHealth: () => request<ProviderHealth>('/admin/providers/football/health'),
     syncFootballProvider: (input) =>
       request<ProviderSyncResult>('/admin/providers/football/sync', {

@@ -1,17 +1,20 @@
 import { Alert, Box, Button, Stack, Switch, TextField, Typography } from '@mui/material';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
+import { Link } from 'react-router';
 
 import { useApi } from '../../api/context';
 import { useAuth } from '../../app/auth-context';
 import { readBootstrapSettings } from '../../app/bootstrap';
 import { ErrorState, LoadingState } from '../../components/AsyncStates';
 import { PageScaffold } from '../../components/PageScaffold';
-import { promptForPush } from '../../onesignal/oneSignalAdapter';
+import { promptForPush, readOneSignalSubscription } from '../../onesignal/oneSignalAdapter';
+import { usePwa } from '../../pwa/PwaProvider';
 import type { NotificationPreference, UserPreferences } from '../../types/api';
 
 const labels: Record<string, string> = {
   match_starting: 'Match starting',
+  match_live: 'Match is live',
   score_change: 'Score changes',
   final_score: 'Final score',
   fixture_change: 'Fixture changes',
@@ -30,8 +33,14 @@ export function NotificationPreferencesPage() {
   const { state } = useAuth();
   const queryClient = useQueryClient();
   const settings = useMemo(() => readBootstrapSettings().oneSignal, []);
+  const pwa = usePwa();
+  const isIos =
+    pwa.installGuide.platform === 'ios-safari' || pwa.installGuide.platform === 'ios-browser';
   const [draft, setDraft] = useState<NotificationPreference[]>([]);
   const [profileDraft, setProfileDraft] = useState<UserPreferences | null>(null);
+  const [permissionStatus, setPermissionStatus] = useState<
+    'idle' | 'working' | 'enabled' | 'denied' | 'unsupported'
+  >('idle');
   const query = useQuery({
     queryKey: ['notifications', 'preferences'],
     queryFn: api.getNotificationPreferences,
@@ -93,9 +102,42 @@ export function NotificationPreferencesPage() {
               We do not ask for native permission on first load. Use this after following a team or
               enabling match alerts.
             </Typography>
-            <Button variant="contained" onClick={() => void promptForPush(settings)} sx={{ mt: 2 }}>
-              Enable push prompts
-            </Button>
+            {isIos && !pwa.standalone ? (
+              <Alert severity="info" sx={{ mt: 2 }}>
+                iPhone and iPad require the installed Home Screen app for match alerts. Install
+                InstaScore, open it from its icon, then return here.
+              </Alert>
+            ) : null}
+            {!pwa.nativeCapabilities.push ? (
+              <Alert severity="warning" sx={{ mt: 2 }}>
+                Push notifications are not supported by this browser or browsing mode.
+              </Alert>
+            ) : null}
+            {permissionStatus === 'enabled' ? (
+              <Alert severity="success" sx={{ mt: 2 }}>
+                Match alerts are enabled on this device.
+              </Alert>
+            ) : null}
+            {permissionStatus === 'denied' ? (
+              <Alert severity="warning" sx={{ mt: 2 }}>
+                Notifications are blocked. Enable them in this app’s browser or device settings.
+              </Alert>
+            ) : null}
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ mt: 2 }}>
+              {isIos && !pwa.standalone ? (
+                <Button component={Link} to="/install" variant="contained">
+                  Install for match alerts
+                </Button>
+              ) : (
+                <Button
+                  variant="contained"
+                  disabled={permissionStatus === 'working' || !pwa.nativeCapabilities.push}
+                  onClick={() => void enablePush()}
+                >
+                  {permissionStatus === 'working' ? 'Enabling…' : 'Enable match alerts'}
+                </Button>
+              )}
+            </Stack>
           </Box>
           {userPreferences ? (
             <Box className="instascore-panel">
@@ -217,5 +259,25 @@ export function NotificationPreferencesPage() {
       next[index] = { ...previous, ...patch };
       return next;
     });
+  }
+
+  async function enablePush() {
+    if (!('Notification' in window)) {
+      setPermissionStatus('unsupported');
+      return;
+    }
+    setPermissionStatus('working');
+    try {
+      await promptForPush(settings);
+      const subscription = await readOneSignalSubscription(settings);
+      if (subscription.subscriptionId && subscription.status === 'active') {
+        await api.syncNotificationSubscription(subscription);
+        setPermissionStatus('enabled');
+        return;
+      }
+      setPermissionStatus(Notification.permission === 'denied' ? 'denied' : 'idle');
+    } catch {
+      setPermissionStatus(Notification.permission === 'denied' ? 'denied' : 'idle');
+    }
   }
 }

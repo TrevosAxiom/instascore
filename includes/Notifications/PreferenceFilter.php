@@ -25,7 +25,11 @@ final class PreferenceFilter {
 			return true;
 		}
 
-		$timezone = new DateTimeZone( (string) ( $preference['timezone'] ?? 'UTC' ) );
+		try {
+			$timezone = new DateTimeZone( (string) ( $preference['timezone'] ?? 'UTC' ) );
+		} catch ( \Exception ) {
+			$timezone = new DateTimeZone( 'UTC' );
+		}
 		$local    = $now->setTimezone( $timezone )->format( 'H:i' );
 
 		if ( $start <= $end ) {

@@ -48,6 +48,25 @@ export interface NotificationPreferencesResponse {
   workerUrl: string;
 }
 
+export interface NotificationAdminStatus {
+  configured: boolean;
+  disabled: boolean;
+  subscriptions: number;
+  workerNextAt: string | null;
+  remindersNextAt: string | null;
+  counts: Record<'queued' | 'processing' | 'retrying' | 'sent' | 'suppressed' | 'failed', number>;
+  recent: Array<{
+    uuid: string;
+    event_type: string;
+    category: string;
+    status: string;
+    attempt_count: number;
+    next_attempt_at: string;
+    last_error: string | null;
+    created_at: string;
+  }>;
+}
+
 export interface ProviderHealth {
   provider: string;
   sport: 'football' | 'basketball';

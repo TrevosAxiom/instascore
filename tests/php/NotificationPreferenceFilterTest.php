@@ -38,4 +38,13 @@ final class NotificationPreferenceFilterTest extends TestCase {
 			)
 		);
 	}
+
+	public function test_invalid_timezone_falls_back_without_breaking_delivery(): void {
+		$this->assertTrue(
+			( new PreferenceFilter() )->allows(
+				array( 'enabled' => true, 'quiet_hours_start' => '22:00', 'quiet_hours_end' => '23:00', 'timezone' => 'Invalid/Timezone' ),
+				new DateTimeImmutable( '2026-07-30 12:00:00 UTC' )
+			)
+		);
+	}
 }

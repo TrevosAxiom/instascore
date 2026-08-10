@@ -34,6 +34,8 @@ final class OneSignalAdapter {
 			'contents'                  => array( 'en' => (string) ( $payload['body'] ?? '' ) ),
 			'url'                       => (string) ( $payload['launchUrl'] ?? home_url( '/' ) ),
 			'collapse_id'               => (string) ( $payload['collapseKey'] ?? '' ),
+			'idempotency_key'           => (string) ( $payload['idempotencyKey'] ?? wp_generate_uuid4() ),
+			'ttl'                       => max( 0, min( 2419200, (int) ( $payload['ttl'] ?? DAY_IN_SECONDS ) ) ),
 			'data'                      => array(
 				'category'  => (string) ( $payload['category'] ?? '' ),
 				'eventUuid' => (string) ( $payload['eventUuid'] ?? '' ),
@@ -56,7 +58,17 @@ final class OneSignalAdapter {
 			return array( 'status' => 'failed', 'error' => $response->get_error_message() );
 		}
 
+		$status_code = (int) wp_remote_retrieve_response_code( $response );
 		$data = json_decode( (string) wp_remote_retrieve_body( $response ), true );
-		return is_array( $data ) ? $data : array( 'status' => 'sent' );
+		if ( $status_code < 200 || $status_code >= 300 || ! is_array( $data ) || empty( $data['id'] ) ) {
+			$error = is_array( $data ) ? wp_json_encode( $data['errors'] ?? $data ) : 'Invalid OneSignal response.';
+			return array( 'status' => 'failed', 'httpStatus' => $status_code, 'error' => (string) $error );
+		}
+
+		return array(
+			'status'     => 'sent',
+			'messageId'  => sanitize_text_field( (string) $data['id'] ),
+			'recipients' => (int) ( $data['recipients'] ?? 0 ),
+		);
 	}
 }

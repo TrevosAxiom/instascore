@@ -9,6 +9,7 @@ namespace InstaScore\Platform\Services;
 
 use InstaScore\Platform\Domain\FixtureValidator;
 use InstaScore\Platform\Domain\ValidationException;
+use InstaScore\Platform\Notifications\NotificationDispatcher;
 use InstaScore\Platform\Repositories\AuditRepository;
 use InstaScore\Platform\Repositories\CompetitionRepository;
 use InstaScore\Platform\Repositories\FixtureOfficialRepository;
@@ -87,6 +88,7 @@ final class FixtureService {
 			if ( in_array( $status, array( 'abandoned', 'completed', 'confirmed' ), true ) || 'confirmed' === (string) $before['status'] ) {
 				StandingsService::create()->rebuild_for_fixture_uuid( $uuid, 'fixture_status_recalculation' );
 			}
+			$this->notify_fixture_updated( $before, $after );
 			return array( 'fixture' => $after );
 		} catch ( \Throwable $error ) {
 			$this->database->query( 'ROLLBACK' );
@@ -107,6 +109,9 @@ final class FixtureService {
 			}
 			( new AuditRepository( $this->database ) )->record( 'fixture', (string) $fixture['uuid'], $action, $before, $fixture );
 			$this->database->query( 'COMMIT' );
+			if ( null !== $before ) {
+				$this->notify_fixture_updated( $before, $fixture );
+			}
 			return array(
 				'fixture'  => $fixture,
 				'warnings' => array_map(
@@ -207,5 +212,14 @@ final class FixtureService {
 				'revision'   => 1,
 			)
 		);
+	}
+
+	/** @param array<string,mixed> $before @param array<string,mixed> $after */
+	private function notify_fixture_updated( array $before, array $after ): void {
+		try {
+			NotificationDispatcher::create()->fixture_updated( $before, $after );
+		} catch ( \Throwable $error ) {
+			error_log( 'InstaScore fixture notification enqueue failed: ' . $error->getMessage() ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+		}
 	}
 }
