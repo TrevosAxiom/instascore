@@ -9,13 +9,28 @@ namespace InstaScore\Platform\Support;
 
 final class PluginUpdater {
 	private const REPOSITORY    = 'TrevosAxiom/instascore';
-	private const API_URL       = 'https://api.github.com/repos/' . self::REPOSITORY . '/releases/latest';
+	private const API_URL       = 'https://api.github.com/repos/' . self::REPOSITORY . '/releases?per_page=20';
 	private const CACHE_KEY     = 'instascore_platform_latest_release';
 	private const CACHE_SECONDS = 6 * HOUR_IN_SECONDS;
 
 	public static function register(): void {
 		add_filter( 'pre_set_site_transient_update_plugins', array( self::class, 'check_for_update' ) );
 		add_filter( 'plugins_api', array( self::class, 'plugin_information' ), 20, 3 );
+		add_filter( 'auto_update_plugin', array( self::class, 'enable_auto_update' ), 20, 2 );
+	}
+
+	/**
+	 * Keep this release-managed plugin opted into WordPress background updates.
+	 *
+	 * @param bool  $update Existing auto-update decision.
+	 * @param mixed $item   Plugin update data.
+	 */
+	public static function enable_auto_update( bool $update, $item ): bool {
+		$plugin = plugin_basename( INSTASCORE_PLATFORM_FILE );
+		if ( is_object( $item ) && ( $plugin === ( $item->plugin ?? '' ) || 'instascore-platform' === ( $item->slug ?? '' ) ) ) {
+			return true;
+		}
+		return $update;
 	}
 
 	/**
@@ -113,7 +128,41 @@ final class PluginUpdater {
 		}
 
 		$payload = json_decode( (string) wp_remote_retrieve_body( $response ), true );
-		if ( ! is_array( $payload ) || ! empty( $payload['draft'] ) || ! empty( $payload['prerelease'] ) ) {
+		if ( ! is_array( $payload ) ) {
+			return null;
+		}
+
+		$release = null;
+		foreach ( $payload as $candidate ) {
+			$normalized = is_array( $candidate ) ? self::normalize_release( $candidate ) : null;
+			if ( null !== $normalized && ( null === $release || version_compare( $normalized['version'], $release['version'], '>' ) ) ) {
+				$release = $normalized;
+			}
+		}
+		if ( null === $release ) {
+			return null;
+		}
+
+		set_site_transient( self::CACHE_KEY, $release, self::CACHE_SECONDS );
+		return $release;
+	}
+
+	/**
+	 * Accept stable releases and explicit release-candidate prereleases only.
+	 * Drafts, alpha/beta builds and releases without the packaged plugin ZIP are ignored.
+	 *
+	 * @param array<string,mixed> $payload GitHub release payload.
+	 * @return array{version:string,packageUrl:string,htmlUrl:string,notes:string}|null
+	 */
+	private static function normalize_release( array $payload ): ?array {
+		if ( ! empty( $payload['draft'] ) ) {
+			return null;
+		}
+		$version = ltrim( sanitize_text_field( (string) ( $payload['tag_name'] ?? '' ) ), 'vV' );
+		if ( '' === $version || ! preg_match( '/^\d+\.\d+\.\d+(?:-rc(?:[.-]\d+)?)?$/i', $version ) ) {
+			return null;
+		}
+		if ( ! empty( $payload['prerelease'] ) && ! str_contains( strtolower( $version ), '-rc' ) ) {
 			return null;
 		}
 
@@ -129,17 +178,11 @@ final class PluginUpdater {
 			return null;
 		}
 
-		$release = array(
-			'version'    => ltrim( sanitize_text_field( (string) ( $payload['tag_name'] ?? '' ) ), 'vV' ),
+		return array(
+			'version'    => $version,
 			'packageUrl' => $package_url,
 			'htmlUrl'    => esc_url_raw( (string) ( $payload['html_url'] ?? '' ) ),
 			'notes'      => sanitize_textarea_field( (string) ( $payload['body'] ?? '' ) ),
 		);
-		if ( '' === $release['version'] ) {
-			return null;
-		}
-
-		set_site_transient( self::CACHE_KEY, $release, self::CACHE_SECONDS );
-		return $release;
 	}
 }

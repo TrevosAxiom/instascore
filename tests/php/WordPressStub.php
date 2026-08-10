@@ -9,6 +9,7 @@ $GLOBALS['instascore_test_actions'] = array();
 $GLOBALS['instascore_test_options'] = array( 'instascore_db_version' => 15 );
 $GLOBALS['instascore_test_capabilities'] = array();
 $GLOBALS['instascore_test_user_meta'] = array();
+$GLOBALS['instascore_test_site_transients'] = array();
 
 defined( 'ARRAY_A' ) || define( 'ARRAY_A', 'ARRAY_A' );
 
@@ -93,6 +94,9 @@ function update_option( string $key, mixed $value, bool $autoload = false ): boo
     $GLOBALS['instascore_test_options'][ $key ] = $value;
     return true;
 }
+function get_site_transient( string $key ): mixed { return $GLOBALS['instascore_test_site_transients'][ $key ] ?? false; }
+function set_site_transient( string $key, mixed $value, int $expiration = 0 ): bool { $GLOBALS['instascore_test_site_transients'][ $key ] = $value; return true; }
+function plugin_basename( string $file ): string { return 'instascore-platform/' . basename( $file ); }
 
 function sanitize_text_field( string $value ): string { return trim( strip_tags( $value ) ); }
 function wp_unslash( string $value ): string { return stripslashes( $value ); }
