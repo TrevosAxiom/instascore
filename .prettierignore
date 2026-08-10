@@ -1,0 +1,7 @@
+dist
+coverage
+vendor
+node_modules
+docs/reference
+package-lock.json
+*.php

@@ -1,0 +1,42 @@
+{
+  "name": "instascore/instascore-platform",
+  "description": "InstaScore WordPress platform plugin",
+  "type": "wordpress-plugin",
+  "license": "GPL-2.0-or-later",
+  "require": {
+    "php": ">=8.2"
+  },
+  "require-dev": {
+    "dealerdirect/phpcodesniffer-composer-installer": "^1.0",
+    "phpcompatibility/phpcompatibility-wp": "^2.1",
+    "phpunit/phpunit": "^11.0",
+    "squizlabs/php_codesniffer": "^3.10",
+    "wp-coding-standards/wpcs": "^3.1"
+  },
+  "autoload": {
+    "psr-4": {
+      "InstaScore\\Platform\\": "includes/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "InstaScore\\Platform\\Tests\\": "tests/php/"
+    }
+  },
+  "config": {
+    "allow-plugins": {
+      "dealerdirect/phpcodesniffer-composer-installer": true
+    },
+    "sort-packages": true
+  },
+  "scripts": {
+    "lint:syntax": "@php scripts/php-lint.php",
+    "lint": "phpcs",
+    "test": "phpunit",
+    "check": [
+      "@lint:syntax",
+      "@lint",
+      "@test"
+    ]
+  }
+}

@@ -1,0 +1,72 @@
+<?xml version="1.0"?>
+<ruleset name="InstaScore">
+  <description>InstaScore PHP coding standards.</description>
+  <file>instascore-platform.php</file>
+  <file>uninstall.php</file>
+  <file>includes</file>
+  <file>tests/php</file>
+  <exclude-pattern>vendor/*</exclude-pattern>
+  <exclude-pattern>tests/php/WordPressStub.php</exclude-pattern>
+  <exclude-pattern>tests/php/bootstrap.php</exclude-pattern>
+  <arg name="basepath" value="."/>
+  <arg name="colors"/>
+  <arg value="sp"/>
+  <rule ref="WordPress"/>
+  <rule ref="PHPCompatibilityWP">
+    <properties>
+      <property name="testVersion" value="8.2-"/>
+    </properties>
+  </rule>
+  <rule ref="WordPress.Files.FileName">
+    <exclude name="WordPress.Files.FileName.InvalidClassFileName"/>
+    <exclude name="WordPress.Files.FileName.NotHyphenatedLowercase"/>
+  </rule>
+  <rule ref="Squiz.Commenting.ClassComment.Missing">
+    <severity>0</severity>
+  </rule>
+  <rule ref="Squiz.Commenting.FunctionComment.Missing">
+    <severity>0</severity>
+  </rule>
+  <rule ref="Squiz.Commenting.VariableComment.Missing">
+    <severity>0</severity>
+  </rule>
+  <rule ref="Generic.Commenting.DocComment.MissingShort">
+    <severity>0</severity>
+  </rule>
+  <rule ref="Squiz.Commenting.FileComment.SpacingAfterComment">
+    <severity>0</severity>
+  </rule>
+  <rule ref="Squiz.Commenting.FunctionComment.MissingParamTag">
+    <severity>0</severity>
+  </rule>
+  <rule ref="Squiz.Commenting.FunctionComment.ParamNameNoMatch">
+    <severity>0</severity>
+  </rule>
+  <rule ref="Squiz.Commenting.FunctionComment.IncorrectTypeHint">
+    <severity>0</severity>
+  </rule>
+  <rule ref="Squiz.Commenting.FunctionCommentThrowTag.Missing">
+    <severity>0</severity>
+  </rule>
+  <rule ref="WordPress.DB.DirectDatabaseQuery">
+    <severity>0</severity>
+  </rule>
+  <rule ref="WordPress.WP.Capabilities">
+    <properties>
+      <property name="custom_capabilities" type="array">
+        <element value="instascore_access_admin"/>
+        <element value="instascore_access_operations"/>
+        <element value="instascore_manage_leagues"/>
+        <element value="instascore_manage_competitions"/>
+      </property>
+    </properties>
+  </rule>
+  <rule ref="WordPress.NamingConventions.PrefixAllGlobals">
+    <properties>
+      <property name="prefixes" type="array">
+        <element value="instascore"/>
+        <element value="INSTASCORE"/>
+      </property>
+    </properties>
+  </rule>
+</ruleset>

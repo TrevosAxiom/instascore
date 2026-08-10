@@ -1,0 +1,382 @@
+:root {
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  --instascore-bg: #f7f5ef;
+  --instascore-navy: #07192d;
+  --instascore-cream: #fff5d6;
+  --instascore-ink: #0b1f35;
+  --instascore-panel: #ffffff;
+  --instascore-line: #e5decb;
+  --instascore-primary: #f3c643;
+}
+
+html[data-instascore-theme='dark'] {
+  background: var(--instascore-navy);
+  color: var(--instascore-cream);
+}
+
+html[data-instascore-theme='light'] {
+  background: var(--instascore-bg);
+  color: #10213a;
+}
+
+body {
+  margin: 0;
+  background: var(--instascore-bg);
+}
+
+html[data-instascore-theme='dark'] body,
+html[data-instascore-theme='dark'] #instascore-root {
+  background: #03101f;
+}
+
+#instascore-root {
+  position: relative;
+  min-height: 100dvh;
+  isolation: isolate;
+  background:
+    radial-gradient(circle at 8% 0%, rgba(243, 198, 67, 0.2), transparent 28%),
+    linear-gradient(180deg, #ffffff 0%, #f7f5ef 42%, #efe9d8 100%);
+}
+
+#instascore-root::before {
+  content: '';
+  position: fixed;
+  z-index: 0;
+  inset: 80px 0 0;
+  pointer-events: none;
+  background-image: url('./assets/sports-ball-watermark.svg');
+  background-repeat: repeat;
+  background-position: 80px 40px;
+  background-size: 620px auto;
+  opacity: 0.035;
+  transform: rotate(-5deg) scale(1.08);
+  transform-origin: center;
+}
+
+#instascore-root > * {
+  position: relative;
+  z-index: 1;
+}
+
+body.instascore-standalone {
+  overflow-x: hidden;
+  overscroll-behavior-y: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body.instascore-standalone .instascore-app-bar {
+  padding-top: env(safe-area-inset-top);
+}
+
+body.instascore-standalone .instascore-app-bar .MuiIconButton-root {
+  color: #fff5d6;
+  border-color: rgba(255, 245, 214, 0.35);
+}
+
+#instascore-root *,
+#instascore-root *::before,
+#instascore-root *::after {
+  box-sizing: border-box;
+}
+
+#instascore-root a:not(.MuiButton-root):not(.MuiBottomNavigationAction-root) {
+  color: inherit;
+  text-decoration: none;
+}
+
+#instascore-root :focus-visible {
+  outline: 3px solid var(--instascore-primary);
+  outline-offset: 3px;
+}
+
+#instascore-root button,
+#instascore-root [role='button'],
+#instascore-root a,
+#instascore-root input,
+#instascore-root select,
+#instascore-root textarea {
+  min-height: 44px;
+}
+
+#instascore-root .crest {
+  width: 54px;
+  height: 54px;
+  margin: 0 auto 8px;
+  display: grid;
+  place-items: center;
+  border-radius: 17px;
+  border: 1px solid #e5decb;
+  background: linear-gradient(145deg, #ffffff, #fff5d6);
+  color: #07192d;
+  font-weight: 900;
+}
+
+@keyframes instascore-live-breathe {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(243, 198, 67, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(243, 198, 67, 0);
+  }
+}
+
+#instascore-root .instascore-live-chip {
+  animation: instascore-live-breathe 2.4s ease-in-out infinite;
+}
+
+.instascore-app-intro {
+  position: fixed;
+  z-index: 20000;
+  inset: 0;
+  display: grid;
+  place-items: stretch center;
+  overflow: hidden;
+  color: #fff5d6;
+  background-color: #07192d;
+  background-position: center center;
+  background-size: cover;
+  opacity: 1;
+  transition:
+    opacity 0.45s ease,
+    transform 0.45s ease;
+}
+
+.instascore-app-intro.is-leaving {
+  opacity: 0;
+  transform: scale(1.04);
+  pointer-events: none;
+}
+.instascore-intro-content {
+  width: min(92vw, 460px);
+  height: 100%;
+  padding-top: max(10vh, calc(env(safe-area-inset-top) + 56px));
+}
+.instascore-intro-logo {
+  width: min(72vw, 300px);
+  height: 78px;
+  object-fit: contain;
+  animation: intro-logo 0.75s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.instascore-intro-kicker {
+  color: rgba(255, 245, 214, 0.88);
+  font-weight: 850 !important;
+  letter-spacing: 0.04em !important;
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.72);
+  animation: intro-rise 0.6s 0.25s both;
+}
+.instascore-intro-sports {
+  margin-top: auto;
+  margin-bottom: 12px;
+  color: #f3c643;
+  font-size: 10px;
+  font-weight: 950;
+  letter-spacing: 0.12em;
+}
+.instascore-intro-progress {
+  width: 150px;
+  height: 3px;
+  margin-top: 0;
+  margin-bottom: max(28px, calc(env(safe-area-inset-bottom) + 18px));
+  overflow: hidden;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.14);
+}
+.instascore-intro-progress i {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: #f3c643;
+  transform-origin: left;
+  animation: intro-progress 6.6s linear both;
+}
+
+@keyframes intro-logo {
+  from {
+    opacity: 0;
+    transform: translateY(-22px) scale(0.82);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes intro-rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes intro-progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.instascore-site-swipe {
+  position: fixed;
+  z-index: 1180;
+  inset: 50% 0 auto;
+  pointer-events: none;
+}
+.instascore-swipe-edge {
+  position: absolute;
+  top: 0;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 54px;
+  color: #f3c643;
+  border: 1px solid rgba(243, 198, 67, 0.42);
+  background: rgba(7, 25, 45, 0.82);
+  font-size: 27px;
+  animation: instascore-peekaboo 5.5s ease-in-out infinite;
+}
+.instascore-swipe-edge.is-left {
+  left: -19px;
+  border-radius: 0 20px 20px 0;
+}
+.instascore-swipe-edge.is-right {
+  right: -19px;
+  border-radius: 20px 0 0 20px;
+  animation-delay: 0.35s;
+}
+.instascore-swipe-hint {
+  position: absolute;
+  left: 50%;
+  top: 25px;
+  padding: 4px 9px;
+  border-radius: 99px;
+  color: #fff5d6;
+  background: rgba(7, 25, 45, 0.7);
+  font-size: 9px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.08em !important;
+  transform: translateX(-50%);
+  animation: instascore-hint-peek 5.5s ease both infinite;
+}
+.instascore-hero-arrow {
+  z-index: 3;
+  transform: translateY(-50%);
+  transition:
+    transform 0.2s ease,
+    background-color 0.2s ease !important;
+}
+.instascore-hero-arrow:hover {
+  transform: translateY(-50%) scale(1.08);
+}
+.instascore-hero-swipe-hint {
+  position: absolute;
+  z-index: 3;
+  right: 18px;
+  bottom: 18px;
+  color: rgba(255, 245, 214, 0.82);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  animation: instascore-hint-peek 5.5s ease both infinite;
+}
+@media (min-width: 768px) {
+  .instascore-hero-swipe-hint {
+    display: none;
+  }
+}
+@keyframes instascore-peekaboo {
+  0%,
+  65%,
+  100% {
+    opacity: 0.35;
+    transform: translateX(0);
+  }
+  72%,
+  88% {
+    opacity: 1;
+    transform: translateX(var(--peek-x, 0));
+  }
+}
+.instascore-swipe-edge.is-left {
+  --peek-x: 13px;
+}
+.instascore-swipe-edge.is-right {
+  --peek-x: -13px;
+}
+@keyframes instascore-hint-peek {
+  0%,
+  58%,
+  100% {
+    opacity: 0;
+  }
+  68%,
+  88% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .instascore-swipe-edge,
+  .instascore-swipe-hint,
+  .instascore-hero-swipe-hint {
+    animation: none;
+  }
+}
+
+@media (max-width: 599px) {
+  #instascore-root .MuiTypography-h1 {
+    font-size: 2.1rem !important;
+    line-height: 1 !important;
+  }
+  #instascore-root .MuiTypography-h2 {
+    font-size: 1.85rem !important;
+    line-height: 1.05 !important;
+  }
+  #instascore-root .MuiTypography-h3 {
+    font-size: 1.5rem !important;
+    line-height: 1.1 !important;
+  }
+  #instascore-root .MuiTypography-h4 {
+    font-size: 1.25rem !important;
+    line-height: 1.15 !important;
+  }
+  #instascore-root .MuiTypography-h5 {
+    font-size: 1.08rem !important;
+    line-height: 1.2 !important;
+  }
+
+  #instascore-root .MuiContainer-root > .MuiStack-root {
+    scroll-margin-top: 64px;
+  }
+
+  #instascore-root .MuiCardContent-root {
+    padding: 14px;
+  }
+
+  #instascore-root h1,
+  #instascore-root h2,
+  #instascore-root h3,
+  #instascore-root h4 {
+    text-wrap: balance;
+  }
+
+  #instascore-root .instascore-panel {
+    padding: 14px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #instascore-root *,
+  #instascore-root *::before,
+  #instascore-root *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

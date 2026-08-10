@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#071225" />
+    <title>InstaScore is offline</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        font-family:
+          Inter,
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          'Segoe UI',
+          sans-serif;
+        background: #071225;
+        color: #fff4d2;
+      }
+      body {
+        min-height: 100dvh;
+        margin: 0;
+        display: grid;
+        place-items: center;
+        background:
+          radial-gradient(circle at 70% 0%, rgba(242, 200, 75, 0.16), transparent 30%),
+          linear-gradient(180deg, #061020, #0a162a 48%, #101c32);
+      }
+      main {
+        width: min(90vw, 420px);
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        border-radius: 28px;
+        padding: 28px;
+        background: rgba(13, 27, 50, 0.92);
+        box-shadow: 0 28px 80px rgba(0, 0, 0, 0.35);
+      }
+      h1 {
+        margin: 0 0 12px;
+        font-size: clamp(2rem, 8vw, 3rem);
+        line-height: 0.95;
+      }
+      p {
+        margin: 0 0 16px;
+        color: #b7c7de;
+        line-height: 1.55;
+      }
+      a {
+        color: #f2c84b;
+        font-weight: 800;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p>Offline mode</p>
+      <h1>InstaScore is keeping the bench warm.</h1>
+      <p>
+        The app shell is cached, but this page was not available offline yet. Reconnect and try
+        again, or return to the cached home screen.
+      </p>
+      <a href="/">Back to InstaScore</a>
+    </main>
+  </body>
+</html>

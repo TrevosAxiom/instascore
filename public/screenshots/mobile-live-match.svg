@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="390" height="844" viewBox="0 0 390 844" role="img" aria-label="InstaScore live match centre screenshot">
+  <rect width="390" height="844" fill="#071225"/>
+  <circle cx="80" cy="86" r="126" fill="#f2c84b" opacity=".12"/>
+  <text x="28" y="68" fill="#f2c84b" font-family="Inter,Arial" font-size="18" font-weight="800">InstaScore</text>
+  <text x="28" y="138" fill="#fff4d2" font-family="Inter,Arial" font-size="42" font-weight="900">Live match</text>
+  <rect x="24" y="184" width="342" height="202" rx="28" fill="#0d1b32" stroke="#29405f"/>
+  <text x="50" y="244" fill="#b7c7de" font-family="Inter,Arial" font-size="16">Falcons</text>
+  <text x="50" y="300" fill="#fff4d2" font-family="Inter,Arial" font-size="54" font-weight="900">21</text>
+  <text x="250" y="244" fill="#b7c7de" font-family="Inter,Arial" font-size="16">Sharks</text>
+  <text x="250" y="300" fill="#fff4d2" font-family="Inter,Arial" font-size="54" font-weight="900">18</text>
+  <text x="136" y="354" fill="#f2c84b" font-family="Inter,Arial" font-size="16" font-weight="800">Q4 · 02:14</text>
+  <rect x="24" y="414" width="342" height="268" rx="28" fill="#0d1b32" stroke="#29405f"/>
+  <text x="48" y="462" fill="#fff4d2" font-family="Inter,Arial" font-size="22" font-weight="900">Timeline</text>
+  <text x="48" y="512" fill="#b7c7de" font-family="Inter,Arial" font-size="15">TD · Falcons · Q4</text>
+  <text x="48" y="560" fill="#b7c7de" font-family="Inter,Arial" font-size="15">Timeout · Sharks · Q4</text>
+  <text x="48" y="608" fill="#b7c7de" font-family="Inter,Arial" font-size="15">Safety · Falcons · Q3</text>
+  <rect x="24" y="730" width="342" height="78" rx="24" fill="#0a162a" stroke="#29405f"/>
+</svg>

@@ -1,0 +1,12 @@
+/node_modules/
+/vendor/
+/coverage/
+/playwright-report/
+/test-results/
+/.phpunit.cache/
+/.env
+/.env.local
+/.DS_Store
+Thumbs.db
+*.log
+*.tsbuildinfo

@@ -1,0 +1,96 @@
+{
+  "name": "InstaScore Match Day",
+  "short_name": "InstaScore",
+  "description": "Offline-ready match-day scoring, fixtures and live results for InstaScore.",
+  "id": "/",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["standalone"],
+  "orientation": "portrait",
+  "launch_handler": { "client_mode": "navigate-existing" },
+  "prefer_related_applications": false,
+  "theme_color": "#07192d",
+  "background_color": "#07192d",
+  "categories": ["sports", "productivity"],
+  "icons": [
+    {
+      "src": "/wp-content/plugins/instascore-platform/dist/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/wp-content/plugins/instascore-platform/dist/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/wp-content/plugins/instascore-platform/dist/icons/icon-maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/wp-content/plugins/instascore-platform/dist/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/wp-content/plugins/instascore-platform/dist/screenshots/mobile-scorekeeper.svg",
+      "sizes": "390x844",
+      "type": "image/svg+xml",
+      "form_factor": "narrow",
+      "label": "Scorekeeper controls"
+    },
+    {
+      "src": "/wp-content/plugins/instascore-platform/dist/screenshots/mobile-live-match.svg",
+      "sizes": "390x844",
+      "type": "image/svg+xml",
+      "form_factor": "narrow",
+      "label": "Public live match centre"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Live Scores",
+      "short_name": "Scores",
+      "description": "Open the live scores screen.",
+      "url": "/scores?source=pwa-shortcut",
+      "icons": [
+        {
+          "src": "/wp-content/plugins/instascore-platform/dist/icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Fixtures",
+      "short_name": "Fixtures",
+      "description": "Open the fixture list.",
+      "url": "/fixtures?source=pwa-shortcut",
+      "icons": [
+        {
+          "src": "/wp-content/plugins/instascore-platform/dist/icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Operations",
+      "short_name": "Ops",
+      "description": "Open match-day operations.",
+      "url": "/operations?source=pwa-shortcut",
+      "icons": [
+        {
+          "src": "/wp-content/plugins/instascore-platform/dist/icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ]
+}
