@@ -269,6 +269,8 @@ export interface NewsItem {
   categories: { name: string; slug: string }[];
 }
 
+export type NewsPage = Paginated<NewsItem>;
+
 export interface RssSource {
   id: string;
   site: string;
@@ -299,6 +301,13 @@ export interface RssSyncResult {
   imported: number;
   duplicates: number;
   failed: number;
+}
+
+export interface RssCsvImportResult {
+  imported: number;
+  skipped: number;
+  errors: Array<{ row: number; message: string }>;
+  fatalError: string;
 }
 
 export interface AuthUser {

@@ -26,10 +26,12 @@ import type {
   NotificationPreferencesResponse,
   NotificationAdminStatus,
   NewsItem,
+  NewsPage,
   RssDashboard,
   RssSettings,
   RssSource,
   RssSyncResult,
+  RssCsvImportResult,
   OperationsActionResult,
   OperationsDashboard,
   OperationsExport,
@@ -199,6 +201,7 @@ export interface ApiClient {
   ) => Promise<ProviderUpcomingMatch[]>;
   getFootballMatch: (providerId: string) => Promise<FootballMatchDetails>;
   getNews: (category?: string) => Promise<NewsItem[]>;
+  getNewsArchive: (category?: string, page?: number) => Promise<NewsPage>;
   sendContactMessage: (input: {
     name: string;
     email: string;
@@ -214,6 +217,7 @@ export interface ApiClient {
   deleteRssSource: (id: string) => Promise<{ deleted: boolean }>;
   updateRssSettings: (input: RssSettings) => Promise<RssSettings>;
   syncRss: (sourceId?: string) => Promise<RssSyncResult>;
+  importRssCsv: (file: File) => Promise<RssCsvImportResult>;
   getFavourites: () => Promise<Favourite[]>;
   followFavourite: (input: {
     entityType: FavouriteEntityType;
@@ -573,6 +577,18 @@ export function createApiClient(settings: BootstrapSettings): ApiClient {
       request<FootballMatchDetails>(`/football/matches/${encodeURIComponent(providerId)}`),
     getNews: (category) =>
       request<NewsItem[]>(`/news${category ? `?category=${encodeURIComponent(category)}` : ''}`),
+    getNewsArchive: async (category, page = 1) => {
+      const params = new URLSearchParams({ page: String(page), per_page: '12' });
+      if (category) params.set('category', category);
+      const response = await envelope<NewsItem[]>(`/news/archive?${params.toString()}`);
+      return {
+        items: response.data,
+        page: Number(response.meta.page ?? page),
+        perPage: Number(response.meta.perPage ?? 12),
+        total: Number(response.meta.total ?? response.data.length),
+        totalPages: Number(response.meta.totalPages ?? 1),
+      };
+    },
     sendContactMessage: (input) =>
       request<{ message: string }>('/contact', { method: 'POST', body: JSON.stringify(input) }),
     getRssDashboard: () => request<RssDashboard>('/admin/rss'),
@@ -589,6 +605,11 @@ export function createApiClient(settings: BootstrapSettings): ApiClient {
         method: 'POST',
         body: JSON.stringify(sourceId ? { sourceId } : {}),
       }),
+    importRssCsv: (file) => {
+      const body = new FormData();
+      body.append('file', file);
+      return request<RssCsvImportResult>('/admin/rss/import', { method: 'POST', body });
+    },
     getFavourites: () => request<Favourite[]>('/me/favourites'),
     followFavourite: (input) =>
       request<Favourite>('/me/favourites', { method: 'POST', body: JSON.stringify(input) }),

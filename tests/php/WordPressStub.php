@@ -89,6 +89,10 @@ function add_filter( string $hook, callable|array|string $callback, int $priorit
 function get_option( string $key, mixed $default = false ): mixed {
     return $GLOBALS['instascore_test_options'][ $key ] ?? $default;
 }
+function update_option( string $key, mixed $value, bool $autoload = false ): bool {
+    $GLOBALS['instascore_test_options'][ $key ] = $value;
+    return true;
+}
 
 function sanitize_text_field( string $value ): string { return trim( strip_tags( $value ) ); }
 function wp_unslash( string $value ): string { return stripslashes( $value ); }
@@ -97,6 +101,8 @@ function sanitize_email( string $value ): string { return filter_var( trim( $val
 function sanitize_key( string $value ): string { return strtolower( preg_replace( '/[^a-z0-9_-]/', '', $value ) ); }
 function sanitize_title( string $value ): string { return trim( strtolower( preg_replace( '/[^a-z0-9]+/i', '-', $value ) ), '-' ); }
 function esc_url_raw( string $value ): string { return filter_var( trim( $value ), FILTER_SANITIZE_URL ); }
+function wp_http_validate_url( string $value ): string|false { return filter_var( $value, FILTER_VALIDATE_URL ); }
+function untrailingslashit( string $value ): string { return rtrim( $value, '/\\' ); }
 function wp_is_uuid( string $value ): bool { return 1 === preg_match( '/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $value ); }
 function current_user_can( string $capability ): bool { return in_array( $capability, $GLOBALS['instascore_test_capabilities'], true ); }
 function get_current_user_id(): int { return 7; }

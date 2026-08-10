@@ -23,7 +23,7 @@ import {
   Typography,
 } from '@mui/material';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { useApi } from '../../api/context';
 import { ErrorState, LoadingState } from '../../components/AsyncStates';
@@ -49,6 +49,7 @@ export function AdminRssPage() {
   const queryClient = useQueryClient();
   const query = useQuery({ queryKey: ['admin-rss'], queryFn: api.getRssDashboard });
   const [dialogOpen, setDialogOpen] = useState(false);
+  const csvInputRef = useRef<HTMLInputElement>(null);
   const [editing, setEditing] = useState<RssSource | null>(null);
   const [draft, setDraft] = useState(emptySource);
   const [settings, setSettings] = useState<RssSettings>({
@@ -73,6 +74,10 @@ export function AdminRssPage() {
   const sync = useMutation({ mutationFn: api.syncRss, onSuccess: refresh });
   const saveSettings = useMutation({
     mutationFn: api.updateRssSettings,
+    onSuccess: refresh,
+  });
+  const csvImport = useMutation({
+    mutationFn: api.importRssCsv,
     onSuccess: refresh,
   });
 
@@ -108,6 +113,27 @@ export function AdminRssPage() {
           <Alert severity={sync.data.failed ? 'warning' : 'success'}>
             Import complete: {sync.data.imported} new, {sync.data.duplicates} duplicates skipped,{' '}
             {sync.data.failed} sources failed.
+          </Alert>
+        )}
+        {csvImport.data && (
+          <Alert severity={csvImport.data.errors.length ? 'warning' : 'success'}>
+            CSV import complete: {csvImport.data.imported} added, {csvImport.data.skipped}{' '}
+            duplicates skipped, {csvImport.data.errors.length} invalid rows.
+            {csvImport.data.errors.slice(0, 3).map((error) => (
+              <Typography
+                key={`${error.row}-${error.message}`}
+                component="span"
+                display="block"
+                variant="caption"
+              >
+                Row {error.row}: {error.message}
+              </Typography>
+            ))}
+          </Alert>
+        )}
+        {csvImport.isError && (
+          <Alert severity="error">
+            The RSS CSV could not be imported. Check its headers and rows.
           </Alert>
         )}
         <Card>
@@ -190,14 +216,43 @@ export function AdminRssPage() {
         <Card>
           <CardContent>
             <Stack spacing={2}>
-              <Stack direction="row" justifyContent="space-between" alignItems="center">
+              <Stack
+                direction={{ xs: 'column', md: 'row' }}
+                justifyContent="space-between"
+                alignItems={{ xs: 'stretch', md: 'center' }}
+                gap={2}
+              >
                 <div>
                   <Typography variant="h6">News sources</Typography>
                   <Typography color="text.secondary">Site | RSS URL | Category | Status</Typography>
                 </div>
-                <Button variant="contained" onClick={openCreate}>
-                  Add source
-                </Button>
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
+                  <Button variant="outlined" onClick={downloadRssTemplate}>
+                    CSV template
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    onClick={() => csvInputRef.current?.click()}
+                    disabled={csvImport.isPending}
+                  >
+                    {csvImport.isPending ? 'Importing…' : 'Import CSV'}
+                  </Button>
+                  <Button variant="contained" onClick={openCreate}>
+                    Add source
+                  </Button>
+                  <input
+                    ref={csvInputRef}
+                    type="file"
+                    aria-label="RSS CSV file"
+                    accept=".csv,text/csv"
+                    hidden
+                    onChange={(event) => {
+                      const file = event.target.files?.[0];
+                      if (file) csvImport.mutate(file);
+                      event.target.value = '';
+                    }}
+                  />
+                </Stack>
               </Stack>
               <TableContainer>
                 <Table size="small" aria-label="RSS news sources">
@@ -347,4 +402,19 @@ export function AdminRssPage() {
       </Dialog>
     </PageScaffold>
   );
+}
+
+function downloadRssTemplate() {
+  const csv = [
+    ['site', 'rss_url', 'category', 'status'],
+    ['ESPN Soccer', 'https://www.espn.com/espn/rss/soccer/news', 'football', 'active'],
+  ]
+    .map((row) => row.map((value) => `"${value.replaceAll('"', '""')}"`).join(','))
+    .join('\r\n');
+  const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'instascore-rss-import-template.csv';
+  link.click();
+  URL.revokeObjectURL(url);
 }

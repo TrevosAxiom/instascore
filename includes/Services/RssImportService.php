@@ -75,6 +75,60 @@ final class RssImportService {
 	}
 
 	/** @return array<string,mixed> */
+	public static function import_csv( string $path ): array {
+		$result = array( 'imported' => 0, 'skipped' => 0, 'errors' => array(), 'fatalError' => '' );
+		$handle = is_readable( $path ) ? fopen( $path, 'r' ) : false;
+		if ( false === $handle ) {
+			$result['fatalError'] = 'The uploaded CSV file could not be read.';
+			return $result;
+		}
+		$headers = fgetcsv( $handle );
+		if ( false === $headers ) {
+			fclose( $handle );
+			$result['fatalError'] = 'The CSV file is empty.';
+			return $result;
+		}
+		$headers = array_map( static fn( $value ): string => sanitize_key( str_replace( array( ' ', '-' ), '_', trim( (string) $value ) ) ), $headers );
+		$headers[0] = ltrim( $headers[0] ?? '', "\xEF\xBB\xBF" );
+		$aliases = array( 'rss_url' => 'url', 'feed_url' => 'url', 'website' => 'site' );
+		$headers = array_map( static fn( string $header ): string => $aliases[ $header ] ?? $header, $headers );
+		if ( ! in_array( 'site', $headers, true ) || ! in_array( 'url', $headers, true ) || ! in_array( 'category', $headers, true ) ) {
+			fclose( $handle );
+			$result['fatalError'] = 'Required headers are: site, rss_url, category, status.';
+			return $result;
+		}
+		$allowed_categories = array( 'cffl', 'flag-football', 'football', 'basketball' );
+		$known_urls = array_map( static fn( array $source ): string => untrailingslashit( strtolower( (string) ( $source['url'] ?? '' ) ) ), self::sources() );
+		$row_number = 1;
+		while ( false !== ( $values = fgetcsv( $handle ) ) ) {
+			++$row_number;
+			if ( ! array_filter( $values, static fn( $value ): bool => '' !== trim( (string) $value ) ) ) {
+				continue;
+			}
+			$values = array_pad( $values, count( $headers ), '' );
+			$row = array_combine( $headers, array_slice( $values, 0, count( $headers ) ) );
+			$site = sanitize_text_field( (string) ( $row['site'] ?? '' ) );
+			$url = esc_url_raw( (string) ( $row['url'] ?? '' ) );
+			$category = sanitize_title( (string) ( $row['category'] ?? '' ) );
+			$status = 'inactive' === strtolower( trim( (string) ( $row['status'] ?? '' ) ) ) ? 'inactive' : 'active';
+			if ( '' === $site || ! wp_http_validate_url( $url ) || ! in_array( $category, $allowed_categories, true ) ) {
+				$result['errors'][] = array( 'row' => $row_number, 'message' => 'Enter a site, valid public RSS URL and supported category.' );
+				continue;
+			}
+			$normalized_url = untrailingslashit( strtolower( $url ) );
+			if ( in_array( $normalized_url, $known_urls, true ) ) {
+				++$result['skipped'];
+				continue;
+			}
+			self::save_source( compact( 'site', 'url', 'category', 'status' ) );
+			$known_urls[] = $normalized_url;
+			++$result['imported'];
+		}
+		fclose( $handle );
+		return $result;
+	}
+
+	/** @return array<string,mixed> */
 	public static function run( string $only_id = '' ): array {
 		$summary = array( 'sources' => 0, 'imported' => 0, 'duplicates' => 0, 'failed' => 0, 'results' => array() );
 		foreach ( self::sources() as $source ) {

@@ -11,7 +11,6 @@ import { RequireAuth } from '../routes/RequireAuth';
 import { UserDashboardPage } from '../routes/UserDashboardPage';
 import { MorePage } from '../routes/MorePage';
 import { ContactPage } from '../routes/ContactPage';
-import { PlaceholderPage } from '../routes/PlaceholderPages';
 import { RequireCapability } from '../routes/RequireCapability';
 
 const AdminDashboardPage = lazy(() =>
@@ -26,6 +25,9 @@ const AdminSettingsPage = lazy(() =>
 );
 const AdminRssPage = lazy(() =>
   import('../features/news/AdminRssPage').then((module) => ({ default: module.AdminRssPage })),
+);
+const NewsPage = lazy(() =>
+  import('../features/news/NewsPage').then((module) => ({ default: module.NewsPage })),
 );
 const AdminAccountsPage = lazy(() =>
   import('../features/admin/AdminAccountsPage').then((module) => ({
@@ -420,7 +422,14 @@ export function AppRoutes(props: { loginUrl: string }) {
             </RouteSuspense>
           }
         />
-        <Route path="news" element={<PlaceholderPage page="news" />} />
+        <Route
+          path="news"
+          element={
+            <RouteSuspense>
+              <NewsPage />
+            </RouteSuspense>
+          }
+        />
         <Route path="contact" element={<ContactPage />} />
         <Route path="more" element={<MorePage />} />
         <Route path="notifications" element={<NotificationPreferencesPage />} />

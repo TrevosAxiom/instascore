@@ -190,6 +190,8 @@ export const testApi: ApiClient = {
       },
     ]),
   getNews: () => Promise.resolve([]),
+  getNewsArchive: (_category, page = 1) =>
+    Promise.resolve({ items: [], page, perPage: 12, total: 0, totalPages: 0 }),
   sendContactMessage: () => Promise.resolve({ message: 'Thanks—your message has been sent.' }),
   getRssDashboard: () =>
     Promise.resolve({
@@ -203,6 +205,7 @@ export const testApi: ApiClient = {
   deleteRssSource: () => Promise.resolve({ deleted: true }),
   updateRssSettings: (settings) => Promise.resolve(settings),
   syncRss: () => Promise.resolve({ sources: 0, imported: 0, duplicates: 0, failed: 0 }),
+  importRssCsv: () => Promise.resolve({ imported: 0, skipped: 0, errors: [], fatalError: '' }),
   getFavourites: () => Promise.resolve([]),
   followFavourite: ({ entityType, entityUuid }) =>
     Promise.resolve({

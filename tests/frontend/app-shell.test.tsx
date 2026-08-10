@@ -32,4 +32,16 @@ describe('App shell', () => {
     expect(screen.getByRole('button', { name: 'Soccer' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Basketball' })).toBeInTheDocument();
   });
+
+  it('shows the complete paginated news archive with an all-sports default', async () => {
+    renderApp(<AppRoutes loginUrl="/wp-login.php" />, { route: '/news' });
+
+    expect(await screen.findByRole('heading', { name: 'News' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'All sports' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    expect(screen.getByRole('tab', { name: 'Soccer' })).toBeInTheDocument();
+    expect(screen.queryByText(/coming soon/i)).not.toBeInTheDocument();
+  });
 });
