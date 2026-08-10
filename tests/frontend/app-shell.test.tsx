@@ -1,4 +1,4 @@
-import { fireEvent, screen } from '@testing-library/react';
+import { fireEvent, screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
 import { AppRoutes } from '../../src/app/AppRoutes';
@@ -27,10 +27,12 @@ describe('App shell', () => {
     renderApp(<AppRoutes loginUrl="/wp-login.php" />, { route: '/' });
 
     expect(await screen.findByRole('heading', { name: 'Around the game' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'CFFL' })).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByRole('button', { name: 'Flag Football' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Soccer' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Basketball' })).toBeInTheDocument();
+    const newsTabs = within(screen.getByRole('tablist', { name: 'News categories' }));
+    expect(newsTabs.getByRole('tab', { name: 'All' })).toHaveAttribute('aria-selected', 'true');
+    expect(newsTabs.getByRole('tab', { name: 'CFFL' })).toBeInTheDocument();
+    expect(newsTabs.getByRole('tab', { name: 'Flag Football' })).toBeInTheDocument();
+    expect(newsTabs.getByRole('tab', { name: 'Soccer' })).toBeInTheDocument();
+    expect(newsTabs.getByRole('tab', { name: 'Basketball' })).toBeInTheDocument();
   });
 
   it('shows the complete paginated news archive with an all-sports default', async () => {
