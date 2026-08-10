@@ -477,6 +477,11 @@ export const testApi: ApiClient = {
             liveIntervalSeconds: 60,
           },
         },
+        oneSignalSettings: {
+          appIdConfigured: false,
+          restKeyConfigured: false,
+          environmentOverride: false,
+        },
       },
       logs: {
         providerSync: [
@@ -519,6 +524,11 @@ export const testApi: ApiClient = {
           pollingEnabled: false,
           liveIntervalSeconds: 60,
         },
+      },
+      oneSignalSettings: input.oneSignalSettings ?? {
+        appIdConfigured: false,
+        restKeyConfigured: false,
+        environmentOverride: false,
       },
     }),
   runOperationsAction: (action) =>

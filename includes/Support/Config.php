@@ -23,11 +23,16 @@ final class Config {
 	}
 
 	public static function onesignal_app_id(): string {
-		return self::value( 'INSTASCORE_ONESIGNAL_APP_ID', '' );
+		return self::value( 'INSTASCORE_ONESIGNAL_APP_ID', (string) get_option( 'instascore_onesignal_app_id', '' ) );
 	}
 
 	public static function onesignal_rest_api_key(): string {
-		return self::value( 'INSTASCORE_ONESIGNAL_REST_API_KEY', '' );
+		return self::value( 'INSTASCORE_ONESIGNAL_REST_API_KEY', (string) get_option( 'instascore_onesignal_rest_api_key', '' ) );
+	}
+
+	public static function onesignal_environment_override(): bool {
+		return self::has_environment_value( 'INSTASCORE_ONESIGNAL_APP_ID' )
+			|| self::has_environment_value( 'INSTASCORE_ONESIGNAL_REST_API_KEY' );
 	}
 
 	public static function notifications_disabled(): bool {
@@ -88,5 +93,15 @@ final class Config {
 
 		$value = getenv( $key );
 		return false !== $value && '' !== $value ? $value : $fallback;
+	}
+
+	private static function has_environment_value( string $key ): bool {
+		if ( defined( $key ) ) {
+			$value = constant( $key );
+			return is_string( $value ) && '' !== trim( $value );
+		}
+
+		$value = getenv( $key );
+		return false !== $value && '' !== trim( $value );
 	}
 }

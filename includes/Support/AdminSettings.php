@@ -62,11 +62,12 @@ final class AdminSettings {
 			wp_die( esc_html__( 'You do not have permission to manage InstaScore.', 'instascore-platform' ) );
 		}
 
-		$dashboard = OperationsService::create()->dashboard();
-		$settings  = $dashboard['settings'];
-		$providers = $settings['providerSettings'];
-		$summary   = $dashboard['summary'];
-		$notice    = self::current_notice();
+		$dashboard  = OperationsService::create()->dashboard();
+		$settings   = $dashboard['settings'];
+		$providers  = $settings['providerSettings'];
+		$one_signal = $settings['oneSignalSettings'];
+		$summary    = $dashboard['summary'];
+		$notice     = self::current_notice();
 
 		?>
 		<div class="wrap instascore-admin-settings">
@@ -125,6 +126,28 @@ final class AdminSettings {
 				<p><?php esc_html_e( 'Provider keys are saved server-side only. Saved keys are never displayed back in the browser.', 'instascore-platform' ); ?></p>
 				<?php self::render_provider_fields( 'football', $providers['football'] ); ?>
 				<?php self::render_provider_fields( 'basketball', $providers['basketball'] ); ?>
+
+				<h2><?php esc_html_e( 'OneSignal push notifications', 'instascore-platform' ); ?></h2>
+				<p><?php esc_html_e( 'Credentials are stored server-side and are never returned to the app or displayed after saving.', 'instascore-platform' ); ?></p>
+				<?php if ( ! empty( $one_signal['environmentOverride'] ) ) : ?>
+					<p><strong><?php esc_html_e( 'Environment constants are active and override saved settings.', 'instascore-platform' ); ?></strong></p>
+				<?php endif; ?>
+				<table class="form-table" role="presentation">
+					<tr>
+						<th scope="row"><label for="instascore-onesignal-app-id"><?php esc_html_e( 'OneSignal App ID', 'instascore-platform' ); ?></label></th>
+						<td>
+							<input id="instascore-onesignal-app-id" name="oneSignalSettings[appId]" type="password" value="" class="regular-text" autocomplete="new-password" placeholder="<?php echo esc_attr( ! empty( $one_signal['appIdConfigured'] ) ? __( 'Leave blank to keep current App ID', 'instascore-platform' ) : __( 'Paste OneSignal App ID', 'instascore-platform' ) ); ?>" <?php disabled( ! empty( $one_signal['environmentOverride'] ) ); ?> />
+							<label><input type="checkbox" name="oneSignalSettings[clearAppId]" value="1" <?php disabled( ! empty( $one_signal['environmentOverride'] ) ); ?> /> <?php esc_html_e( 'Clear saved App ID', 'instascore-platform' ); ?></label>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row"><label for="instascore-onesignal-rest-key"><?php esc_html_e( 'OneSignal REST API key', 'instascore-platform' ); ?></label></th>
+						<td>
+							<input id="instascore-onesignal-rest-key" name="oneSignalSettings[restApiKey]" type="password" value="" class="regular-text" autocomplete="new-password" placeholder="<?php echo esc_attr( ! empty( $one_signal['restKeyConfigured'] ) ? __( 'Leave blank to keep current REST key', 'instascore-platform' ) : __( 'Paste OneSignal REST API key', 'instascore-platform' ) ); ?>" <?php disabled( ! empty( $one_signal['environmentOverride'] ) ); ?> />
+							<label><input type="checkbox" name="oneSignalSettings[clearRestApiKey]" value="1" <?php disabled( ! empty( $one_signal['environmentOverride'] ) ); ?> /> <?php esc_html_e( 'Clear saved REST API key', 'instascore-platform' ); ?></label>
+						</td>
+					</tr>
+				</table>
 
 				<?php submit_button( __( 'Save InstaScore settings', 'instascore-platform' ) ); ?>
 			</form>
@@ -192,6 +215,7 @@ final class AdminSettings {
 			'dataRetentionDays'               => (int) ( $post['dataRetentionDays'] ?? 365 ),
 			'featureFlags'                    => self::feature_flags_from_post( $post['featureFlags'] ?? array() ),
 			'providerSettings'                => is_array( $post['providerSettings'] ?? null ) ? $post['providerSettings'] : array(),
+			'oneSignalSettings'               => is_array( $post['oneSignalSettings'] ?? null ) ? $post['oneSignalSettings'] : array(),
 		);
 	}
 

@@ -82,12 +82,32 @@ export function AdminSettingsPage() {
     leagueIds: [],
     apiKey: '',
   });
+  const [oneSignalDraft, setOneSignalDraft] = useState<OperationsSettings['oneSignalSettings']>({
+    appIdConfigured: false,
+    restKeyConfigured: false,
+    environmentOverride: false,
+    appId: '',
+    restApiKey: '',
+    clearAppId: false,
+    clearRestApiKey: false,
+  });
 
   useEffect(() => {
     if (!query.data?.settings.providerSettings) return;
     setFootballDraft({ ...query.data.settings.providerSettings.football, apiKey: '' });
     setBasketballDraft({ ...query.data.settings.providerSettings.basketball, apiKey: '' });
   }, [query.data?.settings.providerSettings]);
+
+  useEffect(() => {
+    if (!query.data?.settings.oneSignalSettings) return;
+    setOneSignalDraft({
+      ...query.data.settings.oneSignalSettings,
+      appId: '',
+      restApiKey: '',
+      clearAppId: false,
+      clearRestApiKey: false,
+    });
+  }, [query.data?.settings.oneSignalSettings]);
 
   if (query.isLoading) return <LoadingState label="Loading settings" />;
   if (query.isError || !query.data) {
@@ -113,8 +133,9 @@ export function AdminSettingsPage() {
     >
       <Stack spacing={3}>
         <Alert severity="info">
-          Provider keys are encrypted behind the protected server API. This page exposes status and
-          safe controls only — saved provider keys are never sent back to the browser.
+          Provider and notification credentials are stored server-side behind the protected admin
+          API. This page exposes status and safe controls only — saved provider keys are never sent
+          back to the browser, and neither are saved OneSignal credentials.
         </Alert>
         <Alert severity="success">
           Public pages read canonical competitions, teams, players, fixtures, results and standings
@@ -265,6 +286,116 @@ export function AdminSettingsPage() {
                 sx={{ alignSelf: 'flex-start', borderRadius: 0 }}
               >
                 Save provider settings
+              </Button>
+            </Stack>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent>
+            <Stack spacing={2}>
+              <Stack
+                direction={{ xs: 'column', sm: 'row' }}
+                spacing={1}
+                alignItems={{ sm: 'center' }}
+              >
+                <Typography variant="h6" sx={{ flexGrow: 1 }}>
+                  OneSignal push notifications
+                </Typography>
+                <Chip
+                  size="small"
+                  color={oneSignalDraft.appIdConfigured ? 'success' : 'warning'}
+                  label={oneSignalDraft.appIdConfigured ? 'App ID configured' : 'App ID missing'}
+                />
+                <Chip
+                  size="small"
+                  color={oneSignalDraft.restKeyConfigured ? 'success' : 'warning'}
+                  label={
+                    oneSignalDraft.restKeyConfigured ? 'REST key configured' : 'REST key missing'
+                  }
+                />
+              </Stack>
+              <Typography color="text.secondary">
+                Enter credentials here instead of editing plugin files. Existing values remain
+                masked and are never returned to the browser.
+              </Typography>
+              {oneSignalDraft.environmentOverride && (
+                <Alert severity="info">
+                  OneSignal credentials are controlled by server constants or environment variables,
+                  so these fields are read-only.
+                </Alert>
+              )}
+              <Grid container spacing={2}>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    type="password"
+                    label="OneSignal App ID"
+                    value={oneSignalDraft.appId ?? ''}
+                    disabled={oneSignalDraft.environmentOverride}
+                    placeholder={
+                      oneSignalDraft.appIdConfigured
+                        ? 'Leave blank to keep current App ID'
+                        : 'Paste OneSignal App ID'
+                    }
+                    onChange={(event) =>
+                      setOneSignalDraft({ ...oneSignalDraft, appId: event.target.value })
+                    }
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    type="password"
+                    label="OneSignal REST API key"
+                    value={oneSignalDraft.restApiKey ?? ''}
+                    disabled={oneSignalDraft.environmentOverride}
+                    placeholder={
+                      oneSignalDraft.restKeyConfigured
+                        ? 'Leave blank to keep current REST key'
+                        : 'Paste OneSignal REST API key'
+                    }
+                    onChange={(event) =>
+                      setOneSignalDraft({ ...oneSignalDraft, restApiKey: event.target.value })
+                    }
+                  />
+                </Grid>
+              </Grid>
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={Boolean(oneSignalDraft.clearAppId)}
+                      disabled={oneSignalDraft.environmentOverride}
+                      onChange={(_, checked) =>
+                        setOneSignalDraft({ ...oneSignalDraft, clearAppId: checked })
+                      }
+                    />
+                  }
+                  label="Clear saved App ID"
+                />
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={Boolean(oneSignalDraft.clearRestApiKey)}
+                      disabled={oneSignalDraft.environmentOverride}
+                      onChange={(_, checked) =>
+                        setOneSignalDraft({ ...oneSignalDraft, clearRestApiKey: checked })
+                      }
+                    />
+                  }
+                  label="Clear saved REST key"
+                />
+              </Stack>
+              <Button
+                variant="contained"
+                disabled={oneSignalDraft.environmentOverride || mutation.isPending}
+                onClick={() => mutation.mutate({ oneSignalSettings: oneSignalDraft })}
+                sx={{ alignSelf: 'flex-start', borderRadius: 0 }}
+              >
+                Save OneSignal settings
               </Button>
             </Stack>
           </CardContent>

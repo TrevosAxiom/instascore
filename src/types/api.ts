@@ -133,6 +133,17 @@ export interface OperationsSettings {
     football: ProviderApiSettings;
     basketball: ProviderApiSettings;
   };
+  oneSignalSettings: OneSignalAdminSettings;
+}
+
+export interface OneSignalAdminSettings {
+  appIdConfigured: boolean;
+  restKeyConfigured: boolean;
+  environmentOverride: boolean;
+  appId?: string;
+  restApiKey?: string;
+  clearAppId?: boolean;
+  clearRestApiKey?: boolean;
 }
 
 export interface ProviderApiSettings {

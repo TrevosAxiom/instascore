@@ -68,6 +68,7 @@ final class OperationsRepository {
 			'emergencyNotificationsDisabled' => (bool) get_option( 'instascore_admin_notification_disable', false ),
 			'dataRetentionDays'               => (int) get_option( 'instascore_data_retention_days', 365 ),
 			'featureFlags'                    => $this->feature_flags(),
+			'oneSignalSettings'               => $this->onesignal_settings(),
 			'providerSettings'                => array(
 				'football'   => $this->provider_settings( 'football' ),
 				'basketball' => $this->provider_settings( 'basketball' ),
@@ -91,6 +92,9 @@ final class OperationsRepository {
 		if ( isset( $input['providerSettings'] ) && is_array( $input['providerSettings'] ) ) {
 			$this->update_provider_settings( $input['providerSettings'] );
 		}
+		if ( isset( $input['oneSignalSettings'] ) && is_array( $input['oneSignalSettings'] ) ) {
+			$this->update_onesignal_settings( $input['oneSignalSettings'] );
+		}
 		return $this->settings();
 	}
 
@@ -105,6 +109,35 @@ final class OperationsRepository {
 			'liveIntervalSeconds' => (int) get_option( "instascore_provider_{$sport}_live_interval_seconds", 60 ),
 			'leagueIds'          => array_values( array_filter( array_map( 'strval', (array) get_option( "instascore_provider_{$sport}_league_ids", array() ) ) ) ),
 		);
+	}
+
+	/** @return array<string,mixed> */
+	private function onesignal_settings(): array {
+		return array(
+			'appIdConfigured'    => '' !== \InstaScore\Platform\Support\Config::onesignal_app_id(),
+			'restKeyConfigured'  => '' !== \InstaScore\Platform\Support\Config::onesignal_rest_api_key(),
+			'environmentOverride' => \InstaScore\Platform\Support\Config::onesignal_environment_override(),
+		);
+	}
+
+	/** @param array<string,mixed> $settings */
+	private function update_onesignal_settings( array $settings ): void {
+		if ( \InstaScore\Platform\Support\Config::onesignal_environment_override() ) {
+			return;
+		}
+		if ( ! empty( $settings['clearAppId'] ) ) {
+			delete_option( 'instascore_onesignal_app_id' );
+		} elseif ( isset( $settings['appId'] ) && '' !== trim( (string) $settings['appId'] ) ) {
+			$app_id = sanitize_text_field( (string) $settings['appId'] );
+			if ( wp_is_uuid( $app_id ) ) {
+				update_option( 'instascore_onesignal_app_id', $app_id, false );
+			}
+		}
+		if ( ! empty( $settings['clearRestApiKey'] ) ) {
+			delete_option( 'instascore_onesignal_rest_api_key' );
+		} elseif ( isset( $settings['restApiKey'] ) && '' !== trim( (string) $settings['restApiKey'] ) ) {
+			update_option( 'instascore_onesignal_rest_api_key', sanitize_text_field( (string) $settings['restApiKey'] ), false );
+		}
 	}
 
 	private function update_provider_settings( array $settings ): void {
