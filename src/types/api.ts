@@ -484,15 +484,166 @@ export interface Fixture {
   competition: { uuid: string; name: string };
   season: { uuid: string; name: string };
   sport: Sport;
-  homeTeam: { uuid: string; name: string };
-  awayTeam: { uuid: string; name: string };
+  homeTeam: { uuid: string; name: string; logoUrl?: string | null };
+  awayTeam: { uuid: string; name: string; logoUrl?: string | null };
   venue: { uuid: string; name: string } | null;
   updatedAt: string;
+  stream?: FixtureStream | null;
 }
 
 export interface FixtureMutationResult {
   fixture: Record<string, unknown>;
   warnings: { type: string; fixture: string; kickoffAt: string; message: string }[];
+}
+
+export type FixtureStreamStatus =
+  | 'draft'
+  | 'scheduled'
+  | 'testing'
+  | 'live'
+  | 'interrupted'
+  | 'ended'
+  | 'replay_processing'
+  | 'replay_available'
+  | 'cancelled'
+  | 'failed';
+
+export interface FixtureStream {
+  uuid: string;
+  provider: 'youtube';
+  videoId: string;
+  watchUrl: string;
+  embedUrl: string;
+  title: string;
+  status: FixtureStreamStatus;
+  visibility: 'public' | 'unlisted' | 'private';
+  embedEnabled: boolean;
+  chatEnabled: boolean;
+  featured: boolean;
+  replayAvailable: boolean;
+  scheduledStart: string | null;
+  lastSyncedAt: string | null;
+  errorMessage: string | null;
+  thumbnailUrl?: string;
+}
+
+export interface FixtureStreamInput {
+  youtubeUrl: string;
+  title: string;
+  status: FixtureStreamStatus;
+  visibility: 'public' | 'unlisted' | 'private';
+  embedEnabled: boolean;
+  chatEnabled: boolean;
+  featured: boolean;
+  scheduledStart?: string;
+}
+
+export interface YouTubeStreamingSettings {
+  clientIdConfigured: boolean;
+  clientSecretConfigured: boolean;
+  connected: boolean;
+  channel: null | { id: string; name: string; thumbnailUrl: string };
+  redirectUri: string;
+  lastSyncAt: string | null;
+  lastSyncError: string | null;
+}
+
+export interface YouTubeBroadcast {
+  videoId: string;
+  title: string;
+  status: FixtureStreamStatus;
+  visibility: 'public' | 'unlisted' | 'private';
+  scheduledStart: string | null;
+  actualStart: string | null;
+  actualEnd: string | null;
+  thumbnailUrl: string;
+  embedEnabled: boolean;
+  concurrentViewers: number | null;
+  viewCount: number | null;
+}
+
+export interface YouTubeStreamHealth {
+  connected: boolean;
+  total: number;
+  live: number;
+  failed: number;
+  stale: number;
+  items: Array<{
+    fixtureUuid: string;
+    fixtureName: string;
+    videoId: string;
+    status: FixtureStreamStatus;
+    lastSyncedAt: string | null;
+    stale: boolean;
+    errorMessage: string | null;
+  }>;
+}
+
+export interface YouTubeFixtureSuggestion {
+  fixtureUuid: string;
+  fixtureName: string;
+  competitionName: string;
+  kickoffAt: string;
+  score: number;
+  confidence: 'high' | 'medium' | 'low';
+  reasons: string[];
+}
+
+export interface YouTubeControlRoom {
+  health: YouTubeStreamHealth;
+  broadcasts: YouTubeBroadcast[];
+  reviewQueue: Array<{
+    broadcast: YouTubeBroadcast;
+    suggestions: YouTubeFixtureSuggestion[];
+    recommended: YouTubeFixtureSuggestion | null;
+  }>;
+  refreshedAt: string;
+}
+
+export interface StreamSponsor {
+  uuid: string;
+  sponsorName: string;
+  campaignName: string;
+  logoUrl: string;
+  destinationUrl: string;
+  placement: 'pre_match' | 'in_player' | 'post_match';
+  status: string;
+  impressions: number;
+  clicks: number;
+  startsAt: string | null;
+  endsAt: string | null;
+}
+
+export interface StreamAnalyticsReport {
+  summary: {
+    sessions: number;
+    fixtures: number;
+    watchSeconds: number;
+    averageWatchSeconds: number;
+  };
+  devices: Array<{ device: string; sessions: number; watchSeconds: number }>;
+  sponsors: StreamSponsor[];
+}
+
+export interface ChatReaction {
+  reaction: string;
+  count: number;
+  reacted: boolean;
+}
+
+export interface ChatMessage {
+  uuid: string;
+  body: string;
+  author: { uuid: string; displayName: string };
+  parent: { uuid: string; displayName: string } | null;
+  reactions: ChatReaction[];
+  reportCount: number;
+  createdAt: string;
+}
+
+export interface MatchChatRoom {
+  messages: ChatMessage[];
+  banned: boolean;
 }
 
 export type ScoreEventType =
@@ -661,6 +812,21 @@ export interface FantasyGame {
   formationRules?: Record<string, unknown>;
 }
 
+export interface CreateFantasyGameInput {
+  competitionUuid: string;
+  seasonUuid: string;
+  name: string;
+  description?: string;
+  status: 'draft' | 'open' | 'active';
+  deadlineAt: string;
+  gameweekName: string;
+  budgetCents: number;
+  squadSize: number;
+  startingSize: number;
+  benchSize: number;
+  maxPlayersPerTeam: number;
+}
+
 export interface FantasyPlayer {
   uuid: string;
   priceCents: number;
@@ -668,6 +834,8 @@ export interface FantasyPlayer {
   position: { code: string; name: string };
   player: { uuid: string; name: string; photoUrl?: string | null };
   team: { uuid: string; name: string };
+  totalPoints: number;
+  ownershipPercent: number;
 }
 
 export interface FantasySquadEntry {
@@ -723,6 +891,27 @@ export interface FantasyTransferResult {
   costPoints: number;
   freeTransferUsed: boolean;
   status: string;
+  outPlayerName: string;
+  inPlayerName: string;
+}
+
+export interface FantasyScoringRule {
+  uuid: string;
+  sportSlug: string;
+  eventType: string;
+  points: number;
+  version: number;
+  status: string;
+  effectiveFrom: string;
+  conditions: Record<string, unknown>;
+}
+
+export interface FantasyRecalculationResult {
+  fixturesProcessed: number;
+  eventsScored: number;
+  revisionsCreated: number;
+  status: string;
+  gameweekUuid: string;
 }
 
 export interface FantasyLeague {

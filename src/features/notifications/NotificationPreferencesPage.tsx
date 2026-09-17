@@ -15,6 +15,8 @@ import type { NotificationPreference, UserPreferences } from '../../types/api';
 const labels: Record<string, string> = {
   match_starting: 'Match starting',
   match_live: 'Match is live',
+  broadcast_update: 'Broadcast interruptions and recovery',
+  replay_ready: 'Match replay ready',
   score_change: 'Score changes',
   final_score: 'Final score',
   fixture_change: 'Fixture changes',

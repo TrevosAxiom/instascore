@@ -8,17 +8,19 @@ import {
   DialogContent,
   DialogTitle,
   Divider,
+  FormControlLabel,
   Grid,
   MenuItem,
   Paper,
   Stack,
+  Switch,
   Tab,
   Tabs,
   TextField,
   Typography,
 } from '@mui/material';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { Link as RouterLink } from 'react-router';
 import { z } from 'zod';
@@ -27,8 +29,9 @@ import { ApiError } from '../../api/client';
 import { useApi } from '../../api/context';
 import { EmptyState, ErrorState, LoadingState } from '../../components/AsyncStates';
 import { PageScaffold } from '../../components/PageScaffold';
-import type { Fixture, FixtureStatus } from '../../types/api';
+import type { Fixture, FixtureStatus, FixtureStreamInput } from '../../types/api';
 import { fixtureTitle, formatKickoff, statusLabel } from './fixtureFormat';
+import { LiveControlRoom } from './LiveControlRoom';
 
 const fixtureSchema = z
   .object({
@@ -65,6 +68,16 @@ const emptyFixture: FixtureForm = {
   status: 'draft',
 };
 
+const emptyStream: FixtureStreamInput = {
+  youtubeUrl: '',
+  title: '',
+  status: 'scheduled',
+  visibility: 'unlisted',
+  embedEnabled: true,
+  chatEnabled: false,
+  featured: false,
+};
+
 const nextStatuses: Partial<Record<FixtureStatus, FixtureStatus[]>> = {
   draft: ['scheduled', 'cancelled'],
   scheduled: ['draft', 'postponed', 'cancelled'],
@@ -89,6 +102,8 @@ export function AdminFixturesPage() {
   const [status, setStatus] = useState('');
   const [sport, setSport] = useState('');
   const [date, setDate] = useState('');
+  const [broadcastFixture, setBroadcastFixture] = useState<Fixture | null>(null);
+  const [streamForm, setStreamForm] = useState<FixtureStreamInput>(emptyStream);
   const queryParams = useMemo(() => {
     const params = new URLSearchParams({ per_page: '100' });
     if (search.trim()) params.set('search', search.trim());
@@ -111,6 +126,43 @@ export function AdminFixturesPage() {
   });
   const sports = useQuery({ queryKey: ['sports'], queryFn: api.getSports });
   const venues = useQuery({ queryKey: ['fixture-form', 'venues'], queryFn: api.getVenues });
+  const broadcast = useQuery({
+    queryKey: ['admin-fixture-broadcast', broadcastFixture?.uuid],
+    queryFn: () => api.getAdminFixtureStream(broadcastFixture?.uuid ?? ''),
+    enabled: Boolean(broadcastFixture),
+  });
+  const youtubeSettings = useQuery({
+    queryKey: ['youtube-streaming-settings'],
+    queryFn: api.getYouTubeStreamingSettings,
+  });
+  const streamHealth = useQuery({
+    queryKey: ['youtube-stream-health'],
+    queryFn: api.getYouTubeStreamHealth,
+    refetchInterval: 60_000,
+  });
+  const youtubeBroadcasts = useQuery({
+    queryKey: ['youtube-broadcasts'],
+    queryFn: api.getYouTubeBroadcasts,
+    enabled: Boolean(broadcastFixture && youtubeSettings.data?.connected),
+  });
+  useEffect(() => {
+    if (!broadcastFixture || broadcast.isLoading) return;
+    const current = broadcast.data;
+    setStreamForm(
+      current
+        ? {
+            youtubeUrl: current.watchUrl,
+            title: current.title,
+            status: current.status,
+            visibility: current.visibility,
+            embedEnabled: current.embedEnabled,
+            chatEnabled: current.chatEnabled,
+            featured: current.featured,
+            ...(current.scheduledStart ? { scheduledStart: current.scheduledStart } : {}),
+          }
+        : { ...emptyStream, title: fixtureTitle(broadcastFixture) },
+    );
+  }, [broadcast.data, broadcast.isLoading, broadcastFixture]);
   const form = useForm<FixtureForm>({
     resolver: zodResolver(fixtureSchema),
     defaultValues: emptyFixture,
@@ -139,6 +191,22 @@ export function AdminFixturesPage() {
     onSuccess: () => {
       void client.invalidateQueries({ queryKey: ['admin-fixtures'] });
       void client.invalidateQueries({ queryKey: ['fixtures'] });
+    },
+  });
+  const saveBroadcast = useMutation({
+    mutationFn: () => api.saveFixtureStream(broadcastFixture?.uuid ?? '', streamForm),
+    onSuccess: () => {
+      void client.invalidateQueries({ queryKey: ['admin-fixture-broadcast'] });
+      void client.invalidateQueries({ queryKey: ['fixture', broadcastFixture?.uuid, 'broadcast'] });
+      setBroadcastFixture(null);
+    },
+  });
+  const disableBroadcast = useMutation({
+    mutationFn: () => api.disableFixtureStream(broadcastFixture?.uuid ?? ''),
+    onSuccess: () => {
+      void client.invalidateQueries({ queryKey: ['admin-fixture-broadcast'] });
+      void client.invalidateQueries({ queryKey: ['fixture', broadcastFixture?.uuid, 'broadcast'] });
+      setBroadcastFixture(null);
     },
   });
   const editFixture = (fixture: Fixture) => {
@@ -200,6 +268,28 @@ export function AdminFixturesPage() {
         ))}
       </Grid>
 
+      {streamHealth.data?.connected ? (
+        <Alert
+          severity={streamHealth.data.failed || streamHealth.data.stale ? 'warning' : 'success'}
+        >
+          <Stack direction={{ xs: 'column', sm: 'row' }} alignItems={{ sm: 'center' }} gap={1}>
+            <Typography fontWeight={900} sx={{ flexGrow: 1 }}>
+              YouTube stream health
+            </Typography>
+            <Chip
+              size="small"
+              label={`${streamHealth.data.live} live`}
+              color={streamHealth.data.live ? 'error' : 'default'}
+            />
+            <Chip size="small" label={`${streamHealth.data.stale} stale`} />
+            <Chip size="small" label={`${streamHealth.data.failed} failed`} />
+          </Stack>
+          {streamHealth.data.stale || streamHealth.data.failed
+            ? 'Open the affected fixture broadcast and verify the Veo feed or run Sync broadcasts now in Settings.'
+            : 'Connected broadcasts are synchronizing normally.'}
+        </Alert>
+      ) : null}
+
       <Paper variant="outlined" sx={{ p: 2 }}>
         <Stack spacing={2}>
           <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" gap={1.5}>
@@ -211,16 +301,19 @@ export function AdminFixturesPage() {
               <Tab value="calendar" label="Calendar" />
               <Tab value="day" label="Match day" />
             </Tabs>
-            <Button
-              variant="contained"
-              onClick={() => {
-                setEditing(null);
-                form.reset(emptyFixture);
-                setOpen(true);
-              }}
-            >
-              Create fixture
-            </Button>
+            <Stack direction={{ xs: 'column', sm: 'row' }} gap={1}>
+              <LiveControlRoom />
+              <Button
+                variant="contained"
+                onClick={() => {
+                  setEditing(null);
+                  form.reset(emptyFixture);
+                  setOpen(true);
+                }}
+              >
+                Create fixture
+              </Button>
+            </Stack>
           </Stack>
           <Grid container spacing={1.25}>
             <Grid size={{ xs: 12, md: 4 }}>
@@ -363,6 +456,13 @@ export function AdminFixturesPage() {
                         disabled={['confirmed', 'live'].includes(fixture.status)}
                       >
                         Edit
+                      </Button>
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        onClick={() => setBroadcastFixture(fixture)}
+                      >
+                        Broadcast
                       </Button>
                       {(nextStatuses[fixture.status] ?? []).map((next) => (
                         <Button
@@ -586,6 +686,187 @@ export function AdminFixturesPage() {
               </Button>
             </Stack>
           </Stack>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={Boolean(broadcastFixture)}
+        onClose={() => setBroadcastFixture(null)}
+        fullWidth
+        maxWidth="sm"
+      >
+        <DialogTitle>
+          YouTube broadcast · {broadcastFixture ? fixtureTitle(broadcastFixture) : ''}
+        </DialogTitle>
+        <DialogContent>
+          {broadcast.isLoading ? <LoadingState label="Loading broadcast settings" /> : null}
+          {!broadcast.isLoading ? (
+            <Stack spacing={2} sx={{ pt: 1 }}>
+              <Alert severity="info">
+                Paste a YouTube watch, live, short or embed URL. InstaScore stores only the public
+                video ID—never a stream key.
+              </Alert>
+              {youtubeSettings.data?.connected ? (
+                <TextField
+                  select
+                  label="Choose a channel broadcast"
+                  value=""
+                  helperText="Upcoming, active and completed broadcasts from the connected YouTube channel"
+                  onChange={(event) => {
+                    const selected = youtubeBroadcasts.data?.find(
+                      (item) => item.videoId === event.target.value,
+                    );
+                    if (!selected) return;
+                    setStreamForm((value) => ({
+                      ...value,
+                      youtubeUrl: `https://www.youtube.com/watch?v=${selected.videoId}`,
+                      title: selected.title,
+                      status: selected.status,
+                      visibility: selected.visibility,
+                      embedEnabled: selected.embedEnabled,
+                      ...(selected.scheduledStart
+                        ? { scheduledStart: selected.scheduledStart }
+                        : {}),
+                    }));
+                  }}
+                >
+                  {(youtubeBroadcasts.data ?? []).map((item) => (
+                    <MenuItem key={item.videoId} value={item.videoId}>
+                      {item.title} · {item.status.replaceAll('_', ' ')}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              ) : null}
+              <TextField
+                label="YouTube URL or video ID"
+                value={streamForm.youtubeUrl}
+                onChange={(event) =>
+                  setStreamForm((value) => ({ ...value, youtubeUrl: event.target.value }))
+                }
+                required
+                fullWidth
+              />
+              <TextField
+                label="Broadcast title"
+                value={streamForm.title}
+                onChange={(event) =>
+                  setStreamForm((value) => ({ ...value, title: event.target.value }))
+                }
+                fullWidth
+              />
+              <Grid container spacing={1.5}>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    select
+                    fullWidth
+                    label="Broadcast status"
+                    value={streamForm.status}
+                    onChange={(event) =>
+                      setStreamForm((value) => ({
+                        ...value,
+                        status: event.target.value as FixtureStreamInput['status'],
+                      }))
+                    }
+                  >
+                    {[
+                      'draft',
+                      'scheduled',
+                      'testing',
+                      'live',
+                      'interrupted',
+                      'ended',
+                      'replay_processing',
+                      'replay_available',
+                    ].map((item) => (
+                      <MenuItem key={item} value={item}>
+                        {item.replaceAll('_', ' ')}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    select
+                    fullWidth
+                    label="Visibility"
+                    value={streamForm.visibility}
+                    onChange={(event) =>
+                      setStreamForm((value) => ({
+                        ...value,
+                        visibility: event.target.value as FixtureStreamInput['visibility'],
+                      }))
+                    }
+                  >
+                    {['public', 'unlisted', 'private'].map((item) => (
+                      <MenuItem key={item} value={item}>
+                        {item}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                </Grid>
+              </Grid>
+              <Stack direction={{ xs: 'column', sm: 'row' }} gap={1}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={streamForm.embedEnabled}
+                      onChange={(_, checked) =>
+                        setStreamForm((value) => ({ ...value, embedEnabled: checked }))
+                      }
+                    />
+                  }
+                  label="Show player"
+                />
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={streamForm.featured}
+                      onChange={(_, checked) =>
+                        setStreamForm((value) => ({ ...value, featured: checked }))
+                      }
+                    />
+                  }
+                  label="Feature stream"
+                />
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={streamForm.chatEnabled}
+                      onChange={(_, checked) =>
+                        setStreamForm((value) => ({ ...value, chatEnabled: checked }))
+                      }
+                    />
+                  }
+                  label="Live chat"
+                />
+              </Stack>
+              {saveBroadcast.isError ? (
+                <Alert severity="error">
+                  The broadcast could not be saved. Check that the YouTube URL contains a valid
+                  video ID.
+                </Alert>
+              ) : null}
+              <Stack direction="row" justifyContent="space-between" gap={1}>
+                <Button
+                  color="error"
+                  onClick={() => disableBroadcast.mutate()}
+                  disabled={!broadcast.data || disableBroadcast.isPending}
+                >
+                  Disable broadcast
+                </Button>
+                <Stack direction="row" gap={1}>
+                  <Button onClick={() => setBroadcastFixture(null)}>Cancel</Button>
+                  <Button
+                    variant="contained"
+                    onClick={() => saveBroadcast.mutate()}
+                    disabled={!streamForm.youtubeUrl.trim() || saveBroadcast.isPending}
+                  >
+                    Save broadcast
+                  </Button>
+                </Stack>
+              </Stack>
+            </Stack>
+          ) : null}
         </DialogContent>
       </Dialog>
     </PageScaffold>

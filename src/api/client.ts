@@ -11,15 +11,28 @@ import type {
   CsvImportPreview,
   Fixture,
   FixtureMutationResult,
+  FixtureStream,
+  FixtureStreamInput,
+  YouTubeBroadcast,
+  YouTubeStreamingSettings,
+  YouTubeStreamHealth,
+  YouTubeControlRoom,
+  StreamAnalyticsReport,
+  StreamSponsor,
+  MatchChatRoom,
+  ChatMessage,
   Favourite,
   FavouriteEntityType,
   FantasyGame,
+  CreateFantasyGameInput,
   FantasyLeague,
   FantasyLiveRow,
   FantasyPlayer,
   FantasyPointBreakdown,
   FantasySquadEntry,
   FantasySquadState,
+  FantasyScoringRule,
+  FantasyRecalculationResult,
   FantasyTransferResult,
   LiveMatchState,
   MediaUpload,
@@ -137,6 +150,56 @@ export interface ApiClient {
     uuid: string,
     input: { status: string; reason?: string },
   ) => Promise<FixtureMutationResult>;
+  getFixtureStream: (uuid: string) => Promise<FixtureStream>;
+  getAdminFixtureStream: (uuid: string) => Promise<FixtureStream | null>;
+  saveFixtureStream: (uuid: string, input: FixtureStreamInput) => Promise<FixtureStream>;
+  disableFixtureStream: (uuid: string) => Promise<FixtureStream | null>;
+  getYouTubeStreamingSettings: () => Promise<YouTubeStreamingSettings>;
+  saveYouTubeStreamingSettings: (
+    input: Record<string, unknown>,
+  ) => Promise<YouTubeStreamingSettings>;
+  connectYouTube: () => Promise<{ authorizationUrl: string }>;
+  disconnectYouTube: () => Promise<YouTubeStreamingSettings>;
+  getYouTubeBroadcasts: () => Promise<YouTubeBroadcast[]>;
+  syncYouTubeBroadcasts: () => Promise<{
+    broadcastsFound: number;
+    streamsUpdated: number;
+    syncedAt: string;
+  }>;
+  getYouTubeStreamHealth: () => Promise<YouTubeStreamHealth>;
+  getYouTubeControlRoom: () => Promise<YouTubeControlRoom>;
+  attachYouTubeBroadcast: (input: {
+    fixtureUuid: string;
+    videoId: string;
+  }) => Promise<FixtureStream>;
+  autoMatchYouTubeBroadcasts: () => Promise<
+    Array<{ videoId: string; fixtureUuid: string; score: number }>
+  >;
+  getStreamSponsors: (fixtureUuid: string) => Promise<StreamSponsor[]>;
+  recordStreamEngagement: (
+    fixtureUuid: string,
+    input: Record<string, unknown>,
+  ) => Promise<{ recorded: boolean }>;
+  recordSponsorEvent: (
+    sponsorUuid: string,
+    metric: 'impression' | 'click',
+    sessionId: string,
+  ) => Promise<{ recorded: boolean }>;
+  getStreamAnalytics: () => Promise<StreamAnalyticsReport>;
+  createStreamSponsor: (input: Record<string, unknown>) => Promise<StreamSponsor>;
+  getMatchChat: (fixtureUuid: string) => Promise<MatchChatRoom>;
+  postMatchChat: (
+    fixtureUuid: string,
+    input: { body: string; parentUuid?: string },
+  ) => Promise<ChatMessage>;
+  reactToChatMessage: (messageUuid: string, reaction: string) => Promise<{ updated: boolean }>;
+  reportChatMessage: (messageUuid: string, reason: string) => Promise<{ reported: boolean }>;
+  moderateChatMessage: (messageUuid: string) => Promise<{ moderated: boolean }>;
+  banChatAuthor: (
+    fixtureUuid: string,
+    messageUuid: string,
+    input: { hours: number; reason: string },
+  ) => Promise<{ banned: boolean; hours: number }>;
   getLiveMatch: (uuid: string, afterRevision?: number) => Promise<LiveMatchState>;
   getLiveMatchStreamUrl: (uuid: string, afterRevision?: number) => string;
   claimFixture: (uuid: string) => Promise<unknown>;
@@ -231,6 +294,7 @@ export interface ApiClient {
   search: (query: string) => Promise<SearchResult[]>;
   getAlertHistory: () => Promise<AlertHistoryItem[]>;
   getFantasyGames: () => Promise<FantasyGame[]>;
+  getAdminFantasyGames: () => Promise<FantasyGame[]>;
   getFantasyGame: (uuid: string) => Promise<FantasyGame>;
   getFantasyPlayers: (uuid: string, query?: URLSearchParams) => Promise<FantasyPlayer[]>;
   getFantasySquad: (uuid: string) => Promise<FantasySquadState>;
@@ -242,7 +306,7 @@ export interface ApiClient {
     uuid: string,
     input: { name: string; baseRevision: number; players: FantasySquadEntry[] },
   ) => Promise<FantasySquadState>;
-  createFantasyGame: (input: Record<string, unknown>) => Promise<FantasyGame>;
+  createFantasyGame: (input: CreateFantasyGameInput) => Promise<FantasyGame>;
   getFantasyPoints: (uuid: string) => Promise<FantasyPointBreakdown[]>;
   getFantasyLiveTracker: (uuid: string) => Promise<FantasyLiveRow[]>;
   makeFantasyTransfer: (
@@ -252,6 +316,10 @@ export interface ApiClient {
   createFantasyLeague: (uuid: string, input: Record<string, unknown>) => Promise<FantasyLeague>;
   getFantasyLeague: (uuid: string) => Promise<FantasyLeague>;
   createFantasyRule: (uuid: string, input: Record<string, unknown>) => Promise<unknown>;
+  getFantasyRules: (uuid: string) => Promise<FantasyScoringRule[]>;
+  seedFantasyRules: (uuid: string) => Promise<FantasyScoringRule[]>;
+  recalculateFantasy: (uuid: string, reason: string) => Promise<FantasyRecalculationResult>;
+  finalizeFantasyGameweek: (uuid: string, reason: string) => Promise<{ status: string }>;
   overrideFantasyPoints: (uuid: string, input: Record<string, unknown>) => Promise<unknown>;
   getOperationsDashboard: () => Promise<OperationsDashboard>;
   updateOperationsSettings: (input: Partial<OperationsSettings>) => Promise<OperationsSettings>;
@@ -277,6 +345,7 @@ export function createApiClient(settings: BootstrapSettings): ApiClient {
     const response = await fetch(`${settings.apiBase.replace(/\/$/, '')}${path}`, {
       ...init,
       credentials: 'same-origin',
+      cache: init.cache ?? 'no-store',
       headers: {
         Accept: 'application/json',
         ...(!isFormData ? { 'Content-Type': 'application/json' } : {}),
@@ -487,6 +556,89 @@ export function createApiClient(settings: BootstrapSettings): ApiClient {
         method: 'POST',
         body: JSON.stringify(input),
       }),
+    getFixtureStream: (uuid) => request<FixtureStream>(`/fixtures/${uuid}/broadcast`),
+    getAdminFixtureStream: (uuid) =>
+      request<FixtureStream | null>(`/admin/fixtures/${uuid}/broadcast`),
+    saveFixtureStream: (uuid, input) =>
+      request<FixtureStream>(`/admin/fixtures/${uuid}/broadcast`, {
+        method: 'PUT',
+        body: JSON.stringify(input),
+      }),
+    disableFixtureStream: (uuid) =>
+      request<FixtureStream | null>(`/admin/fixtures/${uuid}/broadcast`, { method: 'DELETE' }),
+    getYouTubeStreamingSettings: () =>
+      request<YouTubeStreamingSettings>('/admin/streaming/youtube'),
+    saveYouTubeStreamingSettings: (input) =>
+      request<YouTubeStreamingSettings>('/admin/streaming/youtube', {
+        method: 'PUT',
+        body: JSON.stringify(input),
+      }),
+    connectYouTube: () =>
+      request<{ authorizationUrl: string }>('/admin/streaming/youtube/connect', { method: 'POST' }),
+    disconnectYouTube: () =>
+      request<YouTubeStreamingSettings>('/admin/streaming/youtube/disconnect', { method: 'POST' }),
+    getYouTubeBroadcasts: () => request<YouTubeBroadcast[]>('/admin/streaming/youtube/broadcasts'),
+    syncYouTubeBroadcasts: () =>
+      request<{ broadcastsFound: number; streamsUpdated: number; syncedAt: string }>(
+        '/admin/streaming/youtube/sync',
+        { method: 'POST' },
+      ),
+    getYouTubeStreamHealth: () => request<YouTubeStreamHealth>('/admin/streaming/youtube/health'),
+    getYouTubeControlRoom: () =>
+      request<YouTubeControlRoom>('/admin/streaming/youtube/control-room'),
+    attachYouTubeBroadcast: (input) =>
+      request<FixtureStream>('/admin/streaming/youtube/matches', {
+        method: 'POST',
+        body: JSON.stringify(input),
+      }),
+    autoMatchYouTubeBroadcasts: () =>
+      request<Array<{ videoId: string; fixtureUuid: string; score: number }>>(
+        '/admin/streaming/youtube/matches',
+        { method: 'PUT' },
+      ),
+    getStreamSponsors: (fixtureUuid) =>
+      request<StreamSponsor[]>(`/fixtures/${fixtureUuid}/broadcast/sponsors`),
+    recordStreamEngagement: (fixtureUuid, input) =>
+      request<{ recorded: boolean }>(`/fixtures/${fixtureUuid}/broadcast/engagement`, {
+        method: 'POST',
+        body: JSON.stringify(input),
+      }),
+    recordSponsorEvent: (sponsorUuid, metric, sessionId) =>
+      request<{ recorded: boolean }>(`/streaming/sponsors/${sponsorUuid}/${metric}`, {
+        method: 'POST',
+        body: JSON.stringify({ sessionId }),
+      }),
+    getStreamAnalytics: () => request<StreamAnalyticsReport>('/admin/streaming/analytics'),
+    createStreamSponsor: (input) =>
+      request<StreamSponsor>('/admin/streaming/analytics', {
+        method: 'POST',
+        body: JSON.stringify(input),
+      }),
+    getMatchChat: (fixtureUuid) => request<MatchChatRoom>(`/fixtures/${fixtureUuid}/chat`),
+    postMatchChat: (fixtureUuid, input) =>
+      request<ChatMessage>(`/fixtures/${fixtureUuid}/chat`, {
+        method: 'POST',
+        body: JSON.stringify(input),
+      }),
+    reactToChatMessage: (messageUuid, reaction) =>
+      request<{ updated: boolean }>(`/chat/messages/${messageUuid}/reactions`, {
+        method: 'POST',
+        body: JSON.stringify({ reaction }),
+      }),
+    reportChatMessage: (messageUuid, reason) =>
+      request<{ reported: boolean }>(`/chat/messages/${messageUuid}/reports`, {
+        method: 'POST',
+        body: JSON.stringify({ reason }),
+      }),
+    moderateChatMessage: (messageUuid) =>
+      request<{ moderated: boolean }>(`/admin/chat/messages/${messageUuid}`, {
+        method: 'DELETE',
+      }),
+    banChatAuthor: (fixtureUuid, messageUuid, input) =>
+      request<{ banned: boolean; hours: number }>(
+        `/admin/fixtures/${fixtureUuid}/chat/messages/${messageUuid}/ban`,
+        { method: 'POST', body: JSON.stringify(input) },
+      ),
     getLiveMatch: (uuid, afterRevision = 0) =>
       request<LiveMatchState>(
         `/fixtures/${uuid}/live${afterRevision > 0 ? `?after_revision=${afterRevision}` : ''}`,
@@ -567,11 +719,15 @@ export function createApiClient(settings: BootstrapSettings): ApiClient {
         method: 'POST',
         body: JSON.stringify(input),
       }),
-    getBasketballLive: () => request<BasketballLiveGame[]>('/basketball/live'),
-    getFootballLive: () => request<FootballProviderLiveGame[]>('/football/live'),
+    getBasketballLive: () => request<BasketballLiveGame[]>(`/basketball/live?_poll=${Date.now()}`),
+    getFootballLive: () =>
+      request<FootballProviderLiveGame[]>(`/football/live?_poll=${Date.now()}`),
     getProviderMatches: (sport, period, date) =>
       request<ProviderUpcomingMatch[]>(
-        `/providers/${sport}/${period}${date ? `?date=${encodeURIComponent(date)}` : ''}`,
+        `/providers/${sport}/${period}?${new URLSearchParams({
+          ...(date ? { date } : {}),
+          _poll: String(Date.now()),
+        }).toString()}`,
       ),
     getFootballMatch: (providerId) =>
       request<FootballMatchDetails>(`/football/matches/${encodeURIComponent(providerId)}`),
@@ -627,6 +783,7 @@ export function createApiClient(settings: BootstrapSettings): ApiClient {
     search: (query) => request<SearchResult[]>(`/search?q=${encodeURIComponent(query)}`),
     getAlertHistory: () => request<AlertHistoryItem[]>('/me/alerts'),
     getFantasyGames: () => request<FantasyGame[]>('/fantasy/games'),
+    getAdminFantasyGames: () => request<FantasyGame[]>('/admin/fantasy/games'),
     getFantasyGame: (uuid) => request<FantasyGame>(`/fantasy/games/${uuid}`),
     getFantasyPlayers: (uuid, query = new URLSearchParams()) =>
       request<FantasyPlayer[]>(`/fantasy/games/${uuid}/players${query.size ? `?${query}` : ''}`),
@@ -664,6 +821,22 @@ export function createApiClient(settings: BootstrapSettings): ApiClient {
       request(`/admin/fantasy/games/${uuid}/rules`, {
         method: 'POST',
         body: JSON.stringify(input),
+      }),
+    getFantasyRules: (uuid) => request<FantasyScoringRule[]>(`/admin/fantasy/games/${uuid}/rules`),
+    seedFantasyRules: (uuid) =>
+      request<FantasyScoringRule[]>(`/admin/fantasy/games/${uuid}/rules/defaults`, {
+        method: 'POST',
+        body: JSON.stringify({}),
+      }),
+    recalculateFantasy: (uuid, reason) =>
+      request<FantasyRecalculationResult>(`/admin/fantasy/games/${uuid}/recalculate`, {
+        method: 'POST',
+        body: JSON.stringify({ reason }),
+      }),
+    finalizeFantasyGameweek: (uuid, reason) =>
+      request<{ status: string }>(`/admin/fantasy/games/${uuid}/finalize`, {
+        method: 'POST',
+        body: JSON.stringify({ reason }),
       }),
     overrideFantasyPoints: (uuid, input) =>
       request(`/admin/fantasy/games/${uuid}/override`, {

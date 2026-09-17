@@ -6,7 +6,7 @@
  */
 
 $GLOBALS['instascore_test_actions'] = array();
-$GLOBALS['instascore_test_options'] = array( 'instascore_db_version' => 15 );
+$GLOBALS['instascore_test_options'] = array( 'instascore_db_version' => 18 );
 $GLOBALS['instascore_test_capabilities'] = array();
 $GLOBALS['instascore_test_user_meta'] = array();
 $GLOBALS['instascore_test_site_transients'] = array();
@@ -74,6 +74,7 @@ class wpdb {
         return null;
     }
     public function get_results( string $sql, string $format = ARRAY_A ): array { return array(); }
+    public function get_col( string $sql ): array { return array(); }
     public function get_var( string $sql ): int { return 0; }
     public function query( string $sql ): int { return 1; }
     public function esc_like( string $value ): string { return addcslashes( $value, '_%' ); }
@@ -97,6 +98,7 @@ function update_option( string $key, mixed $value, bool $autoload = false ): boo
 function get_site_transient( string $key ): mixed { return $GLOBALS['instascore_test_site_transients'][ $key ] ?? false; }
 function set_site_transient( string $key, mixed $value, int $expiration = 0 ): bool { $GLOBALS['instascore_test_site_transients'][ $key ] = $value; return true; }
 function plugin_basename( string $file ): string { return 'instascore-platform/' . basename( $file ); }
+function home_url( string $path = '' ): string { return 'https://instascore.test' . $path; }
 
 function sanitize_text_field( string $value ): string { return trim( strip_tags( $value ) ); }
 function wp_unslash( string $value ): string { return stripslashes( $value ); }
@@ -104,8 +106,10 @@ function sanitize_textarea_field( string $value ): string { return trim( strip_t
 function sanitize_email( string $value ): string { return filter_var( trim( $value ), FILTER_SANITIZE_EMAIL ); }
 function sanitize_key( string $value ): string { return strtolower( preg_replace( '/[^a-z0-9_-]/', '', $value ) ); }
 function sanitize_title( string $value ): string { return trim( strtolower( preg_replace( '/[^a-z0-9]+/i', '-', $value ) ), '-' ); }
+function remove_accents( string $value ): string { return $value; }
 function esc_url_raw( string $value ): string { return filter_var( trim( $value ), FILTER_SANITIZE_URL ); }
 function wp_http_validate_url( string $value ): string|false { return filter_var( $value, FILTER_VALIDATE_URL ); }
+function wp_parse_url( string $value ): array|false { return parse_url( $value ); }
 function untrailingslashit( string $value ): string { return rtrim( $value, '/\\' ); }
 function wp_is_uuid( string $value ): bool { return 1 === preg_match( '/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $value ); }
 function current_user_can( string $capability ): bool { return in_array( $capability, $GLOBALS['instascore_test_capabilities'], true ); }

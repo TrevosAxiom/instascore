@@ -85,4 +85,29 @@ describe('admin dashboard and settings', () => {
       }),
     );
   }, 10_000);
+
+  it('saves YouTube OAuth credentials without exposing stored secrets', async () => {
+    const saveYouTubeStreamingSettings = vi.fn(testApi.saveYouTubeStreamingSettings);
+    renderApp(<AppRoutes loginUrl="/wp-login.php" />, {
+      route: '/admin/settings',
+      auth: adminAuth,
+      api: { ...testApi, saveYouTubeStreamingSettings },
+    });
+
+    expect(await screen.findByText('YouTube livestreaming')).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText(/Google OAuth client ID/i), {
+      target: { value: 'youtube-client-id' },
+    });
+    fireEvent.change(screen.getByLabelText(/Google OAuth client secret/i), {
+      target: { value: 'youtube-client-secret' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /Save OAuth credentials/i }));
+
+    await waitFor(() =>
+      expect(saveYouTubeStreamingSettings).toHaveBeenCalledWith({
+        clientId: 'youtube-client-id',
+        clientSecret: 'youtube-client-secret',
+      }),
+    );
+  });
 });

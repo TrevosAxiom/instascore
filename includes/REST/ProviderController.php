@@ -116,7 +116,7 @@ final class ProviderController {
 				'sport'       => $sport,
 			)
 		);
-		$response->header( 'Cache-Control', 'no-cache, must-revalidate' );
+		$this->prevent_polling_cache( $response );
 		return $response;
 	}
 
@@ -135,7 +135,10 @@ final class ProviderController {
 			$cached['items'],
 			array( 'lastKnownAt' => $cached['lastKnownAt'], 'cached' => true, 'sport' => $sport, 'period' => $period, 'date' => $date ?: null )
 		);
-		$response->header( 'Cache-Control', 'public, max-age=60, must-revalidate' );
+		// Match-day navigation must see newly imported fixtures immediately. The
+		// persistent provider snapshot is the cache; an HTTP proxy must not become
+		// a second, stale source of truth in front of it.
+		$this->prevent_polling_cache( $response );
 		return $response;
 	}
 
@@ -145,7 +148,14 @@ final class ProviderController {
 			return Envelope::error( 'football_match_not_found', __( 'Soccer match could not be found.', 'instascore-platform' ), array(), 404 );
 		}
 		$response = Envelope::success( $match, array( 'cached' => true, 'sport' => 'football' ) );
-		$response->header( 'Cache-Control', 'no-cache, must-revalidate' );
+		$this->prevent_polling_cache( $response );
 		return $response;
+	}
+
+	private function prevent_polling_cache( WP_REST_Response $response ): void {
+		$response->header( 'Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0, s-maxage=0' );
+		$response->header( 'Pragma', 'no-cache' );
+		$response->header( 'Expires', 'Wed, 11 Jan 1984 05:00:00 GMT' );
+		$response->header( 'Surrogate-Control', 'no-store' );
 	}
 }

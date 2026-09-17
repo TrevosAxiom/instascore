@@ -12,6 +12,8 @@ final class NotificationPreferenceFilterTest extends TestCase {
 		$this->assertContains( 'score_change', NotificationCategory::all() );
 		$this->assertContains( 'result_awaiting_confirmation', NotificationCategory::all() );
 		$this->assertContains( 'fantasy_deadline', NotificationCategory::all() );
+		$this->assertContains( 'broadcast_update', NotificationCategory::all() );
+		$this->assertContains( 'replay_ready', NotificationCategory::all() );
 	}
 
 	public function test_quiet_hours_filter_blocks_local_night_window(): void {

@@ -68,4 +68,40 @@ describe('adaptive user dashboard', () => {
     expect(screen.getByText('Competition readiness')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Manage competitions' })).toBeInTheDocument();
   });
+
+  it.each([
+    [
+      'scorekeeper',
+      ['instascore_scorekeeper'],
+      { accessOperations: true, manageScoring: true },
+      'Match-day console',
+      'Open match operations',
+    ],
+    ['official', ['instascore_match_official'], {}, 'Official dashboard', 'View today’s fixtures'],
+  ])('renders a distinct %s workspace', async (_name, roles, overrides, heading, action) => {
+    renderApp(<UserDashboardPage />, {
+      auth: {
+        ...fanAuth,
+        state: {
+          authenticated: true,
+          nonce: 'test',
+          theme: 'system',
+          user: {
+            ...fanAuth.state!.user!,
+            roles,
+            capabilities: { ...fanAuth.state!.user!.capabilities, ...overrides },
+          },
+        },
+      },
+      api: {
+        ...testApi,
+        getFixtures: vi
+          .fn()
+          .mockResolvedValue({ items: [], page: 1, perPage: 50, total: 0, totalPages: 0 }),
+      },
+    });
+
+    expect(await screen.findByText(heading)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: action })).toBeInTheDocument();
+  });
 });

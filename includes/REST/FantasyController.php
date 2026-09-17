@@ -44,6 +44,9 @@ final class FantasyController {
 						array(
 							'search'   => $request->get_param( 'search' ),
 							'position' => $request->get_param( 'position' ),
+							'team'     => $request->get_param( 'team' ),
+							'status'   => $request->get_param( 'status' ),
+							'sort'     => $request->get_param( 'sort' ),
 						)
 					)
 				),

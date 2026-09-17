@@ -9,6 +9,7 @@ const adminItems = [
   { label: 'Teams & Players', path: '/admin/teams', capability: 'manageTeams' },
   { label: 'People & Access', path: '/admin/accounts', capability: 'manageUsers' },
   { label: 'Fixtures', path: '/admin/fixtures', capability: 'manageFixtures' },
+  { label: 'Streaming', path: '/admin/streaming', capability: 'manageFixtures' },
   { label: 'Fantasy', path: '/admin/fantasy', capability: 'manageLeagues' },
   { label: 'Discipline', path: '/admin/discipline', capability: 'manageFixtures' },
   { label: 'Notifications', path: '/admin/notifications', capability: 'accessAdmin' },

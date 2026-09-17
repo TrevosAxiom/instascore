@@ -42,7 +42,7 @@ final class FixtureRepository extends BaseRepository {
 		}
 		$join = $this->joins();
 		$condition = ' WHERE ' . implode( ' AND ', $where );
-		$select = "SELECT f.*,c.uuid competition_uuid,c.name competition_name,s.uuid season_uuid,s.name season_name,sp.uuid sport_uuid,sp.name sport_name,sp.slug sport_slug,ht.uuid home_team_uuid,ht.name home_team_name,at.uuid away_team_uuid,at.name away_team_name,v.uuid venue_uuid,v.name venue_name{$join}{$condition}";
+		$select = "SELECT f.*,c.uuid competition_uuid,c.name competition_name,s.uuid season_uuid,s.name season_name,sp.uuid sport_uuid,sp.name sport_name,sp.slug sport_slug,ht.uuid home_team_uuid,ht.name home_team_name,ht.logo_url home_team_logo_url,at.uuid away_team_uuid,at.name away_team_name,at.logo_url away_team_logo_url,v.uuid venue_uuid,v.name venue_name{$this->stream_select()}{$join}{$condition}";
 		$count = (int) $this->database->get_var( $args ? $this->database->prepare( "SELECT COUNT(*){$join}{$condition}", $args ) : "SELECT COUNT(*){$join}{$condition}" );
 		$rows = $this->database->get_results( $this->database->prepare( "{$select} ORDER BY f.kickoff_at DESC, f.id DESC LIMIT %d OFFSET %d", array_merge( $args, array( $per_page, ( $page - 1 ) * $per_page ) ) ), ARRAY_A );
 		return array( 'items' => is_array( $rows ) ? $rows : array(), 'total' => $count );
@@ -86,7 +86,7 @@ final class FixtureRepository extends BaseRepository {
 		}
 		$join = $this->joins();
 		$cond = ' WHERE ' . implode( ' AND ', $where );
-		$sql  = "SELECT f.*,c.uuid competition_uuid,c.name competition_name,s.uuid season_uuid,s.name season_name,sp.uuid sport_uuid,sp.name sport_name,sp.slug sport_slug,ht.uuid home_team_uuid,ht.name home_team_name,at.uuid away_team_uuid,at.name away_team_name,v.uuid venue_uuid,v.name venue_name{$join}{$cond}";
+		$sql  = "SELECT f.*,c.uuid competition_uuid,c.name competition_name,s.uuid season_uuid,s.name season_name,sp.uuid sport_uuid,sp.name sport_name,sp.slug sport_slug,ht.uuid home_team_uuid,ht.name home_team_name,ht.logo_url home_team_logo_url,at.uuid away_team_uuid,at.name away_team_name,at.logo_url away_team_logo_url,v.uuid venue_uuid,v.name venue_name{$this->stream_select()}{$join}{$cond}";
 		$count = (int) $this->database->get_var( $args ? $this->database->prepare( "SELECT COUNT(*){$join}{$cond}", $args ) : "SELECT COUNT(*){$join}{$cond}" );
 		$rows  = $this->database->get_results( $this->database->prepare( "{$sql} ORDER BY f.kickoff_at ASC, f.id ASC LIMIT %d OFFSET %d", array_merge( $args, array( $per_page, $offset ) ) ), ARRAY_A );
 		return array(
@@ -97,7 +97,7 @@ final class FixtureRepository extends BaseRepository {
 
 	public function find_public_by_uuid( string $uuid ): ?array {
 		$sql = $this->database->prepare(
-			'SELECT f.*,c.uuid competition_uuid,c.name competition_name,s.uuid season_uuid,s.name season_name,sp.uuid sport_uuid,sp.name sport_name,sp.slug sport_slug,ht.uuid home_team_uuid,ht.name home_team_name,at.uuid away_team_uuid,at.name away_team_name,v.uuid venue_uuid,v.name venue_name' . $this->joins() . ' WHERE f.uuid = %s LIMIT 1',
+			'SELECT f.*,c.uuid competition_uuid,c.name competition_name,s.uuid season_uuid,s.name season_name,sp.uuid sport_uuid,sp.name sport_name,sp.slug sport_slug,ht.uuid home_team_uuid,ht.name home_team_name,ht.logo_url home_team_logo_url,at.uuid away_team_uuid,at.name away_team_name,at.logo_url away_team_logo_url,v.uuid venue_uuid,v.name venue_name' . $this->stream_select() . $this->joins() . ' WHERE f.uuid = %s LIMIT 1',
 			$uuid
 		);
 		$row = $this->database->get_row( $sql, ARRAY_A );
@@ -131,6 +131,10 @@ final class FixtureRepository extends BaseRepository {
 
 	private function joins(): string {
 		$prefix = $this->database->prefix . 'instascore_';
-		return " FROM {$this->table} f JOIN {$prefix}competitions c ON c.id = f.competition_id JOIN {$prefix}sports sp ON sp.id = c.sport_id JOIN {$prefix}seasons s ON s.id = f.season_id JOIN {$prefix}teams ht ON ht.id = f.home_team_id JOIN {$prefix}teams at ON at.id = f.away_team_id LEFT JOIN {$prefix}venues v ON v.id = f.venue_id";
+		return " FROM {$this->table} f JOIN {$prefix}competitions c ON c.id = f.competition_id JOIN {$prefix}sports sp ON sp.id = c.sport_id JOIN {$prefix}seasons s ON s.id = f.season_id JOIN {$prefix}teams ht ON ht.id = f.home_team_id JOIN {$prefix}teams at ON at.id = f.away_team_id LEFT JOIN {$prefix}venues v ON v.id = f.venue_id LEFT JOIN {$prefix}fixture_streams fs ON fs.fixture_id = f.id AND fs.provider = 'youtube'";
+	}
+
+	private function stream_select(): string {
+		return ",fs.uuid stream_uuid,fs.external_broadcast_id stream_video_id,fs.title stream_title,fs.status stream_status,fs.visibility stream_visibility,fs.embed_enabled stream_embed_enabled,fs.chat_enabled stream_chat_enabled,fs.featured stream_featured,fs.replay_available stream_replay_available,fs.thumbnail_url stream_thumbnail_url,fs.scheduled_start stream_scheduled_start,fs.last_synced_at stream_last_synced_at,fs.error_message stream_error_message";
 	}
 }

@@ -249,7 +249,7 @@ final class ProviderSyncService {
 		$cached  = $this->cached_live();
 		$enabled = (bool) get_option( "instascore_provider_{$this->sport}_polling_enabled", false );
 		if ( ! $this->configured || ! $enabled ) {
-			return $cached;
+			return $this->discard_expired_live_snapshot( $cached );
 		}
 
 		$interval = max( 15, min( 3600, (int) get_option( "instascore_provider_{$this->sport}_live_interval_seconds", 60 ) ) );
@@ -260,15 +260,28 @@ final class ProviderSyncService {
 
 		$lock = "instascore_{$this->sport}_live_poll_lock";
 		if ( false !== get_transient( $lock ) ) {
-			return $cached;
+			return $this->discard_expired_live_snapshot( $cached, $interval );
 		}
 		set_transient( $lock, '1', max( 15, min( 60, $interval ) ) );
 		try {
-			$this->sync( 'live', array( 'source' => 'stale_public_poll' ), false );
-			return $this->cached_live();
+			$result = $this->sync( 'live', array( 'source' => 'stale_public_poll' ), false );
+			if ( 'succeeded' === ( $result['status'] ?? '' ) ) {
+				return $this->cached_live();
+			}
+			return $this->discard_expired_live_snapshot( $cached, $interval );
 		} finally {
 			delete_transient( $lock );
 		}
+	}
+
+	/** Never present an hours- or months-old snapshot as a match that is still live. */
+	private function discard_expired_live_snapshot( array $cached, int $interval = 60 ): array {
+		$updated = null === ( $cached['lastKnownAt'] ?? null ) ? false : strtotime( (string) $cached['lastKnownAt'] . ' UTC' );
+		$grace = max( 300, min( 900, $interval * 3 ) );
+		if ( false === $updated || $updated <= time() - $grace ) {
+			return array( 'items' => array(), 'lastKnownAt' => $cached['lastKnownAt'] ?? null );
+		}
+		return $cached;
 	}
 
 	/**

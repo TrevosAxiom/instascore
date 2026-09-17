@@ -10,6 +10,8 @@ namespace InstaScore\Platform\Notifications;
 final class NotificationCategory {
 	public const MATCH_STARTING           = 'match_starting';
 	public const MATCH_LIVE               = 'match_live';
+	public const BROADCAST_UPDATE         = 'broadcast_update';
+	public const REPLAY_READY             = 'replay_ready';
 	public const SCORE_CHANGE             = 'score_change';
 	public const FINAL_SCORE              = 'final_score';
 	public const FIXTURE_CHANGE           = 'fixture_change';
@@ -29,6 +31,8 @@ final class NotificationCategory {
 		return array(
 			self::MATCH_STARTING,
 			self::MATCH_LIVE,
+			self::BROADCAST_UPDATE,
+			self::REPLAY_READY,
 			self::SCORE_CHANGE,
 			self::FINAL_SCORE,
 			self::FIXTURE_CHANGE,

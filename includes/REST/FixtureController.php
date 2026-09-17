@@ -79,6 +79,20 @@ final class FixtureController {
 	}
 
 	public function present( array $row ): array {
+		$stream = null;
+		if ( ! empty( $row['stream_uuid'] ) && 'private' !== ( $row['stream_visibility'] ?? '' ) && ! empty( $row['stream_embed_enabled'] ) && ! in_array( $row['stream_status'], array( 'draft', 'cancelled', 'failed' ), true ) ) {
+			$video_id = (string) $row['stream_video_id'];
+			$stream = array(
+				'uuid' => $row['stream_uuid'], 'provider' => 'youtube', 'videoId' => $video_id,
+				'watchUrl' => 'https://www.youtube.com/watch?v=' . rawurlencode( $video_id ),
+				'embedUrl' => 'https://www.youtube-nocookie.com/embed/' . rawurlencode( $video_id ),
+				'title' => $row['stream_title'] ?? '', 'status' => $row['stream_status'], 'visibility' => $row['stream_visibility'],
+				'embedEnabled' => true, 'chatEnabled' => (bool) $row['stream_chat_enabled'], 'featured' => (bool) $row['stream_featured'],
+				'replayAvailable' => (bool) $row['stream_replay_available'], 'thumbnailUrl' => $row['stream_thumbnail_url'] ?? '',
+				'scheduledStart' => $row['stream_scheduled_start'] ?? null, 'lastSyncedAt' => $row['stream_last_synced_at'] ?? null,
+				'errorMessage' => $row['stream_error_message'] ?? null,
+			);
+		}
 		return array(
 			'uuid'        => $row['uuid'],
 			'status'      => $row['status'],
@@ -91,10 +105,11 @@ final class FixtureController {
 			'competition' => array( 'uuid' => $row['competition_uuid'] ?? '', 'name' => $row['competition_name'] ?? '' ),
 			'season'      => array( 'uuid' => $row['season_uuid'] ?? '', 'name' => $row['season_name'] ?? '' ),
 			'sport'       => array( 'uuid' => $row['sport_uuid'] ?? '', 'name' => $row['sport_name'] ?? '', 'slug' => $row['sport_slug'] ?? '' ),
-			'homeTeam'    => array( 'uuid' => $row['home_team_uuid'] ?? '', 'name' => $row['home_team_name'] ?? '' ),
-			'awayTeam'    => array( 'uuid' => $row['away_team_uuid'] ?? '', 'name' => $row['away_team_name'] ?? '' ),
+			'homeTeam'    => array( 'uuid' => $row['home_team_uuid'] ?? '', 'name' => $row['home_team_name'] ?? '', 'logoUrl' => $row['home_team_logo_url'] ?? null ),
+			'awayTeam'    => array( 'uuid' => $row['away_team_uuid'] ?? '', 'name' => $row['away_team_name'] ?? '', 'logoUrl' => $row['away_team_logo_url'] ?? null ),
 			'venue'       => empty( $row['venue_uuid'] ) ? null : array( 'uuid' => $row['venue_uuid'], 'name' => $row['venue_name'] ?? '' ),
 			'updatedAt'   => $row['updated_at'] ?? '',
+			'stream'      => $stream,
 		);
 	}
 }

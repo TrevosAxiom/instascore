@@ -46,6 +46,10 @@ export function AdminSettingsPage() {
     queryKey: ['operations-dashboard'],
     queryFn: api.getOperationsDashboard,
   });
+  const youtube = useQuery({
+    queryKey: ['youtube-streaming-settings'],
+    queryFn: api.getYouTubeStreamingSettings,
+  });
   const mutation = useMutation({
     mutationFn: (input: Partial<OperationsSettings>) => api.updateOperationsSettings(input),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['operations-dashboard'] }),
@@ -90,6 +94,28 @@ export function AdminSettingsPage() {
     restApiKey: '',
     clearAppId: false,
     clearRestApiKey: false,
+  });
+  const [youtubeCredentials, setYouTubeCredentials] = useState({ clientId: '', clientSecret: '' });
+  const saveYouTube = useMutation({
+    mutationFn: () => api.saveYouTubeStreamingSettings(youtubeCredentials),
+    onSuccess: () => {
+      setYouTubeCredentials({ clientId: '', clientSecret: '' });
+      void queryClient.invalidateQueries({ queryKey: ['youtube-streaming-settings'] });
+    },
+  });
+  const connectYouTube = useMutation({
+    mutationFn: api.connectYouTube,
+    onSuccess: ({ authorizationUrl }) => window.location.assign(authorizationUrl),
+  });
+  const disconnectYouTube = useMutation({
+    mutationFn: api.disconnectYouTube,
+    onSuccess: () =>
+      void queryClient.invalidateQueries({ queryKey: ['youtube-streaming-settings'] }),
+  });
+  const syncYouTube = useMutation({
+    mutationFn: api.syncYouTubeBroadcasts,
+    onSuccess: () =>
+      void queryClient.invalidateQueries({ queryKey: ['youtube-streaming-settings'] }),
   });
 
   useEffect(() => {
@@ -179,6 +205,130 @@ export function AdminSettingsPage() {
                   {actionMutation.data.message}
                 </Alert>
               )}
+            </Stack>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent>
+            <Stack spacing={2}>
+              <Stack direction={{ xs: 'column', sm: 'row' }} gap={1} alignItems={{ sm: 'center' }}>
+                <Typography variant="h6" sx={{ flexGrow: 1 }}>
+                  YouTube livestreaming
+                </Typography>
+                <Chip
+                  color={youtube.data?.connected ? 'success' : 'warning'}
+                  label={
+                    youtube.data?.connected
+                      ? `Connected · ${youtube.data.channel?.name ?? 'YouTube'}`
+                      : 'Not connected'
+                  }
+                />
+              </Stack>
+              <Typography color="text.secondary">
+                Connect the official league channel for secure broadcast discovery and automatic
+                live/replay status updates. The client secret and OAuth tokens remain encrypted on
+                the server.
+              </Typography>
+              {youtube.data?.redirectUri ? (
+                <Alert severity="info">
+                  <strong>Google redirect URI:</strong> {youtube.data.redirectUri}
+                </Alert>
+              ) : null}
+              <Grid container spacing={2}>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <TextField
+                    fullWidth
+                    type="password"
+                    label="Google OAuth client ID"
+                    value={youtubeCredentials.clientId}
+                    placeholder={
+                      youtube.data?.clientIdConfigured
+                        ? 'Leave blank to keep saved client ID'
+                        : 'Paste OAuth client ID'
+                    }
+                    onChange={(event) =>
+                      setYouTubeCredentials((value) => ({ ...value, clientId: event.target.value }))
+                    }
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <TextField
+                    fullWidth
+                    type="password"
+                    label="Google OAuth client secret"
+                    value={youtubeCredentials.clientSecret}
+                    placeholder={
+                      youtube.data?.clientSecretConfigured
+                        ? 'Leave blank to keep saved secret'
+                        : 'Paste OAuth client secret'
+                    }
+                    onChange={(event) =>
+                      setYouTubeCredentials((value) => ({
+                        ...value,
+                        clientSecret: event.target.value,
+                      }))
+                    }
+                  />
+                </Grid>
+              </Grid>
+              <Stack direction={{ xs: 'column', sm: 'row' }} gap={1}>
+                <Button
+                  variant="contained"
+                  onClick={() => saveYouTube.mutate()}
+                  disabled={
+                    saveYouTube.isPending ||
+                    (!youtubeCredentials.clientId && !youtubeCredentials.clientSecret)
+                  }
+                >
+                  Save OAuth credentials
+                </Button>
+                <Button
+                  variant="outlined"
+                  onClick={() => connectYouTube.mutate()}
+                  disabled={
+                    !youtube.data?.clientIdConfigured ||
+                    !youtube.data?.clientSecretConfigured ||
+                    connectYouTube.isPending
+                  }
+                >
+                  {youtube.data?.connected ? 'Reconnect channel' : 'Connect YouTube channel'}
+                </Button>
+                {youtube.data?.connected ? (
+                  <Button
+                    variant="outlined"
+                    onClick={() => syncYouTube.mutate()}
+                    disabled={syncYouTube.isPending}
+                  >
+                    Sync broadcasts now
+                  </Button>
+                ) : null}
+                {youtube.data?.connected ? (
+                  <Button
+                    color="error"
+                    onClick={() => disconnectYouTube.mutate()}
+                    disabled={disconnectYouTube.isPending}
+                  >
+                    Disconnect
+                  </Button>
+                ) : null}
+              </Stack>
+              {youtube.data?.lastSyncAt ? (
+                <Typography variant="caption" color="text.secondary">
+                  Last synchronized {youtube.data.lastSyncAt}
+                </Typography>
+              ) : null}
+              {youtube.data?.lastSyncError ? (
+                <Alert severity="error">
+                  Last synchronization error: {youtube.data.lastSyncError}
+                </Alert>
+              ) : null}
+              {saveYouTube.isError || connectYouTube.isError || syncYouTube.isError ? (
+                <Alert severity="error">
+                  YouTube setup could not be completed. Verify the OAuth credentials, redirect URI
+                  and YouTube Data API access.
+                </Alert>
+              ) : null}
             </Stack>
           </CardContent>
         </Card>

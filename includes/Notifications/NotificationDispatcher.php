@@ -104,6 +104,31 @@ final class NotificationDispatcher {
 		}
 	}
 
+	public function broadcast_status_changed( string $fixture_uuid, string $before, string $after ): void {
+		if ( $before === $after ) { return; }
+		$fixture = $this->fixture( $fixture_uuid );
+		if ( null === $fixture ) { return; }
+		$name = (string) $fixture['home_team_name'] . ' vs ' . (string) $fixture['away_team_name'];
+		if ( 'live' === $after ) {
+			$this->enqueue_fixture(
+				$fixture, $fixture_uuid, 'match_live', NotificationCategory::MATCH_LIVE,
+				'live-' . $fixture_uuid, 'Watch live now', $name . ' is live on InstaScore.', 300
+			);
+		}
+		if ( 'interrupted' === $after ) {
+			$this->enqueue_fixture(
+				$fixture, $fixture_uuid, 'broadcast_interrupted', NotificationCategory::BROADCAST_UPDATE,
+				'broadcast-interrupted-' . $fixture_uuid, 'Broadcast interrupted', $name . ': the video feed is temporarily unavailable. Live scores will continue.', 300
+			);
+		}
+		if ( 'replay_available' === $after ) {
+			$this->enqueue_fixture(
+				$fixture, $fixture_uuid, 'replay_ready', NotificationCategory::REPLAY_READY,
+				'replay-' . $fixture_uuid, 'Replay ready', 'Watch ' . $name . ' on InstaScore.', 3 * DAY_IN_SECONDS
+			);
+		}
+	}
+
 	/** Queue reminders for fixtures beginning roughly 15 minutes from now. */
 	public function queue_starting_reminders(): int {
 		$fixtures = new FixtureRepository( $this->database, 'fixtures' );

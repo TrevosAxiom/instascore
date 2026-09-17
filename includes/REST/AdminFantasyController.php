@@ -18,6 +18,15 @@ final class AdminFantasyController {
 			'instascore/v1',
 			'/admin/fantasy/games',
 			array(
+				'methods'             => 'GET',
+				'callback'            => fn(): WP_REST_Response => $this->execute( fn(): array => FantasyService::create()->admin_games() ),
+				'permission_callback' => array( $this, 'can_manage' ),
+			)
+		);
+		register_rest_route(
+			'instascore/v1',
+			'/admin/fantasy/games',
+			array(
 				'methods'             => 'POST',
 				'callback'            => fn( WP_REST_Request $request ): WP_REST_Response => $this->execute( fn(): array => FantasyService::create()->create_game( (array) $request->get_json_params(), get_current_user_id() ), 201 ),
 				'permission_callback' => array( $this, 'can_manage' ),

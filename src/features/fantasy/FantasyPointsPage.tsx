@@ -1,21 +1,25 @@
-import { Box, Chip, Stack, Typography } from '@mui/material';
+import { Box, Chip, MenuItem, Stack, TextField, Typography } from '@mui/material';
 import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
 
 import { useApi } from '../../api/context';
 import { EmptyState, ErrorState, LoadingState } from '../../components/AsyncStates';
 import { PageScaffold } from '../../components/PageScaffold';
 
-const demoGameUuid = '00000000-0000-4000-8000-000000000120';
-
 export function FantasyPointsPage() {
   const api = useApi();
+  const [selectedGameUuid, setSelectedGameUuid] = useState('');
+  const games = useQuery({ queryKey: ['fantasy', 'games'], queryFn: api.getFantasyGames });
+  const activeGameUuid = selectedGameUuid || games.data?.[0]?.uuid || '';
   const points = useQuery({
-    queryKey: ['fantasy', demoGameUuid, 'points'],
-    queryFn: () => api.getFantasyPoints(demoGameUuid),
+    queryKey: ['fantasy', activeGameUuid, 'points'],
+    queryFn: () => api.getFantasyPoints(activeGameUuid),
+    enabled: Boolean(activeGameUuid),
   });
   const live = useQuery({
-    queryKey: ['fantasy', demoGameUuid, 'live'],
-    queryFn: () => api.getFantasyLiveTracker(demoGameUuid),
+    queryKey: ['fantasy', activeGameUuid, 'live'],
+    queryFn: () => api.getFantasyLiveTracker(activeGameUuid),
+    enabled: Boolean(activeGameUuid),
   });
 
   return (
@@ -28,6 +32,18 @@ export function FantasyPointsPage() {
       {points.isLoading ? <LoadingState label="Loading fantasy points" /> : null}
       {points.isError ? <ErrorState description="Fantasy points could not be loaded." /> : null}
       <Stack spacing={3}>
+        <TextField
+          select
+          label="Fantasy competition"
+          value={activeGameUuid}
+          onChange={(event) => setSelectedGameUuid(event.target.value)}
+        >
+          {(games.data ?? []).map((game) => (
+            <MenuItem key={game.uuid} value={game.uuid}>
+              {game.name}
+            </MenuItem>
+          ))}
+        </TextField>
         <Box className="instascore-panel">
           <Typography variant="h3">Live fantasy tracker</Typography>
           {live.data?.length ? (
@@ -53,7 +69,7 @@ export function FantasyPointsPage() {
           )}
         </Box>
         <Box className="instascore-panel">
-          <Typography variant="h3">Revision history</Typography>
+          <Typography variant="h3">Scoring breakdown</Typography>
           {points.data?.length ? (
             points.data.map((row) => (
               <Stack
@@ -70,7 +86,7 @@ export function FantasyPointsPage() {
           ) : (
             <EmptyState
               title="No point revisions yet"
-              description="Recalculations and admin overrides will preserve older revisions here."
+              description="Player scoring events appear here after the opening match begins."
             />
           )}
         </Box>

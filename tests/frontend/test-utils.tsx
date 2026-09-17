@@ -71,6 +71,89 @@ export const testApi: ApiClient = {
   createFixture: () => Promise.reject(new Error('Not configured')),
   updateFixture: () => Promise.reject(new Error('Not configured')),
   updateFixtureStatus: () => Promise.reject(new Error('Not configured')),
+  getFixtureStream: () => Promise.reject(new Error('No broadcast configured')),
+  getAdminFixtureStream: () => Promise.resolve(null),
+  saveFixtureStream: (_uuid, input) =>
+    Promise.resolve({
+      uuid: '00000000-0000-4000-8000-000000000199',
+      provider: 'youtube',
+      videoId: 'M7lc1UVf-VE',
+      watchUrl: 'https://www.youtube.com/watch?v=M7lc1UVf-VE',
+      embedUrl: 'https://www.youtube-nocookie.com/embed/M7lc1UVf-VE',
+      title: input.title,
+      status: input.status,
+      visibility: input.visibility,
+      embedEnabled: input.embedEnabled,
+      chatEnabled: input.chatEnabled,
+      featured: input.featured,
+      replayAvailable: false,
+      scheduledStart: input.scheduledStart ?? null,
+      lastSyncedAt: null,
+      errorMessage: null,
+    }),
+  disableFixtureStream: () => Promise.resolve(null),
+  getYouTubeStreamingSettings: () =>
+    Promise.resolve({
+      clientIdConfigured: false,
+      clientSecretConfigured: false,
+      connected: false,
+      channel: null,
+      redirectUri: 'https://instascore.test/wp-json/instascore/v1/admin/streaming/youtube/callback',
+      lastSyncAt: null,
+      lastSyncError: null,
+    }),
+  saveYouTubeStreamingSettings: () =>
+    Promise.resolve({
+      clientIdConfigured: true,
+      clientSecretConfigured: true,
+      connected: false,
+      channel: null,
+      redirectUri: 'https://instascore.test/wp-json/instascore/v1/admin/streaming/youtube/callback',
+      lastSyncAt: null,
+      lastSyncError: null,
+    }),
+  connectYouTube: () =>
+    Promise.resolve({ authorizationUrl: 'https://accounts.google.com/o/oauth2/v2/auth' }),
+  disconnectYouTube: () =>
+    Promise.resolve({
+      clientIdConfigured: true,
+      clientSecretConfigured: true,
+      connected: false,
+      channel: null,
+      redirectUri: '',
+      lastSyncAt: null,
+      lastSyncError: null,
+    }),
+  getYouTubeBroadcasts: () => Promise.resolve([]),
+  syncYouTubeBroadcasts: () =>
+    Promise.resolve({ broadcastsFound: 0, streamsUpdated: 0, syncedAt: '2026-08-01 12:00:00' }),
+  getYouTubeStreamHealth: () =>
+    Promise.resolve({ connected: false, total: 0, live: 0, failed: 0, stale: 0, items: [] }),
+  getYouTubeControlRoom: () =>
+    Promise.resolve({
+      health: { connected: false, total: 0, live: 0, failed: 0, stale: 0, items: [] },
+      broadcasts: [],
+      reviewQueue: [],
+      refreshedAt: '2026-08-01T12:00:00Z',
+    }),
+  attachYouTubeBroadcast: () => Promise.reject(new Error('Not configured')),
+  autoMatchYouTubeBroadcasts: () => Promise.resolve([]),
+  getStreamSponsors: () => Promise.resolve([]),
+  recordStreamEngagement: () => Promise.resolve({ recorded: true }),
+  recordSponsorEvent: () => Promise.resolve({ recorded: true }),
+  getStreamAnalytics: () =>
+    Promise.resolve({
+      summary: { sessions: 0, fixtures: 0, watchSeconds: 0, averageWatchSeconds: 0 },
+      devices: [],
+      sponsors: [],
+    }),
+  createStreamSponsor: () => Promise.reject(new Error('Not configured')),
+  getMatchChat: () => Promise.resolve({ messages: [], banned: false }),
+  postMatchChat: () => Promise.reject(new Error('Not configured')),
+  reactToChatMessage: () => Promise.resolve({ updated: true }),
+  reportChatMessage: () => Promise.resolve({ reported: true }),
+  moderateChatMessage: () => Promise.resolve({ moderated: true }),
+  banChatAuthor: () => Promise.resolve({ banned: true, hours: 24 }),
   getLiveMatch: () => Promise.reject(new Error('Not configured')),
   getLiveMatchStreamUrl: (uuid) => `/wp-json/instascore/v1/fixtures/${uuid}/live/stream`,
   claimFixture: () => Promise.reject(new Error('Not configured')),
@@ -252,6 +335,7 @@ export const testApi: ApiClient = {
         },
       },
     ]),
+  getAdminFantasyGames: () => testApi.getFantasyGames(),
   getFantasyGame: () =>
     Promise.resolve({
       uuid: '00000000-0000-4000-8000-000000000120',
@@ -280,6 +364,18 @@ export const testApi: ApiClient = {
         position: { code: 'QB', name: 'Quarterback' },
         player: { uuid: '00000000-0000-4000-8000-000000000131', name: 'Ada Touchdown' },
         team: { uuid: '00000000-0000-4000-8000-000000000141', name: 'Lagos Lightning' },
+        totalPoints: 42,
+        ownershipPercent: 18.5,
+      },
+      {
+        uuid: '00000000-0000-4000-8000-000000000124',
+        priceCents: 44000,
+        status: 'available',
+        position: { code: 'QB', name: 'Quarterback' },
+        player: { uuid: '00000000-0000-4000-8000-000000000134', name: 'Tola Blitz' },
+        team: { uuid: '00000000-0000-4000-8000-000000000144', name: 'Abuja Comets' },
+        totalPoints: 38,
+        ownershipPercent: 12,
       },
     ]),
   getFantasySquad: () =>
@@ -417,6 +513,8 @@ export const testApi: ApiClient = {
       costPoints: 0,
       freeTransferUsed: true,
       status: 'completed',
+      outPlayerName: 'Ada Touchdown',
+      inPlayerName: 'Tola Blitz',
     }),
   createFantasyLeague: () =>
     Promise.resolve({
@@ -446,6 +544,17 @@ export const testApi: ApiClient = {
       ],
     }),
   createFantasyRule: () => Promise.resolve({ created: true }),
+  getFantasyRules: () => Promise.resolve([]),
+  seedFantasyRules: () => Promise.resolve([]),
+  recalculateFantasy: () =>
+    Promise.resolve({
+      fixturesProcessed: 0,
+      eventsScored: 0,
+      revisionsCreated: 0,
+      status: 'provisional',
+      gameweekUuid: '00000000-0000-4000-8000-000000000140',
+    }),
+  finalizeFantasyGameweek: () => Promise.resolve({ status: 'confirmed' }),
   overrideFantasyPoints: () => Promise.resolve({ action: 'admin_override' }),
   getOperationsDashboard: () =>
     Promise.resolve({

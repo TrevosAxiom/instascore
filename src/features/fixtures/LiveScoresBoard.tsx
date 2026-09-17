@@ -63,18 +63,22 @@ export function LiveScoresBoard({ initialSport }: { initialSport?: string }) {
     queryKey: ['live-scores', 'football', date],
     queryFn: () => api.getFixtures(params),
     enabled: sport !== 'basketball',
+    refetchInterval: () => (document.visibilityState === 'visible' ? 30_000 : false),
+    refetchIntervalInBackground: false,
   });
   const providerFootball = useQuery({
     queryKey: ['live-scores', 'api-football-live'],
     queryFn: api.getFootballLive,
     enabled: sport === 'football' && date === localDateValue(new Date()),
-    refetchInterval: 30_000,
+    refetchInterval: () => (document.visibilityState === 'visible' ? 30_000 : false),
+    refetchIntervalInBackground: false,
   });
   const basketball = useQuery({
     queryKey: ['live-scores', 'basketball'],
     queryFn: api.getBasketballLive,
     enabled: sport === 'basketball' && date === localDateValue(new Date()),
-    refetchInterval: 30_000,
+    refetchInterval: () => (document.visibilityState === 'visible' ? 30_000 : false),
+    refetchIntervalInBackground: false,
   });
   const providerUpcoming = useQuery({
     queryKey: ['provider-upcoming', sport, date],
@@ -99,6 +103,8 @@ export function LiveScoresBoard({ initialSport }: { initialSport?: string }) {
       queryFn: () => api.getLiveMatch(fixture.uuid),
       enabled: sport !== 'basketball' && !upcomingStatuses.includes(fixture.status),
       staleTime: 15_000,
+      refetchInterval: () => (document.visibilityState === 'visible' ? 5_000 : false),
+      refetchIntervalInBackground: false,
       retry: false,
     })),
   });
@@ -430,7 +436,22 @@ export function LiveScoresBoard({ initialSport }: { initialSport?: string }) {
                         <Typography fontWeight={950}>{score?.away ?? '–'}</Typography>
                       </Stack>
                     </Stack>
-                    <Chip size="small" label={statusLabel(fixture.status)} />
+                    <Stack alignItems="flex-end" spacing={0.5}>
+                      {fixture.stream ? (
+                        <Chip
+                          size="small"
+                          color={fixture.stream.status === 'live' ? 'error' : 'primary'}
+                          label={
+                            fixture.stream.status === 'live'
+                              ? '▶ Live video'
+                              : fixture.stream.replayAvailable
+                                ? '▶ Replay'
+                                : '▶ Video'
+                          }
+                        />
+                      ) : null}
+                      <Chip size="small" label={statusLabel(fixture.status)} />
+                    </Stack>
                   </Box>
                 );
               })}

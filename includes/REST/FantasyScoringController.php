@@ -41,8 +41,27 @@ final class FantasyScoringController {
 			'permission_callback' => array( $this, 'authenticated' ),
 		) );
 		register_rest_route( 'instascore/v1', '/admin/fantasy/games/(?P<uuid>[0-9a-f-]{36})/rules', array(
-			'methods'             => 'POST',
-			'callback'            => fn( WP_REST_Request $request ): WP_REST_Response => $this->execute( fn(): array => FantasyScoringService::create()->create_rule( (string) $request['uuid'], (array) $request->get_json_params() ), 201 ),
+			array(
+				'methods'             => 'GET',
+				'callback'            => fn( WP_REST_Request $request ): WP_REST_Response => $this->execute( fn(): array => FantasyScoringService::create()->rules( (string) $request['uuid'] ) ),
+				'permission_callback' => array( $this, 'can_manage' ),
+			),
+			array(
+				'methods'             => 'POST',
+				'callback'            => fn( WP_REST_Request $request ): WP_REST_Response => $this->execute( fn(): array => FantasyScoringService::create()->create_rule( (string) $request['uuid'], (array) $request->get_json_params() ), 201 ),
+				'permission_callback' => array( $this, 'can_manage' ),
+			),
+		) );
+		register_rest_route( 'instascore/v1', '/admin/fantasy/games/(?P<uuid>[0-9a-f-]{36})/rules/defaults', array(
+			'methods' => 'POST', 'callback' => fn( WP_REST_Request $request ): WP_REST_Response => $this->execute( fn(): array => FantasyScoringService::create()->seed_default_rules( (string) $request['uuid'] ) ),
+			'permission_callback' => array( $this, 'can_manage' ),
+		) );
+		register_rest_route( 'instascore/v1', '/admin/fantasy/games/(?P<uuid>[0-9a-f-]{36})/recalculate', array(
+			'methods' => 'POST', 'callback' => fn( WP_REST_Request $request ): WP_REST_Response => $this->execute( fn(): array => FantasyScoringService::create()->recalculate_game( (string) $request['uuid'], get_current_user_id(), (string) ( $request->get_json_params()['reason'] ?? 'Manual fantasy recalculation' ) ) ),
+			'permission_callback' => array( $this, 'can_manage' ),
+		) );
+		register_rest_route( 'instascore/v1', '/admin/fantasy/games/(?P<uuid>[0-9a-f-]{36})/finalize', array(
+			'methods' => 'POST', 'callback' => fn( WP_REST_Request $request ): WP_REST_Response => $this->execute( fn(): array => FantasyScoringService::create()->finalize_gameweek( (string) $request['uuid'], get_current_user_id(), (string) ( $request->get_json_params()['reason'] ?? '' ) ) ),
 			'permission_callback' => array( $this, 'can_manage' ),
 		) );
 		register_rest_route( 'instascore/v1', '/admin/fantasy/games/(?P<uuid>[0-9a-f-]{36})/override', array(

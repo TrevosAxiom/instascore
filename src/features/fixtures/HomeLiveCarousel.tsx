@@ -17,6 +17,8 @@ interface LiveCarouselItem {
   awayScore: number | string;
   competition: string;
   detail: string;
+  video: boolean;
+  featured: boolean;
 }
 
 function chunks<T>(items: T[], size: number) {
@@ -48,6 +50,8 @@ export function HomeLiveCarousel({
       awayScore: match.awayScore,
       competition: match.competitionName,
       detail: match.elapsed ? `${match.elapsed}'` : (match.statusShort ?? 'Live'),
+      video: false,
+      featured: false,
     })),
     ...basketball.map((match) => ({
       id: `basketball-${match.providerId}`,
@@ -60,6 +64,8 @@ export function HomeLiveCarousel({
       awayScore: match.awayScore,
       competition: match.competitionName ?? 'Basketball',
       detail: `${match.sportState.periodLabel}${match.sportState.clock ? ` · ${match.sportState.clock}` : ''}`,
+      video: false,
+      featured: false,
     })),
     ...fixtures.map((match) => ({
       id: `fixture-${match.uuid}`,
@@ -71,9 +77,11 @@ export function HomeLiveCarousel({
       homeScore: '–',
       awayScore: '–',
       competition: match.competition.name,
-      detail: publicSportName(match.sport),
+      detail: match.stream?.status === 'live' ? 'Watch live' : publicSportName(match.sport),
+      video: Boolean(match.stream),
+      featured: Boolean(match.stream?.featured),
     })),
-  ];
+  ].sort((left, right) => Number(right.featured) - Number(left.featured));
   const pages = chunks(items, 3);
   const selectPage = (index: number) => {
     const scroller = scrollerRef.current;
@@ -130,7 +138,11 @@ export function HomeLiveCarousel({
                 }}
               >
                 <Stack spacing={0.25}>
-                  <Chip label="LIVE" color="success" size="small" />
+                  <Chip
+                    label={match.video ? '▶ LIVE' : 'LIVE'}
+                    color={match.video ? 'error' : 'success'}
+                    size="small"
+                  />
                   <Typography variant="caption" textAlign="center" fontWeight={900}>
                     {match.detail}
                   </Typography>

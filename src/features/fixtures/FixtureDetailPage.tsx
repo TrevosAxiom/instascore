@@ -1,4 +1,15 @@
-import { Box, Card, CardContent, Chip, Paper, Stack, Tab, Tabs, Typography } from '@mui/material';
+import {
+  Box,
+  Button,
+  Card,
+  CardContent,
+  Chip,
+  Paper,
+  Stack,
+  Tab,
+  Tabs,
+  Typography,
+} from '@mui/material';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import { useParams } from 'react-router';
@@ -11,6 +22,8 @@ import { useLiveMatchStream } from '../../realtime/useLiveMatchStream';
 import { LiveScoreboard } from '../scoring/LiveScoreboard';
 import { MatchTimeline } from '../scoring/MatchTimeline';
 import { fixtureTitle, formatKickoff, statusLabel } from './fixtureFormat';
+import { MatchBanter } from './MatchBanter';
+import { YouTubeBroadcastPlayer } from './YouTubeBroadcastPlayer';
 
 const flagTabs = ['Overview', 'Scoring plays', 'Team stats', 'Match info'];
 const generalTabs = ['Overview', 'Timeline', 'Team stats', 'Match info'];
@@ -19,6 +32,7 @@ export function FixtureDetailPage() {
   const api = useApi();
   const { uuid = '' } = useParams();
   const [tab, setTab] = useState(0);
+  const [banterOpen, setBanterOpen] = useState(false);
   const query = useQuery({
     queryKey: ['fixture', uuid],
     queryFn: () => api.getFixture(uuid),
@@ -34,6 +48,12 @@ export function FixtureDetailPage() {
     refetchIntervalInBackground: false,
   });
   const fixture = query.data;
+  const broadcast = useQuery({
+    queryKey: ['fixture', uuid, 'broadcast'],
+    queryFn: () => api.getFixtureStream(uuid),
+    enabled: Boolean(uuid),
+    retry: false,
+  });
   const liveState = stream.state ?? live.data;
   const isFlag = fixture?.sport.slug.includes('flag') ?? false;
   const tabs = isFlag ? flagTabs : generalTabs;
@@ -86,6 +106,24 @@ export function FixtureDetailPage() {
       {query.isError ? <ErrorState title="Fixture could not be loaded." /> : null}
       {fixture ? (
         <Stack spacing={2}>
+          {broadcast.data ? (
+            <YouTubeBroadcastPlayer
+              stream={broadcast.data}
+              fixture={fixture}
+              liveState={liveState}
+            />
+          ) : (
+            <Paper variant="outlined" sx={{ borderRadius: 3, overflow: 'hidden' }}>
+              <Button fullWidth size="large" onClick={() => setBanterOpen(true)} sx={{ py: 1.25 }}>
+                Open match banter
+              </Button>
+              <MatchBanter
+                fixtureUuid={fixture.uuid}
+                open={banterOpen}
+                onClose={() => setBanterOpen(false)}
+              />
+            </Paper>
+          )}
           <Card
             sx={{
               borderRadius: 4,
@@ -120,6 +158,7 @@ export function FixtureDetailPage() {
                   >
                     <EntityAvatar
                       entity="team"
+                      src={team.logoUrl}
                       alt={`${team.name} logo`}
                       sx={{
                         width: { xs: 58, sm: 78 },

@@ -18,7 +18,7 @@ final class NotificationScheduler {
 		add_action( self::WORKER_HOOK, array( self::class, 'process' ) );
 		add_action( self::REMINDER_HOOK, array( self::class, 'reminders' ) );
 		self::ensure( self::WORKER_HOOK, 'instascore_every_minute', MINUTE_IN_SECONDS );
-		self::ensure( self::REMINDER_HOOK, 'instascore_every_five_minutes', 2 * MINUTE_IN_SECONDS );
+		self::ensure( self::REMINDER_HOOK, 'instascore_every_minute', 2 * MINUTE_IN_SECONDS );
 	}
 
 	/** @param array<string,array<string,mixed>> $schedules */

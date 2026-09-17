@@ -130,6 +130,7 @@ final class ScoringService {
 			$created = $events->create( $row );
 			( new AuditRepository( $this->database ) )->record( 'match_event', (string) $created['uuid'], 'created', null, $created );
 			$this->database->query( 'COMMIT' );
+			$this->recalculate_fantasy( (int) $fixture['id'], 'Match event created' );
 			$this->notify_score_event( $fixture_uuid, $created );
 			return $this->snapshot( $fixture, false, $created );
 		} catch ( \Throwable $error ) {
@@ -151,6 +152,7 @@ final class ScoringService {
 			$after = $events->void_event( $event_uuid, sanitize_textarea_field( $reason ) );
 			( new AuditRepository( $this->database ) )->record( 'match_event', $event_uuid, 'voided', $before, $after );
 			$this->database->query( 'COMMIT' );
+			$this->recalculate_fantasy( (int) $fixture['id'], 'Match event voided' );
 			StandingsService::create()->rebuild_for_fixture_uuid( $fixture_uuid, 'match_event_voided' );
 			return $this->snapshot( $fixture, false, $after );
 		} catch ( \Throwable $error ) {
@@ -300,6 +302,14 @@ final class ScoringService {
 			NotificationDispatcher::create()->score_event( $fixture_uuid, $event );
 		} catch ( \Throwable $error ) {
 			error_log( 'InstaScore notification enqueue failed: ' . $error->getMessage() ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+		}
+	}
+
+	private function recalculate_fantasy( int $fixture_id, string $reason ): void {
+		try {
+			FantasyScoringService::create()->recalculate_fixture( $fixture_id, get_current_user_id(), $reason );
+		} catch ( \Throwable $error ) {
+			error_log( 'InstaScore fantasy recalculation failed: ' . $error->getMessage() ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
 		}
 	}
 }

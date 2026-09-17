@@ -42,12 +42,28 @@ export function FixtureCards({ fixtures }: { fixtures: Fixture[] }) {
               {formatKickoff(fixture)}
             </Typography>
           </Stack>
-          <Chip
-            size="small"
-            label={statusLabel(fixture.status)}
-            color="primary"
-            sx={{ borderRadius: 2, minWidth: 72 }}
-          />
+          <Stack alignItems="flex-end" spacing={0.5}>
+            {fixture.stream ? (
+              <Chip
+                size="small"
+                label={
+                  fixture.stream.status === 'live'
+                    ? '▶ Watch live'
+                    : fixture.stream.replayAvailable
+                      ? '▶ Replay'
+                      : '▶ Broadcast'
+                }
+                color={fixture.stream.status === 'live' ? 'error' : 'primary'}
+                sx={{ borderRadius: 2 }}
+              />
+            ) : null}
+            <Chip
+              size="small"
+              label={statusLabel(fixture.status)}
+              color="primary"
+              sx={{ borderRadius: 2, minWidth: 72 }}
+            />
+          </Stack>
         </Box>
       ))}
     </Stack>

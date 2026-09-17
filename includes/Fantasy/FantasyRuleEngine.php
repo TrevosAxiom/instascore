@@ -16,7 +16,10 @@ final class FantasyRuleEngine {
 	public function calculate_player_points( array $events, array $rules, string $status = 'provisional' ): array {
 		$by_event = array();
 		foreach ( $rules as $rule ) {
-			$by_event[ (string) $rule['event_type'] ] = $rule;
+			$type = (string) $rule['event_type'];
+			if ( ! isset( $by_event[ $type ] ) ) {
+				$by_event[ $type ] = $rule;
+			}
 		}
 		$points = array();
 		foreach ( $events as $event ) {
@@ -43,6 +46,16 @@ final class FantasyRuleEngine {
 					'points' => (int) $rule['points'],
 				),
 			);
+			$conditions       = is_array( $rule['conditions'] ?? null ) ? $rule['conditions'] : json_decode( (string) ( $rule['conditions_json'] ?? '{}' ), true );
+			$secondary_points = (int) ( $conditions['secondaryPoints'] ?? 0 );
+			if ( $secondary_points && ! empty( $event['secondary_player_id'] ) ) {
+				$points[] = array(
+					'playerId' => (int) $event['secondary_player_id'], 'matchEventId' => (int) $event['id'],
+					'fixtureId' => (int) $event['fixture_id'], 'eventType' => $type . '_secondary', 'points' => $secondary_points,
+					'ruleVersion' => (int) $rule['version'], 'status' => $status,
+					'breakdown' => array( 'type' => $type . '_secondary', 'label' => (string) ( $conditions['secondaryLabel'] ?? 'Secondary player contribution' ), 'points' => $secondary_points ),
+				);
+			}
 		}
 		return $points;
 	}

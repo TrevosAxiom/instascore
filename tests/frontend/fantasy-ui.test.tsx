@@ -15,7 +15,7 @@ describe('fantasy foundation UI', () => {
 
     expect(await screen.findByText('InstaScore Fantasy')).toBeInTheDocument();
     expect(await screen.findByText(/Ada Touchdown/i)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: /select/i }));
+    fireEvent.click(screen.getByRole('button', { name: /select Ada Touchdown/i }));
 
     expect(await screen.findByText(/Remaining ₦550/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /save draft/i }));

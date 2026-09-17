@@ -25,6 +25,11 @@ final class FantasyService {
 		return array_map( array( $this, 'present_game' ), $this->repository->public_games() );
 	}
 
+	/** @return array<int,array<string,mixed>> */
+	public function admin_games(): array {
+		return array_map( array( $this, 'present_game' ), $this->repository->admin_games() );
+	}
+
 	public function game( string $uuid ): array {
 		$game = $this->repository->find_game( $uuid );
 		if ( null === $game ) {
@@ -122,12 +127,35 @@ final class FantasyService {
 	 * @param array<string,mixed> $input Admin input.
 	 */
 	public function create_game( array $input, int $user_id ): array {
-		foreach ( array( 'sportId', 'name' ) as $field ) {
+		foreach ( array( 'competitionUuid', 'seasonUuid', 'name', 'deadlineAt' ) as $field ) {
 			if ( empty( $input[ $field ] ) ) {
 				throw new ValidationException( array( $field => 'required' ) );
 			}
 		}
-		return $this->present_game( $this->repository->create_game( $input, $user_id ) );
+		$squad_size    = (int) ( $input['squadSize'] ?? 10 );
+		$starting_size = (int) ( $input['startingSize'] ?? 7 );
+		$bench_size    = (int) ( $input['benchSize'] ?? 3 );
+		$deadline      = strtotime( (string) $input['deadlineAt'] );
+		$errors        = array();
+		if ( $squad_size < 5 || $squad_size > 30 || $starting_size < 1 || $bench_size < 0 || $starting_size + $bench_size !== $squad_size ) {
+			$errors['squadSize'] = 'starting_and_bench_must_equal_squad_size';
+		}
+		if ( (int) ( $input['budgetCents'] ?? 100000 ) < 1 ) {
+			$errors['budgetCents'] = 'must_be_positive';
+		}
+		if ( false === $deadline || $deadline <= time() ) {
+			$errors['deadlineAt'] = 'must_be_in_the_future';
+		}
+		if ( $errors ) {
+			throw new ValidationException( $errors );
+		}
+		try {
+			$created = $this->repository->create_game( $input, $user_id );
+			FantasyScoringService::create()->seed_default_rules( (string) $created['uuid'] );
+			return $this->present_game( $created );
+		} catch ( \InvalidArgumentException $error ) {
+			throw new ValidationException( array( 'seasonUuid' => 'not_found_for_competition' ) );
+		}
 	}
 
 	/**
@@ -187,8 +215,13 @@ final class FantasyService {
 		}
 		$captains = array_filter( $entries, fn( $entry ): bool => is_array( $entry ) && ! empty( $entry['isCaptain'] ) );
 		$vices    = array_filter( $entries, fn( $entry ): bool => is_array( $entry ) && ! empty( $entry['isViceCaptain'] ) );
-		if ( 1 !== count( $captains ) || 1 !== count( $vices ) || ( $captains && $vices && reset( $captains ) === reset( $vices ) ) ) {
+		if ( $submit && ( 1 !== count( $captains ) || 1 !== count( $vices ) || ( $captains && $vices && reset( $captains ) === reset( $vices ) ) ) ) {
 			$errors['captain'] = 'captain_and_vice_required';
+		}
+		foreach ( $players as $player ) {
+			if ( 'available' !== ( $player['status'] ?? '' ) ) {
+				$errors['availability'] = 'unavailable_player_selected';
+			}
 		}
 		$team_counts = array_count_values( array_filter( array_map( fn( array $player ): int => (int) ( $player['team_id'] ?? 0 ), $players ) ) );
 		foreach ( $team_counts as $count ) {
@@ -198,10 +231,23 @@ final class FantasyService {
 		}
 		$player_positions = array_column( $players, 'position_code' );
 		$position_counts  = array_count_values( $player_positions );
+		$by_uuid          = array_column( $players, null, 'uuid' );
+		$starting_counts  = array();
+		foreach ( $starting as $entry ) {
+			$uuid = (string) ( $entry['fantasyPlayerUuid'] ?? '' );
+			if ( isset( $by_uuid[ $uuid ] ) ) {
+				$code = (string) $by_uuid[ $uuid ]['position_code'];
+				$starting_counts[ $code ] = ( $starting_counts[ $code ] ?? 0 ) + 1;
+			}
+		}
 		foreach ( $positions as $position ) {
 			$count = (int) ( $position_counts[ $position['code'] ] ?? 0 );
 			if ( $submit && ( $count < (int) $position['min_squad'] || $count > (int) $position['max_squad'] ) ) {
 				$errors[ 'position_' . $position['code'] ] = 'invalid_count';
+			}
+			$starting_count = (int) ( $starting_counts[ $position['code'] ] ?? 0 );
+			if ( $submit && ( $starting_count < (int) $position['min_starting'] || $starting_count > (int) $position['max_starting'] ) ) {
+				$errors[ 'startingPosition_' . $position['code'] ] = 'invalid_count';
 			}
 		}
 		if ( $errors ) {
@@ -248,6 +294,7 @@ final class FantasyService {
 	}
 
 	private function present_player( array $row ): array {
+		$managers = max( 0, (int) ( $row['manager_count'] ?? 0 ) );
 		return array(
 			'uuid'       => $row['uuid'],
 			'priceCents' => (int) $row['price_cents'],
@@ -255,6 +302,8 @@ final class FantasyService {
 			'position'   => array( 'code' => $row['position_code'], 'name' => $row['position_name'] ),
 			'player'     => array( 'uuid' => $row['player_uuid'], 'name' => $row['player_name'], 'photoUrl' => $row['photo_url'] ?? null ),
 			'team'       => array( 'uuid' => $row['team_uuid'] ?? '', 'name' => $row['team_name'] ?? 'Free agent' ),
+			'totalPoints'=> (int) ( $row['total_points'] ?? 0 ),
+			'ownershipPercent' => 0 === $managers ? 0.0 : round( 100 * (int) ( $row['ownership_count'] ?? 0 ) / $managers, 1 ),
 		);
 	}
 

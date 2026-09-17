@@ -84,6 +84,11 @@ const AdminFixturesPage = lazy(() =>
     default: module.AdminFixturesPage,
   })),
 );
+const StreamAnalyticsAdminPage = lazy(() =>
+  import('../features/fixtures/StreamAnalyticsAdminPage').then((module) => ({
+    default: module.StreamAnalyticsAdminPage,
+  })),
+);
 const FixtureDetailPage = lazy(() =>
   import('../features/fixtures/FixtureDetailPage').then((module) => ({
     default: module.FixtureDetailPage,
@@ -476,6 +481,14 @@ export function AppRoutes(props: { loginUrl: string }) {
             element={
               <RouteSuspense>
                 <AdminFixturesPage />
+              </RouteSuspense>
+            }
+          />
+          <Route
+            path="admin/streaming"
+            element={
+              <RouteSuspense>
+                <StreamAnalyticsAdminPage />
               </RouteSuspense>
             }
           />

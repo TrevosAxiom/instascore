@@ -11,7 +11,7 @@ declare const self: ServiceWorkerGlobalScope & {
   __WB_MANIFEST: Array<{ url: string; revision: string | null }>;
 };
 
-const CACHE_VERSION = 'm7-v1';
+const CACHE_VERSION = 'm8-v1';
 const API_PREFIX = '/wp-json/instascore/v1';
 const expirationPlugin = (options: ConstructorParameters<typeof ExpirationPlugin>[0]) =>
   new ExpirationPlugin(options) as unknown as WorkboxPlugin;
@@ -53,9 +53,15 @@ registerRoute(
   ({ url, request }) =>
     request.method === 'GET' &&
     url.pathname.startsWith(API_PREFIX) &&
-    /\/fixtures\/[^/]+\/live$|\/football\/live$|\/basketball\/live$|\/fixtures$|\/results$/.test(
-      url.pathname,
-    ),
+    /\/fixtures\/[^/]+\/live$|\/football\/live$|\/basketball\/live$/.test(url.pathname),
+  new NetworkOnly(),
+);
+
+registerRoute(
+  ({ url, request }) =>
+    request.method === 'GET' &&
+    url.pathname.startsWith(API_PREFIX) &&
+    /\/fixtures$|\/results$/.test(url.pathname),
   new NetworkFirst({
     cacheName: `instascore-live-${CACHE_VERSION}`,
     networkTimeoutSeconds: 4,
