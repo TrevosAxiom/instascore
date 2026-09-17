@@ -48,9 +48,19 @@ jobs:
           zip -qr "instascore-platform-${GITHUB_REF_NAME}.zip" instascore-platform
 
       - name: Attach ZIP to the GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: release/instascore-platform-${{ github.ref_name }}.zip
-          fail_on_unmatched_files: true
-          generate_release_notes: true
-          prerelease: ${{ contains(github.ref_name, '-rc.') || contains(github.ref_name, '-rc-') }}
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          release_args=(
+            "$GITHUB_REF_NAME"
+            "release/instascore-platform-${GITHUB_REF_NAME}.zip"
+            --generate-notes
+            --title "$GITHUB_REF_NAME"
+          )
+
+          if [[ "$GITHUB_REF_NAME" == *-rc.* || "$GITHUB_REF_NAME" == *-rc-* ]]; then
+            release_args+=(--prerelease)
+          fi
+
+          gh release create "${release_args[@]}"

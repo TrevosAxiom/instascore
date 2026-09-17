@@ -2,7 +2,7 @@
 Contributors: instascore
 Requires at least: 6.6
 Requires PHP: 8.2
-Stable tag: 0.19.0
+Stable tag: 0.19.1
 License: GPL-2.0-or-later
 
 WordPress backend and React application shell for InstaScore.
@@ -12,6 +12,9 @@ WordPress backend and React application shell for InstaScore.
 See README.md for the shortcode, development server and production build steps.
 
 == Changelog ==
+
+= 0.19.1 =
+* Repaired the GitHub release packaging workflow so installable plugin ZIP files publish reliably.
 
 = 0.19.0 =
 * Added the complete CFFL fantasy foundation, scoring, transfers, leagues and administration workflows.
