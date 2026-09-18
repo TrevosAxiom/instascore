@@ -2,7 +2,7 @@
 Contributors: instascore
 Requires at least: 6.6
 Requires PHP: 8.2
-Stable tag: 0.20.0
+Stable tag: 0.20.1
 License: GPL-2.0-or-later
 
 WordPress backend and React application shell for InstaScore.
@@ -12,6 +12,9 @@ WordPress backend and React application shell for InstaScore.
 See README.md for the shortcode, development server and production build steps.
 
 == Changelog ==
+
+= 0.20.1 =
+* Corrected strict production type validation for provider-backed table selections.
 
 = 0.20.0 =
 * Removed stale homepage and live-score records by enforcing current date, status and kickoff windows.

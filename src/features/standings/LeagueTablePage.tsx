@@ -67,18 +67,25 @@ export function LeagueTablePage() {
 
   const selectedOption = options.find((option) => option.id === selection);
   const parts = selection.split(':');
+  const selectionKind = parts[0] ?? '';
+  const selectionSport = parts[1] ?? '';
+  const selectionId = parts[2] ?? '';
   const localTable = useQuery({
     queryKey: ['standings', selection],
-    queryFn: () => api.getStandings(parts[1]),
-    enabled: parts[0] === 'local' && Boolean(parts[1]),
+    queryFn: () => api.getStandings(selectionSport),
+    enabled: selectionKind === 'local' && Boolean(selectionSport),
   });
   const providerTable = useQuery({
     queryKey: ['provider-standings', selection, selectedOption?.season],
     queryFn: () =>
-      api.getProviderStandings(parts[1] as ProviderSport, parts[2], selectedOption?.season),
-    enabled: parts[0] === 'provider' && Boolean(parts[1] && parts[2]),
+      api.getProviderStandings(
+        selectionSport as ProviderSport,
+        selectionId,
+        selectedOption?.season,
+      ),
+    enabled: selectionKind === 'provider' && Boolean(selectionSport && selectionId),
   });
-  const rows = parts[0] === 'provider' ? (providerTable.data ?? []) : (localTable.data ?? []);
+  const rows = selectionKind === 'provider' ? (providerTable.data ?? []) : (localTable.data ?? []);
   const loading = competitions.isLoading || localTable.isLoading || providerTable.isLoading;
   const failed = localTable.isError || providerTable.isError;
 
@@ -128,7 +135,7 @@ export function LeagueTablePage() {
           <Alert severity="info">
             {selectedOption?.name} · {selectedOption?.season || 'Current season'}
           </Alert>
-          {parts[0] === 'local' && localTable.data?.[0]?.tiebreakerOrder?.length ? (
+          {selectionKind === 'local' && localTable.data?.[0]?.tiebreakerOrder?.length ? (
             <Alert severity="info">
               Sorted by {localTable.data[0].tiebreakerOrder.join(', ')}.
             </Alert>
