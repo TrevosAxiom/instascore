@@ -26,6 +26,8 @@ export const testApi: ApiClient = {
   getAdminSports: () => Promise.resolve([]),
   getCompetitions: () =>
     Promise.resolve({ items: [], page: 1, perPage: 12, total: 0, totalPages: 0 }),
+  getProviderCompetitions: () => Promise.resolve([]),
+  getProviderStandings: () => Promise.resolve([]),
   getCompetition: () => Promise.reject(new Error('Not configured')),
   getTeams: () => Promise.resolve({ items: [], page: 1, perPage: 12, total: 0, totalPages: 0 }),
   getTeam: () => Promise.reject(new Error('Not configured')),

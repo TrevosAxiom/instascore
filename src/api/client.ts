@@ -51,6 +51,8 @@ import type {
   OperationsSettings,
   OperationalAccount,
   ProviderHealth,
+  ProviderCompetition,
+  ProviderStandingRow,
   ProviderUpcomingMatch,
   ProviderSyncResult,
   Paginated,
@@ -89,6 +91,12 @@ export interface ApiClient {
   getSports: () => Promise<Sport[]>;
   getAdminSports: () => Promise<Sport[]>;
   getCompetitions: (query?: URLSearchParams) => Promise<CompetitionPage>;
+  getProviderCompetitions: (sport: 'football' | 'basketball') => Promise<ProviderCompetition[]>;
+  getProviderStandings: (
+    sport: 'football' | 'basketball',
+    competitionId: string,
+    season?: string,
+  ) => Promise<ProviderStandingRow[]>;
   getCompetition: (uuid: string, query?: URLSearchParams) => Promise<Competition>;
   createSport: (input: { name: string }) => Promise<Sport>;
   createCompetition: (input: Record<string, unknown>) => Promise<Competition>;
@@ -437,6 +445,12 @@ export function createApiClient(settings: BootstrapSettings): ApiClient {
     },
     getCompetition: (uuid, query) =>
       request<Competition>(`/competitions/${uuid}${query ? `?${query}` : ''}`),
+    getProviderCompetitions: (sport) =>
+      request<ProviderCompetition[]>(`/providers/${sport}/competitions`),
+    getProviderStandings: (sport, competitionId, season = '') =>
+      request<ProviderStandingRow[]>(
+        `/providers/${sport}/competitions/${encodeURIComponent(competitionId)}/standings${season ? `?season=${encodeURIComponent(season)}` : ''}`,
+      ),
     createSport: (input) =>
       request<Sport>('/admin/sports', { method: 'POST', body: JSON.stringify(input) }),
     createCompetition: (input) =>

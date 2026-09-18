@@ -18,6 +18,8 @@ final class BasketballNormalizer {
 				'providerId' => (string) ( $row['id'] ?? $row['league']['id'] ?? '' ),
 				'name'       => (string) ( $row['name'] ?? $row['league']['name'] ?? '' ),
 				'country'    => (string) ( $row['country'] ?? $row['country']['name'] ?? '' ),
+				'logoUrl'    => (string) ( $row['logo'] ?? $row['league']['logo'] ?? '' ),
+				'currentSeason' => (string) ( $row['season'] ?? ( is_array( $row['seasons'] ?? null ) ? ( $row['seasons'][ array_key_last( $row['seasons'] ) ] ?? '' ) : '' ) ),
 				'type'       => 'league',
 				'sport'      => 'basketball',
 			),
@@ -74,6 +76,8 @@ final class BasketballNormalizer {
 		return array_map(
 			fn( array $row ): array => array(
 				'teamProviderId'  => (string) ( $row['team']['id'] ?? $row['team_id'] ?? '' ),
+				'teamName'        => (string) ( $row['team']['name'] ?? '' ),
+				'teamLogoUrl'     => (string) ( $row['team']['logo'] ?? '' ),
 				'position'        => (int) ( $row['rank'] ?? $row['position'] ?? 0 ),
 				'played'          => (int) ( $row['games']['played'] ?? $row['played'] ?? 0 ),
 				'wins'            => (int) ( $row['games']['win']['total'] ?? $row['wins'] ?? 0 ),

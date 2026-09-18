@@ -86,7 +86,13 @@ export function HomePage() {
     setActiveSlide((current) => (current + direction + heroSlides.length) % heroSlides.length);
   const fixtures = useQuery({
     queryKey: ['home', 'fixtures'],
-    queryFn: () => api.getFixtures(new URLSearchParams({ per_page: '50' })),
+    queryFn: () => {
+      const start = new Date();
+      start.setHours(0, 0, 0, 0);
+      return api.getFixtures(
+        new URLSearchParams({ per_page: '50', from_utc: start.toISOString().slice(0, 19) }),
+      );
+    },
     refetchInterval: 30_000,
   });
   const providerFootball = useQuery({
@@ -126,7 +132,10 @@ export function HomePage() {
   const providerUpcoming = [
     ...(!sport || sport === 'football' ? (upcomingFootball.data ?? []) : []),
     ...(!sport || sport === 'basketball' ? (upcomingBasketball.data ?? []) : []),
-  ];
+  ].filter((match) => {
+    const kickoff = Date.parse(match.kickoffAt ?? '');
+    return Number.isFinite(kickoff) && kickoff >= Date.now() - 3 * 60 * 60 * 1000;
+  });
   const selectedSportName =
     sport === 'flag-football'
       ? 'Flag Football'

@@ -61,6 +61,12 @@ final class ProviderController {
 				'permission_callback' => '__return_true',
 			)
 		);
+		register_rest_route( 'instascore/v1', '/providers/(?P<sport>football|basketball)/competitions', array(
+			'methods' => 'GET', 'callback' => fn( WP_REST_Request $request ): WP_REST_Response => Envelope::success( ProviderSyncService::create_for_sport( sanitize_key( (string) $request['sport'] ) )->public_competitions() ), 'permission_callback' => '__return_true',
+		) );
+		register_rest_route( 'instascore/v1', '/providers/(?P<sport>football|basketball)/competitions/(?P<competition_id>\d+)/standings', array(
+			'methods' => 'GET', 'callback' => array( $this, 'provider_standings' ), 'permission_callback' => '__return_true',
+		) );
 		register_rest_route(
 			'instascore/v1',
 			'/football/(?P<period>upcoming|previous)',
@@ -79,6 +85,16 @@ final class ProviderController {
 				'permission_callback' => '__return_true',
 			)
 		);
+	}
+
+	public function provider_standings( WP_REST_Request $request ): WP_REST_Response {
+		try {
+			return Envelope::success( ProviderSyncService::create_for_sport( sanitize_key( (string) $request['sport'] ) )->public_standings( sanitize_text_field( (string) $request['competition_id'] ), sanitize_text_field( (string) $request->get_param( 'season' ) ) ) );
+		} catch ( \InvalidArgumentException $error ) {
+			return Envelope::error( 'provider_competition_not_available', $error->getMessage(), array(), 404 );
+		} catch ( \Throwable $error ) {
+			return Envelope::error( 'provider_standings_failed', $error->getMessage(), array(), 502 );
+		}
 	}
 
 	public function permissions(): bool|WP_Error {

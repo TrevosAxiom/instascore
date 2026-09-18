@@ -289,7 +289,50 @@ final class ProviderSyncService {
 	 */
 	public function cached_matches( string $period ): array {
 		$period = in_array( $period, array( 'live', 'upcoming', 'previous' ), true ) ? $period : 'live';
-		return $this->repository->latest_preview( $this->provider_name, $period );
+		$cached = $this->repository->latest_preview( $this->provider_name, $period );
+		$now = time();
+		$cached['items'] = array_values( array_filter( $cached['items'], static function ( array $item ) use ( $period, $now ): bool {
+			$kickoff = strtotime( (string) ( $item['kickoffAt'] ?? '' ) );
+			if ( false === $kickoff ) {
+				return false;
+			}
+			if ( 'upcoming' === $period ) {
+				return $kickoff >= $now - ( 3 * HOUR_IN_SECONDS ) && in_array( (string) ( $item['status'] ?? '' ), array( 'draft', 'scheduled', 'postponed' ), true );
+			}
+			if ( 'previous' === $period ) {
+				return $kickoff <= $now && in_array( (string) ( $item['status'] ?? '' ), array( 'completed', 'confirmed', 'cancelled' ), true );
+			}
+			return in_array( (string) ( $item['status'] ?? '' ), array( 'live', 'halftime', 'interval', 'warmup' ), true ) && $kickoff >= $now - DAY_IN_SECONDS && $kickoff <= $now + DAY_IN_SECONDS;
+		} ) );
+		return $cached;
+	}
+
+	/** Public competition catalogue sourced from the persistent provider snapshot. */
+	public function public_competitions(): array {
+		$cached = $this->repository->latest_preview( $this->provider_name, 'competitions' );
+		if ( empty( $cached['items'] ) && $this->configured ) {
+			$result = $this->sync( 'competitions', array( 'source' => 'public_catalogue_cache_miss' ), false );
+			if ( 'succeeded' === ( $result['status'] ?? '' ) ) $cached = $this->repository->latest_preview( $this->provider_name, 'competitions' );
+		}
+		$allowed = array_map( 'strval', 'basketball' === $this->sport ? Config::basketball_provider_league_ids() : Config::football_provider_league_ids() );
+		return array_values( array_filter( $cached['items'], static fn( array $item ): bool => in_array( (string) ( $item['providerId'] ?? '' ), $allowed, true ) ) );
+	}
+
+	/** Database-first provider table with an allow-listed API fallback. */
+	public function public_standings( string $competition_id, string $season = '' ): array {
+		$allowed = array_map( 'strval', 'basketball' === $this->sport ? Config::basketball_provider_league_ids() : Config::football_provider_league_ids() );
+		if ( ! in_array( $competition_id, $allowed, true ) ) throw new \InvalidArgumentException( 'Competition is not enabled for public provider data.' );
+		if ( '' === $season ) {
+			foreach ( $this->public_competitions() as $competition ) {
+				if ( $competition_id === (string) ( $competition['providerId'] ?? '' ) ) $season = (string) ( $competition['currentSeason'] ?? '' );
+			}
+		}
+		$cache_key = sanitize_key( 'standings_' . $competition_id . '_' . $season );
+		$cached = $this->repository->latest_preview( $this->provider_name, $cache_key );
+		if ( ! empty( $cached['items'] ) || ! $this->configured || '' === $season ) return $cached['items'];
+		$items = $this->normalizer->standings( $this->provider->getStandings( $competition_id, $season ) );
+		$this->repository->store_snapshot( $this->provider_name, $this->sport, $cache_key, $items );
+		return $items;
 	}
 
 	/**

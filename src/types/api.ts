@@ -403,6 +403,31 @@ export interface CompetitionPage {
   totalPages: number;
 }
 
+export interface ProviderCompetition {
+  providerId: string;
+  name: string;
+  country: string;
+  logoUrl?: string;
+  currentSeason?: string;
+  type: string;
+  sport: 'football' | 'basketball';
+}
+
+export interface ProviderStandingRow {
+  teamProviderId: string;
+  teamName: string;
+  teamLogoUrl?: string;
+  position: number;
+  played: number;
+  wins: number;
+  draws?: number;
+  losses: number;
+  points: number;
+  pointsFor: number;
+  pointsAgainst: number;
+  pointDifference: number;
+}
+
 export interface Team {
   uuid: string;
   name: string;

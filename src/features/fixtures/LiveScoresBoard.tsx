@@ -52,12 +52,19 @@ function initialSportTab(value?: string): SportTab {
   return 'football';
 }
 
-export function LiveScoresBoard({ initialSport }: { initialSport?: string }) {
+export function LiveScoresBoard({
+  initialSport,
+  initialFilter = 'all',
+}: {
+  initialSport?: string;
+  initialFilter?: ScoreFilter;
+}) {
   const api = useApi();
   const pwa = usePwa();
   const [sport, setSport] = useState<SportTab>(() => initialSportTab(initialSport));
-  const [filter, setFilter] = useState<ScoreFilter>('all');
+  const [filter, setFilter] = useState<ScoreFilter>(initialFilter);
   const [date, setDate] = useState(localDateValue(new Date()));
+  const today = localDateValue(new Date());
   const params = useMemo(() => new URLSearchParams({ date, per_page: '50' }), [date]);
   const football = useQuery({
     queryKey: ['live-scores', 'football', date],
@@ -69,14 +76,14 @@ export function LiveScoresBoard({ initialSport }: { initialSport?: string }) {
   const providerFootball = useQuery({
     queryKey: ['live-scores', 'api-football-live'],
     queryFn: api.getFootballLive,
-    enabled: sport === 'football' && date === localDateValue(new Date()),
+    enabled: sport === 'football' && date === today,
     refetchInterval: () => (document.visibilityState === 'visible' ? 30_000 : false),
     refetchIntervalInBackground: false,
   });
   const basketball = useQuery({
     queryKey: ['live-scores', 'basketball'],
     queryFn: api.getBasketballLive,
-    enabled: sport === 'basketball' && date === localDateValue(new Date()),
+    enabled: sport === 'basketball' && date === today,
     refetchInterval: () => (document.visibilityState === 'visible' ? 30_000 : false),
     refetchIntervalInBackground: false,
   });
@@ -118,6 +125,10 @@ export function LiveScoresBoard({ initialSport }: { initialSport?: string }) {
   const datedProviderPrevious = (providerPrevious.data ?? []).filter(
     (match) => (match.kickoffAt ?? '').slice(0, 10) === date,
   );
+  // React Query retains successful data when a query becomes disabled. Never let
+  // today's live feed bleed into a previous or future match day after navigation.
+  const datedFootballLive = date === today ? (providerFootball.data ?? []) : [];
+  const datedBasketballLive = date === today ? (basketball.data ?? []) : [];
   const grouped = Object.entries(
     filteredFixtures.reduce<Record<string, Fixture[]>>((groups, fixture) => {
       (groups[fixture.competition.name] ??= []).push(fixture);
@@ -127,16 +138,12 @@ export function LiveScoresBoard({ initialSport }: { initialSport?: string }) {
   const counts = {
     all:
       fixtures.length +
-      (sport === 'football'
-        ? (providerFootball.data?.length ?? 0)
-        : (basketball.data?.length ?? 0)) +
+      (sport === 'football' ? datedFootballLive.length : datedBasketballLive.length) +
       datedProviderUpcoming.length +
       datedProviderPrevious.length,
     live:
       fixtures.filter((fixture) => liveStatuses.includes(fixture.status)).length +
-      (sport === 'football'
-        ? (providerFootball.data?.length ?? 0)
-        : (basketball.data?.length ?? 0)),
+      (sport === 'football' ? datedFootballLive.length : datedBasketballLive.length),
     finished:
       fixtures.filter((fixture) => finishedStatuses.includes(fixture.status)).length +
       datedProviderPrevious.length,
@@ -145,25 +152,19 @@ export function LiveScoresBoard({ initialSport }: { initialSport?: string }) {
       datedProviderUpcoming.length,
   };
   const providerGroups = Object.entries(
-    (providerFootball.data ?? []).reduce<Record<string, typeof providerFootball.data>>(
-      (groups, game) => {
-        (groups[game.competitionName] ??= []).push(game);
-        return groups;
-      },
-      {},
-    ),
+    datedFootballLive.reduce<Record<string, typeof datedFootballLive>>((groups, game) => {
+      (groups[game.competitionName] ??= []).push(game);
+      return groups;
+    }, {}),
   );
   const basketballGroups = Object.entries(
-    (basketball.data ?? []).reduce<Record<string, NonNullable<typeof basketball.data>>>(
-      (groups, game) => {
-        (groups[game.competitionName ?? 'Basketball'] ??= []).push(game);
-        return groups;
-      },
-      {},
-    ),
+    datedBasketballLive.reduce<Record<string, typeof datedBasketballLive>>((groups, game) => {
+      (groups[game.competitionName ?? 'Basketball'] ??= []).push(game);
+      return groups;
+    }, {}),
   );
   const basketballVisibleCount =
-    (filter === 'all' || filter === 'live' ? (basketball.data?.length ?? 0) : 0) +
+    (filter === 'all' || filter === 'live' ? datedBasketballLive.length : 0) +
     (filter === 'all' || filter === 'upcoming' ? datedProviderUpcoming.length : 0) +
     (filter === 'all' || filter === 'finished' ? datedProviderPrevious.length : 0);
 
@@ -359,7 +360,7 @@ export function LiveScoresBoard({ initialSport }: { initialSport?: string }) {
           !(
             sport === 'football' &&
             (filter === 'all' || filter === 'live') &&
-            providerFootball.data?.length
+            datedFootballLive.length
           ) &&
           !(
             sport === 'football' &&

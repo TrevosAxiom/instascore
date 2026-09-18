@@ -18,11 +18,20 @@ final class FootballNormalizer {
 				'providerId' => (string) ( $row['id'] ?? $row['league']['id'] ?? '' ),
 				'name'       => (string) ( $row['name'] ?? $row['league']['name'] ?? '' ),
 				'country'    => (string) ( is_array( $row['country'] ?? null ) ? ( $row['country']['name'] ?? '' ) : ( $row['country'] ?? '' ) ),
+				'logoUrl'    => (string) ( $row['logo'] ?? $row['league']['logo'] ?? '' ),
+				'currentSeason' => (string) $this->current_season( $row ),
 				'type'       => 'league',
 				'sport'      => 'football',
 			),
 			$this->rows( $payload )
 		);
+	}
+
+	private function current_season( array $row ): string {
+		foreach ( (array) ( $row['seasons'] ?? array() ) as $season ) {
+			if ( is_array( $season ) && ! empty( $season['current'] ) ) return (string) ( $season['year'] ?? '' );
+		}
+		return (string) ( $row['season'] ?? '' );
 	}
 
 	/**

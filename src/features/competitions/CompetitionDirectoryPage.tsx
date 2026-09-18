@@ -34,6 +34,24 @@ export function CompetitionDirectoryPage() {
         new URLSearchParams({ page: String(page), per_page: '12', search, sport, sort: 'name' }),
       ),
   });
+  const footballCompetitions = useQuery({
+    queryKey: ['provider-competitions', 'football'],
+    queryFn: () => api.getProviderCompetitions('football'),
+    enabled: !sport || sport === 'football',
+  });
+  const basketballCompetitions = useQuery({
+    queryKey: ['provider-competitions', 'basketball'],
+    queryFn: () => api.getProviderCompetitions('basketball'),
+    enabled: !sport || sport === 'basketball',
+  });
+  const providerCompetitions = [
+    ...(footballCompetitions.data ?? []),
+    ...(basketballCompetitions.data ?? []),
+  ].filter(
+    (competition) =>
+      (!sport || competition.sport === sport) &&
+      (!search || competition.name.toLowerCase().includes(search.toLowerCase())),
+  );
 
   return (
     <PageScaffold
@@ -65,7 +83,7 @@ export function CompetitionDirectoryPage() {
           description="Please retry the public directory."
         />
       )}
-      {query.data?.items.length === 0 && (
+      {query.data?.items.length === 0 && providerCompetitions.length === 0 && (
         <EmptyState title="No competitions found" description="Try a different search." />
       )}
       <Box
@@ -99,6 +117,43 @@ export function CompetitionDirectoryPage() {
                   </Stack>
                   <Typography color="text.secondary">
                     {competition.description || 'Competition details and seasons.'}
+                  </Typography>
+                </Stack>
+              </CardContent>
+            </CardActionArea>
+          </Card>
+        ))}
+        {providerCompetitions.map((competition) => (
+          <Card key={`${competition.sport}-${competition.providerId}`} variant="outlined">
+            <CardActionArea
+              component={Link}
+              to={`/tables?sport=${competition.sport}&competition=provider:${competition.sport}:${competition.providerId}`}
+              sx={{ height: '100%' }}
+            >
+              <CardContent>
+                <Stack spacing={1.5}>
+                  <Stack direction="row" justifyContent="space-between">
+                    <Chip
+                      label={competition.sport === 'football' ? 'Soccer' : 'Basketball'}
+                      size="small"
+                      color="primary"
+                    />
+                    <Typography variant="caption">{competition.type || 'league'}</Typography>
+                  </Stack>
+                  <Stack direction="row" spacing={1.5} alignItems="center">
+                    <EntityAvatar
+                      entity="competition"
+                      src={competition.logoUrl}
+                      alt={`${competition.name} logo`}
+                      sx={{ width: 52, height: 52 }}
+                    />
+                    <Typography variant="h6">{competition.name}</Typography>
+                  </Stack>
+                  <Typography color="text.secondary">
+                    {competition.country || 'International'} ·{' '}
+                    {competition.currentSeason
+                      ? `${competition.currentSeason} season`
+                      : 'Current season'}
                   </Typography>
                 </Stack>
               </CardContent>

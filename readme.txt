@@ -2,7 +2,7 @@
 Contributors: instascore
 Requires at least: 6.6
 Requires PHP: 8.2
-Stable tag: 0.19.1
+Stable tag: 0.20.0
 License: GPL-2.0-or-later
 
 WordPress backend and React application shell for InstaScore.
@@ -12,6 +12,12 @@ WordPress backend and React application shell for InstaScore.
 See README.md for the shortcode, development server and production build steps.
 
 == Changelog ==
+
+= 0.20.0 =
+* Removed stale homepage and live-score records by enforcing current date, status and kickoff windows.
+* Rebuilt Scores, Fixtures and Results with match-day navigation and competition-grouped listings.
+* Added database-first public soccer and basketball competition catalogues and standings with allow-listed provider fallback.
+* Expanded the Competition directory and Tables page across flag football, soccer and basketball.
 
 = 0.19.1 =
 * Repaired the GitHub release packaging workflow so installable plugin ZIP files publish reliably.
