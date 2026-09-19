@@ -10,12 +10,22 @@ namespace InstaScore\Platform\REST;
 use InstaScore\Platform\Auth\FixturePermissions;
 use InstaScore\Platform\Domain\ValidationException;
 use InstaScore\Platform\Services\FixtureService;
+use InstaScore\Platform\Services\FixtureCsvImportService;
 use InstaScore\Platform\Repositories\FixtureRepository;
 use WP_REST_Request;
 use WP_REST_Response;
 
 final class AdminFixtureController {
 	public function register(): void {
+		register_rest_route(
+			'instascore/v1',
+			'/admin/fixtures/import',
+			array(
+				'methods'             => 'POST',
+				'callback'            => array( $this, 'import' ),
+				'permission_callback' => array( FixturePermissions::class, 'manage_fixtures' ),
+			)
+		);
 		register_rest_route(
 			'instascore/v1',
 			'/admin/fixtures',
@@ -52,6 +62,18 @@ final class AdminFixtureController {
 				'permission_callback' => array( FixturePermissions::class, 'manage_fixtures' ),
 			)
 		);
+	}
+
+	public function import( WP_REST_Request $request ): WP_REST_Response {
+		$files = $request->get_file_params();
+		$file = $files['file'] ?? null;
+		if ( ! is_array( $file ) || UPLOAD_ERR_OK !== (int) ( $file['error'] ?? UPLOAD_ERR_NO_FILE ) ) {
+			return Envelope::error( 'instascore_fixture_csv_missing', 'Choose a readable CSV file.', array( 'file' => 'CSV file is required.' ), 422 );
+		}
+		if ( (int) ( $file['size'] ?? 0 ) > 4 * MB_IN_BYTES ) {
+			return Envelope::error( 'instascore_fixture_csv_large', 'The CSV file must be 4 MB or smaller.', array( 'file' => 'File is too large.' ), 413 );
+		}
+		return $this->execute( fn(): array => FixtureCsvImportService::create()->import( (string) $file['tmp_name'] ), 201 );
 	}
 
 	public function index( WP_REST_Request $request ): WP_REST_Response {

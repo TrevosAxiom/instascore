@@ -73,6 +73,7 @@ export function HomePage() {
   const [sliderPaused, setSliderPaused] = useState(false);
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const defaultSlide = heroSlides[0];
+  const today = localDateValue(new Date());
   const slide = heroSlides[activeSlide] ?? defaultSlide;
   useEffect(() => {
     if (sliderPaused) return;
@@ -85,13 +86,9 @@ export function HomePage() {
   const moveSlide = (direction: number) =>
     setActiveSlide((current) => (current + direction + heroSlides.length) % heroSlides.length);
   const fixtures = useQuery({
-    queryKey: ['home', 'fixtures'],
+    queryKey: ['home', 'fixtures', today],
     queryFn: () => {
-      const start = new Date();
-      start.setHours(0, 0, 0, 0);
-      return api.getFixtures(
-        new URLSearchParams({ per_page: '50', from_utc: start.toISOString().slice(0, 19) }),
-      );
+      return api.getFixtures(new URLSearchParams({ per_page: '50', date: today }));
     },
     refetchInterval: 30_000,
   });
@@ -106,12 +103,12 @@ export function HomePage() {
     refetchInterval: 30_000,
   });
   const upcomingFootball = useQuery({
-    queryKey: ['home', 'football-upcoming'],
-    queryFn: () => api.getProviderMatches('football', 'upcoming'),
+    queryKey: ['home', 'football-upcoming', today],
+    queryFn: () => api.getProviderMatches('football', 'upcoming', today),
   });
   const upcomingBasketball = useQuery({
-    queryKey: ['home', 'basketball-upcoming'],
-    queryFn: () => api.getProviderMatches('basketball', 'upcoming'),
+    queryKey: ['home', 'basketball-upcoming', today],
+    queryFn: () => api.getProviderMatches('basketball', 'upcoming', today),
   });
   const sports = useQuery({ queryKey: ['sports'], queryFn: api.getSports });
   const competitions = useQuery({
@@ -124,18 +121,22 @@ export function HomePage() {
   const live = sportMatches.filter((fixture) =>
     ['warmup', 'live', 'halftime', 'interval'].includes(fixture.status),
   );
-  const upcoming = sportMatches.filter((fixture) =>
-    ['scheduled', 'postponed'].includes(fixture.status),
-  );
+  const upcoming = sportMatches
+    .filter((fixture) => ['scheduled', 'postponed'].includes(fixture.status))
+    .sort((a, b) => Date.parse(a.kickoffAt) - Date.parse(b.kickoffAt))
+    .slice(0, 12);
   const providerLive = !sport || sport === 'football' ? (providerFootball.data ?? []) : [];
   const basketballLive = !sport || sport === 'basketball' ? (providerBasketball.data ?? []) : [];
   const providerUpcoming = [
     ...(!sport || sport === 'football' ? (upcomingFootball.data ?? []) : []),
     ...(!sport || sport === 'basketball' ? (upcomingBasketball.data ?? []) : []),
-  ].filter((match) => {
-    const kickoff = Date.parse(match.kickoffAt ?? '');
-    return Number.isFinite(kickoff) && kickoff >= Date.now() - 3 * 60 * 60 * 1000;
-  });
+  ]
+    .filter((match) => {
+      const kickoff = Date.parse(match.kickoffAt ?? '');
+      return Number.isFinite(kickoff) && localDateValue(new Date(kickoff)) === today;
+    })
+    .sort((a, b) => Date.parse(a.kickoffAt ?? '') - Date.parse(b.kickoffAt ?? ''))
+    .slice(0, Math.max(0, 12 - upcoming.length));
   const selectedSportName =
     sport === 'flag-football'
       ? 'Flag Football'
@@ -143,7 +144,9 @@ export function HomePage() {
         ? 'Soccer'
         : sport === 'basketball'
           ? 'Basketball'
-          : 'All sports';
+          : sport === 'nfl'
+            ? 'NFL'
+            : 'All sports';
   const selectedSportMatchCount =
     live.length +
     upcoming.length +
@@ -378,8 +381,8 @@ export function HomePage() {
 
       {!loading && upcoming.length + providerUpcoming.length ? (
         <Stack spacing={1}>
-          <FixtureCards fixtures={upcoming.slice(0, 6)} />
-          <ProviderUpcomingCards matches={providerUpcoming.slice(0, 6)} />
+          <FixtureCards fixtures={upcoming} />
+          <ProviderUpcomingCards matches={providerUpcoming} />
         </Stack>
       ) : !loading ? (
         <Card>
@@ -528,4 +531,9 @@ export function HomePage() {
       </Stack>
     </Stack>
   );
+}
+
+function localDateValue(date: Date) {
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
+  return local.toISOString().slice(0, 10);
 }

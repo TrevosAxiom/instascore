@@ -20,7 +20,7 @@ import {
   Typography,
 } from '@mui/material';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { Link as RouterLink } from 'react-router';
 import { z } from 'zod';
@@ -103,6 +103,7 @@ export function AdminFixturesPage() {
   const [sport, setSport] = useState('');
   const [date, setDate] = useState('');
   const [broadcastFixture, setBroadcastFixture] = useState<Fixture | null>(null);
+  const csvInputRef = useRef<HTMLInputElement>(null);
   const [streamForm, setStreamForm] = useState<FixtureStreamInput>(emptyStream);
   const queryParams = useMemo(() => {
     const params = new URLSearchParams({ per_page: '100' });
@@ -181,6 +182,13 @@ export function AdminFixturesPage() {
       setOpen(false);
       setEditing(null);
       form.reset(emptyFixture);
+      void client.invalidateQueries({ queryKey: ['admin-fixtures'] });
+      void client.invalidateQueries({ queryKey: ['fixtures'] });
+    },
+  });
+  const csvImport = useMutation({
+    mutationFn: api.importFixturesCsv,
+    onSuccess: () => {
       void client.invalidateQueries({ queryKey: ['admin-fixtures'] });
       void client.invalidateQueries({ queryKey: ['fixtures'] });
     },
@@ -303,6 +311,28 @@ export function AdminFixturesPage() {
             </Tabs>
             <Stack direction={{ xs: 'column', sm: 'row' }} gap={1}>
               <LiveControlRoom />
+              <Button variant="outlined" onClick={downloadFixtureTemplate}>
+                Sample CSV
+              </Button>
+              <Button
+                variant="outlined"
+                onClick={() => csvInputRef.current?.click()}
+                disabled={csvImport.isPending}
+              >
+                {csvImport.isPending ? 'Importing…' : 'Import fixtures'}
+              </Button>
+              <input
+                ref={csvInputRef}
+                type="file"
+                accept=".csv,text/csv"
+                aria-label="Fixtures CSV file"
+                hidden
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  if (file) csvImport.mutate(file);
+                  event.target.value = '';
+                }}
+              />
               <Button
                 variant="contained"
                 onClick={() => {
@@ -315,6 +345,25 @@ export function AdminFixturesPage() {
               </Button>
             </Stack>
           </Stack>
+          {csvImport.data ? (
+            <Alert severity={csvImport.data.errors.length ? 'warning' : 'success'}>
+              Import complete: {csvImport.data.created} created, {csvImport.data.skipped} duplicates
+              skipped, {csvImport.data.warnings} schedule warnings and{' '}
+              {csvImport.data.errors.length} invalid rows.
+              {csvImport.data.errors.slice(0, 4).map((error) => (
+                <Typography key={`${error.row}-${error.message}`} variant="body2">
+                  Row {error.row}: {error.message}
+                </Typography>
+              ))}
+            </Alert>
+          ) : null}
+          {csvImport.isError ? (
+            <Alert severity="error">
+              {csvImport.error instanceof ApiError
+                ? csvImport.error.message
+                : 'Fixture CSV could not be imported.'}
+            </Alert>
+          ) : null}
           <Grid container spacing={1.25}>
             <Grid size={{ xs: 12, md: 4 }}>
               <TextField
@@ -871,4 +920,18 @@ export function AdminFixturesPage() {
       </Dialog>
     </PageScaffold>
   );
+}
+
+function downloadFixtureTemplate() {
+  const csv = [
+    'competition_slug,season_slug,home_team_slug,away_team_slug,kickoff_at,timezone,venue_slug,round_name,match_day,bracket_slot,status',
+    'cffl-lagos,2026-season-3,lagos-wolverines,lagos-lions,2026-09-26 14:00,Africa/Lagos,cffl-lagos-primary-field,Regular season,1,,scheduled',
+    'cffl-lagos,,liquid-sports-club,titans-athletics,2026-09-26 16:00,Africa/Lagos,cffl-lagos-primary-field,Regular season,1,,draft',
+  ].join('\n');
+  const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'instascore-fixtures-import-template.csv';
+  link.click();
+  URL.revokeObjectURL(url);
 }

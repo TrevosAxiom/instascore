@@ -1,0 +1,3 @@
+competition_slug,season_slug,home_team_slug,away_team_slug,kickoff_at,timezone,venue_slug,round_name,match_day,bracket_slot,status
+cffl-lagos,2026-season-3,lagos-wolverines,lagos-lions,2026-09-26 14:00,Africa/Lagos,cffl-lagos-primary-field,Regular season,1,,scheduled
+cffl-lagos,,liquid-sports-club,titans-athletics,2026-09-26 16:00,Africa/Lagos,cffl-lagos-primary-field,Regular season,1,,draft

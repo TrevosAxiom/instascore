@@ -71,6 +71,7 @@ export const testApi: ApiClient = {
   getResults: () => Promise.resolve({ items: [], page: 1, perPage: 12, total: 0, totalPages: 0 }),
   getFixture: () => Promise.reject(new Error('Not configured')),
   createFixture: () => Promise.reject(new Error('Not configured')),
+  importFixturesCsv: () => Promise.resolve({ created: 2, skipped: 0, warnings: 0, errors: [] }),
   updateFixture: () => Promise.reject(new Error('Not configured')),
   updateFixtureStatus: () => Promise.reject(new Error('Not configured')),
   getFixtureStream: () => Promise.reject(new Error('No broadcast configured')),

@@ -49,6 +49,7 @@ use InstaScore\Platform\Support\RssProvisioner;
 use InstaScore\Platform\Support\RssScheduler;
 use InstaScore\Platform\Support\Shortcode;
 use InstaScore\Platform\Support\StandingsCommand;
+use InstaScore\Platform\Support\SportsProvisioner;
 use InstaScore\Platform\Support\YouTubeStreamScheduler;
 
 final class Bootstrap {
@@ -68,6 +69,7 @@ final class Bootstrap {
 		add_action( 'rest_api_init', array( $this, 'register_rest_routes' ) );
 		add_action( 'init', array( Shortcode::class, 'register' ) );
 		add_action( 'init', array( PageProvisioner::class, 'maybe_create_pages' ), 20 );
+		add_action( 'init', array( SportsProvisioner::class, 'maybe_seed' ), 20 );
 		add_action( 'init', array( NewsProvisioner::class, 'maybe_create_categories' ), 21 );
 		add_action( 'template_redirect', array( Pwa::class, 'maybe_serve_asset' ), 0 );
 		add_action( 'template_redirect', array( Shortcode::class, 'hide_admin_bar_for_app' ) );

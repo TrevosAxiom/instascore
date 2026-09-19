@@ -5,6 +5,26 @@ import { AdminFixturesPage } from '../../src/features/fixtures/AdminFixturesPage
 import { renderApp, testApi } from './test-utils';
 
 describe('YouTube live control room', () => {
+  it('imports fixture CSV files from the fixture manager', async () => {
+    const importFixturesCsv = vi.fn(testApi.importFixturesCsv);
+    renderApp(<AdminFixturesPage />, { api: { ...testApi, importFixturesCsv } });
+
+    const input = await screen.findByLabelText('Fixtures CSV file');
+    fireEvent.change(input, {
+      target: {
+        files: [
+          new File(['competition_slug,home_team_slug,away_team_slug,kickoff_at'], 'fixtures.csv', {
+            type: 'text/csv',
+          }),
+        ],
+      },
+    });
+
+    await waitFor(() => expect(importFixturesCsv).toHaveBeenCalledOnce());
+    expect(await screen.findByText(/Import complete: 2 created/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /sample csv/i })).toBeInTheDocument();
+  });
+
   it('shows stream health and runs safe fixture matching', async () => {
     const autoMatchYouTubeBroadcasts = vi.fn(() =>
       Promise.resolve([

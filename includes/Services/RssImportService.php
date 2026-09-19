@@ -97,7 +97,7 @@ final class RssImportService {
 			$result['fatalError'] = 'Required headers are: site, rss_url, category, status.';
 			return $result;
 		}
-		$allowed_categories = array( 'cffl', 'flag-football', 'football', 'basketball' );
+		$allowed_categories = array( 'cffl', 'flag-football', 'football', 'basketball', 'nfl' );
 		$known_urls = array_map( static fn( array $source ): string => untrailingslashit( strtolower( (string) ( $source['url'] ?? '' ) ) ), self::sources() );
 		$row_number = 1;
 		while ( false !== ( $values = fgetcsv( $handle ) ) ) {

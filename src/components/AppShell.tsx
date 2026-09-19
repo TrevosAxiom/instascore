@@ -15,11 +15,12 @@ import { Link as RouterLink, Outlet, useLocation, useNavigate } from 'react-rout
 import { useAuth } from '../app/auth-context';
 import logo from '../assets/instascore-logo-brand.png';
 import { usePwa } from '../pwa/PwaProvider';
-import { AdminNavigation } from './AdminNavigation';
 import { NavigationIcon } from './NavigationIcon';
 import { ThemeToggle } from './ThemeToggle';
 import { SiteSwipeNavigator } from './SiteSwipeNavigator';
 import { InstallHelper } from './InstallHelper';
+import { WorkspaceLayout } from './WorkspaceLayout';
+import { isWorkspaceUser } from './workspace';
 
 const primaryNavigation = [
   { label: 'Scores', path: '/scores', icon: 'scores' },
@@ -43,6 +44,8 @@ export function AppShell() {
   const isEmbedRoute = location.pathname.startsWith('/embed/');
   const isAdminRoute =
     location.pathname.startsWith('/admin') || location.pathname.startsWith('/operations');
+  const isWorkspaceRoute =
+    isAdminRoute || (location.pathname === '/dashboard' && isWorkspaceUser(auth.state?.user));
   const activePath =
     primaryNavigation.find((item) => location.pathname.startsWith(item.path))?.path ?? false;
 
@@ -52,6 +55,10 @@ export function AppShell() {
         <Outlet />
       </Box>
     );
+  }
+
+  if (isWorkspaceRoute) {
+    return <WorkspaceLayout />;
   }
 
   return (
@@ -185,7 +192,6 @@ export function AppShell() {
             </Button>
           )}
         </Stack>
-        {isAdminRoute && <AdminNavigation />}
         <Outlet />
       </Container>
 

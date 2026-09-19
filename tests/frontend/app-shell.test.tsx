@@ -2,7 +2,39 @@ import { fireEvent, screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
 import { AppRoutes } from '../../src/app/AppRoutes';
-import { renderApp } from './test-utils';
+import type { AuthContextValue } from '../../src/app/auth-context';
+import { adminAuth, renderApp } from './test-utils';
+
+function roleAuth(
+  displayName: string,
+  roles: string[],
+  capabilities: Partial<
+    NonNullable<NonNullable<AuthContextValue['state']>['user']>['capabilities']
+  >,
+): AuthContextValue {
+  return {
+    ...adminAuth,
+    state: {
+      authenticated: true,
+      nonce: 'test',
+      theme: 'system',
+      user: {
+        ...adminAuth.state!.user!,
+        displayName,
+        roles,
+        capabilities: {
+          ...Object.fromEntries(
+            Object.keys(adminAuth.state!.user!.capabilities).map((capability) => [
+              capability,
+              false,
+            ]),
+          ),
+          ...capabilities,
+        } as NonNullable<NonNullable<AuthContextValue['state']>['user']>['capabilities'],
+      },
+    },
+  };
+}
 
 describe('App shell', () => {
   it('renders the requested public route with shared navigation', async () => {
@@ -45,5 +77,54 @@ describe('App shell', () => {
     );
     expect(screen.getByRole('tab', { name: 'Soccer' })).toBeInTheDocument();
     expect(screen.queryByText(/coming soon/i)).not.toBeInTheDocument();
+  });
+
+  it('uses a dedicated sidebar workspace for operational users', async () => {
+    renderApp(<AppRoutes loginUrl="/wp-login.php" />, { route: '/dashboard', auth: adminAuth });
+
+    expect(
+      await screen.findByRole('heading', { name: 'Welcome back, League Admin' }),
+    ).toBeInTheDocument();
+    const workspace = screen.getByRole('navigation', { name: 'Administration navigation' });
+    expect(within(workspace).getAllByRole('link', { name: 'Competitions' }).length).toBeGreaterThan(
+      0,
+    );
+    expect(
+      within(workspace).getAllByRole('link', { name: 'Teams & players' }).length,
+    ).toBeGreaterThan(0);
+    expect(
+      within(workspace).getAllByRole('link', { name: 'View public site' }).length,
+    ).toBeGreaterThan(0);
+    expect(
+      screen.queryByRole('navigation', { name: 'Primary navigation' }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText('Powered by Lagos Wolverines')).not.toBeInTheDocument();
+  });
+
+  it.each([
+    [
+      'team manager',
+      roleAuth('Team Manager', ['instascore_team_administrator'], {
+        accessAdmin: true,
+        manageTeams: true,
+        managePlayers: true,
+      }),
+      'Team manager',
+      'Teams & players',
+    ],
+    [
+      'umpire',
+      roleAuth('Match Umpire', ['instascore_match_official'], {}),
+      'Umpire / official',
+      'Today’s fixtures',
+    ],
+  ])('gives the %s a focused workspace menu', async (_name, auth, role, expectedLink) => {
+    renderApp(<AppRoutes loginUrl="/wp-login.php" />, { route: '/dashboard', auth });
+
+    expect(await screen.findByText(role)).toBeInTheDocument();
+    expect(screen.getAllByRole('link', { name: expectedLink }).length).toBeGreaterThan(0);
+    expect(
+      screen.queryByRole('navigation', { name: 'Primary navigation' }),
+    ).not.toBeInTheDocument();
   });
 });

@@ -3,11 +3,12 @@ import { Box, Button, Stack, Tooltip } from '@mui/material';
 import type { Sport } from '../types/api';
 import { publicSportName } from '../utils/publicSportName';
 
-const order = ['flag-football', 'football', 'basketball'];
+const order = ['flag-football', 'football', 'basketball', 'nfl'];
 const requiredSports: Sport[] = [
   { uuid: 'flag-football', slug: 'flag-football', name: 'Flag Football' },
   { uuid: 'football', slug: 'football', name: 'Soccer' },
   { uuid: 'basketball', slug: 'basketball', name: 'Basketball' },
+  { uuid: 'nfl', slug: 'nfl', name: 'NFL' },
 ];
 
 export function SportIcon({ sport }: { sport: string }) {
@@ -46,6 +47,19 @@ export function SportIcon({ sport }: { sport: string }) {
           strokeLinejoin="round"
         />
         <path d="M16 6c4 1 5 5 2 8-2 2-5 1-6-1" stroke="currentColor" strokeWidth="1.5" />
+      </Box>
+    );
+  }
+  if (sport === 'nfl') {
+    return (
+      <Box component="svg" {...common} aria-hidden>
+        <path
+          d="M4 12c0-4.5 3.6-8 8-8s8 3.5 8 8-3.6 8-8 8-8-3.5-8-8Z"
+          stroke="currentColor"
+          strokeWidth="2"
+          transform="rotate(-24 12 12)"
+        />
+        <path d="m9 9 6 6m-4.5-4.5 3-3m-1 5 3-3" stroke="currentColor" strokeWidth="1.4" />
       </Box>
     );
   }

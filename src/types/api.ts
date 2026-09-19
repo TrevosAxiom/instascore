@@ -310,6 +310,13 @@ export interface RssCsvImportResult {
   fatalError: string;
 }
 
+export interface FixtureCsvImportResult {
+  created: number;
+  skipped: number;
+  warnings: number;
+  errors: Array<{ row: number; message: string }>;
+}
+
 export interface AuthUser {
   uuid: string;
   displayName: string;

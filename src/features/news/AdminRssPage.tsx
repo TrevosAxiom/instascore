@@ -42,6 +42,7 @@ const categories = [
   ['flag-football', 'Flag Football'],
   ['football', 'Football'],
   ['basketball', 'Basketball'],
+  ['nfl', 'NFL'],
 ] as const;
 
 export function AdminRssPage() {

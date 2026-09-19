@@ -15,6 +15,7 @@ const categories = [
   ['flag-football', 'Flag Football'],
   ['football', 'Soccer'],
   ['basketball', 'Basketball'],
+  ['nfl', 'NFL'],
 ] as const;
 
 export function HomeNewsSection() {

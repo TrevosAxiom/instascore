@@ -10,6 +10,7 @@ import type {
   CompetitionPage,
   CsvImportPreview,
   Fixture,
+  FixtureCsvImportResult,
   FixtureMutationResult,
   FixtureStream,
   FixtureStreamInput,
@@ -153,6 +154,7 @@ export interface ApiClient {
   getResults: (query?: URLSearchParams) => Promise<Paginated<Fixture>>;
   getFixture: (uuid: string) => Promise<Fixture>;
   createFixture: (input: Record<string, unknown>) => Promise<FixtureMutationResult>;
+  importFixturesCsv: (file: File) => Promise<FixtureCsvImportResult>;
   updateFixture: (uuid: string, input: Record<string, unknown>) => Promise<FixtureMutationResult>;
   updateFixtureStatus: (
     uuid: string,
@@ -560,6 +562,11 @@ export function createApiClient(settings: BootstrapSettings): ApiClient {
         method: 'POST',
         body: JSON.stringify(input),
       }),
+    importFixturesCsv: (file) => {
+      const body = new FormData();
+      body.append('file', file);
+      return request<FixtureCsvImportResult>('/admin/fixtures/import', { method: 'POST', body });
+    },
     updateFixture: (uuid, input) =>
       request<FixtureMutationResult>(`/admin/fixtures/${uuid}`, {
         method: 'PATCH',
