@@ -58,7 +58,7 @@ export function ProviderUpcomingCards({
               >
                 <Stack spacing={0.25}>
                   <Chip
-                    label={kind === 'finished' ? 'Final' : 'Upcoming'}
+                    label={kind === 'finished' ? 'FT' : 'Upcoming'}
                     size="small"
                     color={kind === 'finished' ? 'default' : 'primary'}
                   />

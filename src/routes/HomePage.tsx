@@ -86,9 +86,14 @@ export function HomePage() {
   const moveSlide = (direction: number) =>
     setActiveSlide((current) => (current + direction + heroSlides.length) % heroSlides.length);
   const fixtures = useQuery({
-    queryKey: ['home', 'fixtures', today],
+    queryKey: ['home', 'fixtures', 'next-30-days'],
     queryFn: () => {
-      return api.getFixtures(new URLSearchParams({ per_page: '50', date: today }));
+      const from = `${today} 00:00:00`;
+      const to = new Date(Date.now() + 30 * 86_400_000)
+        .toISOString()
+        .slice(0, 19)
+        .replace('T', ' ');
+      return api.getFixtures(new URLSearchParams({ per_page: '50', from_utc: from, to_utc: to }));
     },
     refetchInterval: 30_000,
   });
@@ -103,12 +108,16 @@ export function HomePage() {
     refetchInterval: 30_000,
   });
   const upcomingFootball = useQuery({
-    queryKey: ['home', 'football-upcoming', today],
-    queryFn: () => api.getProviderMatches('football', 'upcoming', today),
+    queryKey: ['home', 'football-upcoming'],
+    queryFn: () => api.getProviderMatches('football', 'upcoming'),
   });
   const upcomingBasketball = useQuery({
-    queryKey: ['home', 'basketball-upcoming', today],
-    queryFn: () => api.getProviderMatches('basketball', 'upcoming', today),
+    queryKey: ['home', 'basketball-upcoming'],
+    queryFn: () => api.getProviderMatches('basketball', 'upcoming'),
+  });
+  const upcomingNfl = useQuery({
+    queryKey: ['home', 'nfl-upcoming'],
+    queryFn: () => api.getProviderMatches('nfl', 'upcoming'),
   });
   const sports = useQuery({ queryKey: ['sports'], queryFn: api.getSports });
   const competitions = useQuery({
@@ -122,7 +131,11 @@ export function HomePage() {
     ['warmup', 'live', 'halftime', 'interval'].includes(fixture.status),
   );
   const upcoming = sportMatches
-    .filter((fixture) => ['scheduled', 'postponed'].includes(fixture.status))
+    .filter(
+      (fixture) =>
+        ['draft', 'scheduled', 'postponed'].includes(fixture.status) &&
+        Date.parse(fixture.kickoffAt) > Date.now(),
+    )
     .sort((a, b) => Date.parse(a.kickoffAt) - Date.parse(b.kickoffAt))
     .slice(0, 12);
   const providerLive = !sport || sport === 'football' ? (providerFootball.data ?? []) : [];
@@ -130,10 +143,15 @@ export function HomePage() {
   const providerUpcoming = [
     ...(!sport || sport === 'football' ? (upcomingFootball.data ?? []) : []),
     ...(!sport || sport === 'basketball' ? (upcomingBasketball.data ?? []) : []),
+    ...(!sport || sport === 'nfl' ? (upcomingNfl.data ?? []) : []),
   ]
     .filter((match) => {
       const kickoff = Date.parse(match.kickoffAt ?? '');
-      return Number.isFinite(kickoff) && localDateValue(new Date(kickoff)) === today;
+      return (
+        Number.isFinite(kickoff) &&
+        kickoff > Date.now() &&
+        ['draft', 'scheduled', 'postponed'].includes(match.status)
+      );
     })
     .sort((a, b) => Date.parse(a.kickoffAt ?? '') - Date.parse(b.kickoffAt ?? ''))
     .slice(0, Math.max(0, 12 - upcoming.length));

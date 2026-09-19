@@ -2,7 +2,7 @@
 Contributors: instascore
 Requires at least: 6.6
 Requires PHP: 8.2
-Stable tag: 0.22.1
+Stable tag: 0.22.2
 License: GPL-2.0-or-later
 
 WordPress backend and React application shell for InstaScore.
@@ -12,6 +12,11 @@ WordPress backend and React application shell for InstaScore.
 See README.md for the shortcode, development server and production build steps.
 
 == Changelog ==
+
+= 0.22.2 =
+* Corrected homepage Next Fixtures to select the earliest future matches across the next 30 days.
+* Refreshed current match-day provider caches on the live interval instead of retaining stale scheduled states.
+* Removed elapsed kickoffs from Upcoming and added consistent FT markers for completed and confirmed matches.
 
 = 0.22.1 =
 * Added native InstaScore article pages with the application header, navigation, themes, footer and responsive PWA layout.

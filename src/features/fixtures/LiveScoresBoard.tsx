@@ -126,7 +126,10 @@ export function LiveScoresBoard({
   );
   const filteredFixtures = fixtures.filter((fixture) => matchesFilter(fixture.status, filter));
   const datedProviderUpcoming = (providerUpcoming.data ?? []).filter(
-    (match) => (match.kickoffAt ?? '').slice(0, 10) === date,
+    (match) =>
+      (match.kickoffAt ?? '').slice(0, 10) === date &&
+      (date !== today || Date.parse(match.kickoffAt ?? '') > Date.now()) &&
+      ['draft', 'scheduled', 'postponed'].includes(match.status),
   );
   const datedProviderPrevious = (providerPrevious.data ?? []).filter(
     (match) => (match.kickoffAt ?? '').slice(0, 10) === date,

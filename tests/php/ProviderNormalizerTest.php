@@ -11,6 +11,8 @@ final class ProviderNormalizerTest extends TestCase {
 		$this->assertSame( 'scheduled', ProviderStatusMapper::fixture_status( 'NS' ) );
 		$this->assertSame( 'live', ProviderStatusMapper::fixture_status( '1H' ) );
 		$this->assertSame( 'completed', ProviderStatusMapper::fixture_status( 'FT' ) );
+		$this->assertSame( 'completed', ProviderStatusMapper::fixture_status( 'AWD' ) );
+		$this->assertSame( 'completed', ProviderStatusMapper::fixture_status( 'WO' ) );
 		$this->assertSame( 'postponed', ProviderStatusMapper::fixture_status( 'PST' ) );
 	}
 

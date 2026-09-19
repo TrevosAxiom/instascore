@@ -358,7 +358,11 @@ final class ProviderSyncService {
 		$cached = $this->repository->latest_preview( $this->provider_name, $cache_key );
 		$updated = null === $cached['lastKnownAt'] ? 0 : strtotime( (string) $cached['lastKnownAt'] . ' UTC' );
 		$empty_lifetime = 15 * MINUTE_IN_SECONDS;
-		if ( null !== $cached['lastKnownAt'] && ( ! empty( $cached['items'] ) || ( false !== $updated && $updated > time() - $empty_lifetime ) ) ) {
+		$is_today = $date === wp_date( 'Y-m-d', null, new \DateTimeZone( 'Africa/Lagos' ) );
+		$live_interval = max( 15, min( 3600, (int) get_option( "instascore_provider_{$this->sport}_live_interval_seconds", 30 ) ) );
+		$cache_lifetime = $is_today ? $live_interval : 12 * HOUR_IN_SECONDS;
+		$is_fresh = false !== $updated && $updated > time() - $cache_lifetime;
+		if ( null !== $cached['lastKnownAt'] && ( $is_fresh || ( empty( $cached['items'] ) && false !== $updated && $updated > time() - $empty_lifetime ) ) ) {
 			return array( 'items' => $this->filter_period( $cached['items'], $period ), 'lastKnownAt' => $cached['lastKnownAt'] );
 		}
 
@@ -372,7 +376,7 @@ final class ProviderSyncService {
 				}
 			}
 		}
-		if ( array() !== $broad_items ) {
+		if ( array() !== $broad_items && ! $is_today ) {
 			$items = array_values( $broad_items );
 			$this->repository->store_snapshot( $this->provider_name, $this->sport, $cache_key, $items );
 			return array( 'items' => $this->filter_period( $items, $period ), 'lastKnownAt' => gmdate( 'Y-m-d H:i:s' ) );
@@ -416,7 +420,11 @@ final class ProviderSyncService {
 		$statuses = 'previous' === $period
 			? array( 'completed', 'confirmed', 'cancelled' )
 			: array( 'draft', 'scheduled', 'postponed' );
-		return array_values( array_filter( $items, static fn( array $item ): bool => in_array( (string) ( $item['status'] ?? '' ), $statuses, true ) ) );
+		return array_values( array_filter( $items, static function ( array $item ) use ( $statuses, $period ): bool {
+			if ( ! in_array( (string) ( $item['status'] ?? '' ), $statuses, true ) ) return false;
+			$kickoff = strtotime( (string) ( $item['kickoffAt'] ?? '' ) );
+			return 'upcoming' !== $period || false === $kickoff || $kickoff > time();
+		} ) );
 	}
 
 	/**

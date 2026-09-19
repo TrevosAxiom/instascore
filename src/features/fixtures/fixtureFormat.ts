@@ -9,6 +9,7 @@ export function formatKickoff(fixture: Fixture) {
 }
 
 export function statusLabel(status: FixtureStatus) {
+  if (status === 'completed' || status === 'confirmed') return 'FT';
   return status.replace(/_/g, ' ').replace(/^\w/, (letter) => letter.toUpperCase());
 }
 

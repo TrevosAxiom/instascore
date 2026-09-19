@@ -161,7 +161,7 @@ final class BasketballNormalizer {
 			'NS', 'SCHEDULED' => 'scheduled',
 			'Q1', 'Q2', 'Q3', 'Q4', 'OT', 'LIVE', 'IN_PLAY' => 'live',
 			'HT', 'HALFTIME' => 'halftime',
-			'FT', 'AOT', 'FINAL' => 'completed',
+			'FT', 'AOT', 'FINAL', 'AWD', 'WO' => 'completed',
 			'CANC', 'CANCELLED' => 'cancelled',
 			'PST', 'POSTPONED' => 'postponed',
 			default => 'draft',

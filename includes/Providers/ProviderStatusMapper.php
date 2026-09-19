@@ -13,7 +13,7 @@ final class ProviderStatusMapper {
 			'TBD', 'NS', 'SCHEDULED' => 'scheduled',
 			'1H', '2H', 'ET', 'P', 'LIVE', 'IN_PLAY' => 'live',
 			'HT' => 'halftime',
-			'FT', 'AET', 'PEN', 'FINISHED' => 'completed',
+			'FT', 'AET', 'PEN', 'FINISHED', 'AWD', 'WO' => 'completed',
 			'CANC', 'CANCELLED' => 'cancelled',
 			'PST', 'POSTPONED' => 'postponed',
 			'SUSP', 'SUSPENDED' => 'suspended',
