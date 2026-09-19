@@ -2,7 +2,7 @@
 Contributors: instascore
 Requires at least: 6.6
 Requires PHP: 8.2
-Stable tag: 0.22.2
+Stable tag: 0.22.3
 License: GPL-2.0-or-later
 
 WordPress backend and React application shell for InstaScore.
@@ -12,6 +12,11 @@ WordPress backend and React application shell for InstaScore.
 See README.md for the shortcode, development server and production build steps.
 
 == Changelog ==
+
+= 0.22.3 =
+* Routed direct soccer and NFL match-detail URLs through the InstaScore application instead of the WordPress 404 template.
+* Added database-first historical match recovery with an allow-listed provider fallback for older completed matches.
+* Cached recovered match records so subsequent match-detail requests do not repeat provider calls.
 
 = 0.22.2 =
 * Corrected homepage Next Fixtures to select the earliest future matches across the next 30 days.
