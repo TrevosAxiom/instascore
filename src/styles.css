@@ -440,3 +440,239 @@ body.instascore-standalone .instascore-app-bar .MuiIconButton-root {
     animation-iteration-count: 1 !important;
   }
 }
+.fantasy-squad-shell {
+  overflow: hidden;
+}
+
+.fantasy-pitch {
+  position: relative;
+  min-height: 680px;
+  overflow: hidden;
+  border: 2px solid rgba(206, 231, 197, 0.55);
+  border-radius: 18px;
+  background-color: #0d4b3b;
+  background-image:
+    linear-gradient(
+      to bottom,
+      transparent 24.7%,
+      rgba(255, 255, 255, 0.14) 25%,
+      transparent 25.3%,
+      transparent 49.7%,
+      rgba(255, 255, 255, 0.18) 50%,
+      transparent 50.3%,
+      transparent 74.7%,
+      rgba(255, 255, 255, 0.14) 75%,
+      transparent 75.3%
+    ),
+    linear-gradient(
+      to right,
+      transparent 8%,
+      rgba(255, 255, 255, 0.12) 8.15%,
+      transparent 8.3%,
+      transparent 91.7%,
+      rgba(255, 255, 255, 0.12) 91.85%,
+      transparent 92%
+    ),
+    radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.035), transparent 52%);
+}
+
+.fantasy-pitch::before {
+  content: '';
+  position: absolute;
+  inset: 14% 8%;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  pointer-events: none;
+}
+
+.fantasy-pitch-word {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  color: rgba(255, 255, 255, 0.12);
+  font-size: clamp(2rem, 5vw, 4.5rem);
+  font-weight: 1000;
+  font-style: italic;
+  letter-spacing: 0.16em;
+  text-align: center;
+}
+
+.fantasy-pitch-word--top {
+  top: 18px;
+}
+.fantasy-pitch-word--bottom {
+  bottom: 18px;
+}
+.fantasy-pitch-label {
+  position: absolute;
+  left: 5%;
+  z-index: 2;
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 0.72rem !important;
+  font-weight: 1000 !important;
+  letter-spacing: 0.16em !important;
+}
+.fantasy-pitch-label--defense {
+  top: 16%;
+}
+.fantasy-pitch-label--offense {
+  top: 54%;
+}
+.fantasy-pitch-unit {
+  position: absolute;
+  left: 3%;
+  right: 3%;
+  height: 34%;
+}
+.fantasy-pitch-unit--defense {
+  top: 13%;
+}
+.fantasy-pitch-unit--offense {
+  top: 52%;
+}
+.fantasy-scrimmage {
+  position: absolute;
+  z-index: 3;
+  top: 50%;
+  left: 3%;
+  right: 3%;
+  border-top: 2px dashed rgba(255, 255, 255, 0.74);
+}
+.fantasy-scrimmage span {
+  position: absolute;
+  right: 0;
+  top: -14px;
+  padding: 4px 8px;
+  border-radius: 5px;
+  background: #f7f3dc;
+  color: rgb(7, 25, 45);
+  font-size: 0.64rem;
+  font-weight: 1000;
+  letter-spacing: 0.08em;
+}
+.fantasy-pitch-player {
+  position: absolute;
+  z-index: 4;
+  display: flex;
+  width: 130px;
+  padding: 0;
+  transform: translate(-50%, -50%);
+  flex-direction: column;
+  align-items: center;
+  border: 0;
+  background: transparent;
+  color: #fff;
+  font: inherit;
+  cursor: pointer;
+}
+.fantasy-pitch-avatar-wrap {
+  position: relative;
+}
+.fantasy-pitch-avatar {
+  width: 54px !important;
+  height: 54px !important;
+  border: 3px solid rgba(255, 255, 255, 0.92);
+  background: rgb(7, 25, 45) !important;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.3);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+.fantasy-pitch-player:hover .fantasy-pitch-avatar,
+.fantasy-pitch-player.is-selected .fantasy-pitch-avatar {
+  transform: translateY(-3px) scale(1.08);
+  box-shadow:
+    0 0 0 4px #f3c643,
+    0 12px 24px rgba(0, 0, 0, 0.42);
+}
+.fantasy-pitch-player strong {
+  max-width: 100%;
+  margin-top: 7px;
+  overflow: hidden;
+  font-size: 0.76rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fantasy-pitch-player small {
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.66rem;
+}
+.fantasy-pitch-role {
+  position: absolute;
+  top: -4px;
+  right: -5px;
+  display: grid;
+  width: 21px;
+  height: 21px;
+  place-items: center;
+  border: 2px solid white;
+  border-radius: 50%;
+  background: #f3c643;
+  color: rgb(7, 25, 45);
+  font-size: 0.62rem;
+  font-weight: 1000;
+}
+.fantasy-pitch-empty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 800 !important;
+}
+.fantasy-selected-player {
+  align-items: center;
+  margin: 16px -24px 0;
+  padding: 16px 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.16);
+}
+.fantasy-selected-position {
+  display: grid;
+  width: 48px;
+  height: 44px;
+  place-items: center;
+  border-radius: 8px;
+  background: #c62828;
+  color: white;
+  font-weight: 1000;
+}
+.fantasy-squad-accordion {
+  margin: 16px -24px -24px !important;
+  background: #fff !important;
+  color: rgb(7, 25, 45) !important;
+}
+
+@media (max-width: 700px) {
+  .fantasy-pitch {
+    min-height: 520px;
+    border-radius: 12px;
+  }
+  .fantasy-pitch-player {
+    width: 82px;
+  }
+  .fantasy-pitch-avatar {
+    width: 42px !important;
+    height: 42px !important;
+  }
+  .fantasy-pitch-player strong {
+    font-size: 0.62rem;
+  }
+  .fantasy-pitch-player small {
+    font-size: 0.55rem;
+  }
+  .fantasy-pitch-word {
+    font-size: 1.7rem;
+  }
+  .fantasy-scrimmage span {
+    display: none;
+  }
+  .fantasy-selected-player {
+    margin-inline: -16px;
+    padding-inline: 16px;
+  }
+  .fantasy-squad-accordion {
+    margin-inline: -16px !important;
+    margin-bottom: -16px !important;
+  }
+}

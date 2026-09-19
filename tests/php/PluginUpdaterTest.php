@@ -26,4 +26,9 @@ final class PluginUpdaterTest extends TestCase {
 		$this->assertTrue( PluginUpdater::enable_auto_update( false, (object) array( 'slug' => 'instascore-platform' ) ) );
 		$this->assertFalse( PluginUpdater::enable_auto_update( false, (object) array( 'slug' => 'another-plugin' ) ) );
 	}
+
+	public function test_accepts_wordpress_null_forced_update_state(): void {
+		$this->assertTrue( PluginUpdater::enable_auto_update( null, (object) array( 'slug' => 'instascore-platform' ) ) );
+		$this->assertFalse( PluginUpdater::enable_auto_update( null, (object) array( 'slug' => 'another-plugin' ) ) );
+	}
 }

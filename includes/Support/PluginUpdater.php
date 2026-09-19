@@ -22,15 +22,16 @@ final class PluginUpdater {
 	/**
 	 * Keep this release-managed plugin opted into WordPress background updates.
 	 *
-	 * @param bool  $update Existing auto-update decision.
+	 * @param bool|null $update Existing auto-update decision. WordPress passes null while
+	 *                          checking whether an update is forcibly enabled or disabled.
 	 * @param mixed $item   Plugin update data.
 	 */
-	public static function enable_auto_update( bool $update, $item ): bool {
+	public static function enable_auto_update( ?bool $update, $item ): bool {
 		$plugin = plugin_basename( INSTASCORE_PLATFORM_FILE );
 		if ( is_object( $item ) && ( $plugin === ( $item->plugin ?? '' ) || 'instascore-platform' === ( $item->slug ?? '' ) ) ) {
 			return true;
 		}
-		return $update;
+		return (bool) $update;
 	}
 
 	/**

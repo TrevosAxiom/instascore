@@ -1,4 +1,7 @@
 import {
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
   Alert,
   Avatar,
   Box,
@@ -30,6 +33,7 @@ export function FantasyDashboardPage() {
   const [team, setTeam] = useState('');
   const [sort, setSort] = useState('points');
   const [draft, setDraft] = useState<FantasySquadEntry[] | null>(null);
+  const [focusedPlayerUuid, setFocusedPlayerUuid] = useState('');
   const games = useQuery({ queryKey: ['fantasy', 'games'], queryFn: api.getFantasyGames });
   const activeGameUuid = selectedGameUuid || games.data?.[0]?.uuid || '';
   const activeGame = games.data?.find((game) => game.uuid === activeGameUuid);
@@ -139,16 +143,22 @@ export function FantasyDashboardPage() {
           </Box>
 
           <Box
-            className="instascore-panel"
+            className="instascore-panel fantasy-squad-shell"
             sx={{
-              background: 'linear-gradient(145deg, rgb(7, 25, 45), rgb(14, 52, 82))',
+              background: 'linear-gradient(145deg, rgb(7, 25, 45), rgb(12, 39, 67))',
               color: 'white',
             }}
           >
             <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" gap={2}>
               <Box>
+                <Typography
+                  variant="overline"
+                  sx={{ color: 'rgba(255,255,255,.6)', fontWeight: 900, letterSpacing: '.18em' }}
+                >
+                  Fantasy · {squad.data?.gameweek.name ?? 'Current gameweek'}
+                </Typography>
                 <Typography variant="h3" color="inherit">
-                  Your formation
+                  My starting lineup
                 </Typography>
                 <Typography sx={{ opacity: 0.72 }}>
                   Captain scores double. Vice-captain is ready if the captain does not play.
@@ -167,24 +177,48 @@ export function FantasyDashboardPage() {
                 />
               </Stack>
             </Stack>
-            <Typography fontWeight={900} sx={{ mt: 3, mb: 1, color: 'primary.main' }}>
-              STARTING TEAM
-            </Typography>
-            <FormationGrid
+            <FantasyPitch
               entries={starting}
-              onRole={changeRole}
               onCaptain={setCaptain}
+              selectedUuid={focusedPlayerUuid}
+              onSelect={setFocusedPlayerUuid}
+            />
+            <SelectedPlayerBar
+              entry={
+                starting.find((entry) => entry.fantasyPlayerUuid === focusedPlayerUuid) ??
+                starting[0]
+              }
+              onCaptain={setCaptain}
+              onBench={changeRole}
               onRemove={removePlayer}
             />
-            <Typography fontWeight={900} sx={{ mt: 3, mb: 1, color: 'primary.main' }}>
-              BENCH
-            </Typography>
-            <FormationGrid
-              entries={bench}
-              onRole={changeRole}
-              onCaptain={setCaptain}
-              onRemove={removePlayer}
-            />
+            <Accordion className="fantasy-squad-accordion" disableGutters>
+              <AccordionSummary expandIcon={<span aria-hidden="true">⌄</span>}>
+                <Typography fontWeight={900}>
+                  All {squadEntries.length} players, bench &amp; controls
+                </Typography>
+              </AccordionSummary>
+              <AccordionDetails>
+                <Typography fontWeight={900} sx={{ mb: 1, color: 'primary.main' }}>
+                  STARTING TEAM
+                </Typography>
+                <FormationGrid
+                  entries={starting}
+                  onRole={changeRole}
+                  onCaptain={setCaptain}
+                  onRemove={removePlayer}
+                />
+                <Typography fontWeight={900} sx={{ mt: 3, mb: 1, color: 'primary.main' }}>
+                  BENCH
+                </Typography>
+                <FormationGrid
+                  entries={bench}
+                  onRole={changeRole}
+                  onCaptain={setCaptain}
+                  onRemove={removePlayer}
+                />
+              </AccordionDetails>
+            </Accordion>
             {!squadEntries.length ? (
               <EmptyState
                 title="Your pitch is empty"
@@ -369,6 +403,160 @@ export function FantasyDashboardPage() {
   }
 }
 
+function FantasyPitch({
+  entries,
+  selectedUuid,
+  onSelect,
+  onCaptain,
+}: {
+  entries: FantasySquadEntry[];
+  selectedUuid: string;
+  onSelect: (uuid: string) => void;
+  onCaptain: (uuid: string, role: 'captain' | 'vice') => void;
+}) {
+  const offense = entries.filter((entry) => isOffense(entry.position?.code));
+  const defense = entries.filter((entry) => !isOffense(entry.position?.code));
+
+  return (
+    <Box className="fantasy-pitch" sx={{ mt: 3 }}>
+      <Box className="fantasy-pitch-word fantasy-pitch-word--top">INSTASCORE</Box>
+      <Typography className="fantasy-pitch-label fantasy-pitch-label--defense">DEFENSE</Typography>
+      <Box className="fantasy-pitch-unit fantasy-pitch-unit--defense">
+        {defense.map((entry, index) => (
+          <PitchPlayer
+            key={entry.fantasyPlayerUuid}
+            entry={entry}
+            index={index}
+            count={defense.length}
+            selected={selectedUuid === entry.fantasyPlayerUuid}
+            onSelect={onSelect}
+            onCaptain={onCaptain}
+          />
+        ))}
+      </Box>
+      <Box className="fantasy-scrimmage">
+        <span>LINE OF SCRIMMAGE</span>
+      </Box>
+      <Typography className="fantasy-pitch-label fantasy-pitch-label--offense">OFFENSE</Typography>
+      <Box className="fantasy-pitch-unit fantasy-pitch-unit--offense">
+        {offense.map((entry, index) => (
+          <PitchPlayer
+            key={entry.fantasyPlayerUuid}
+            entry={entry}
+            index={index}
+            count={offense.length}
+            selected={selectedUuid === entry.fantasyPlayerUuid}
+            onSelect={onSelect}
+            onCaptain={onCaptain}
+          />
+        ))}
+      </Box>
+      <Box className="fantasy-pitch-word fantasy-pitch-word--bottom">FANTASY</Box>
+      {!entries.length ? (
+        <Typography className="fantasy-pitch-empty">
+          Select players below to build your lineup
+        </Typography>
+      ) : null}
+    </Box>
+  );
+}
+
+function PitchPlayer({
+  entry,
+  index,
+  count,
+  selected,
+  onSelect,
+  onCaptain,
+}: {
+  entry: FantasySquadEntry;
+  index: number;
+  count: number;
+  selected: boolean;
+  onSelect: (uuid: string) => void;
+  onCaptain: (uuid: string, role: 'captain' | 'vice') => void;
+}) {
+  const columns = Math.min(Math.max(count, 1), 4);
+  const row = Math.floor(index / columns);
+  const column = index % columns;
+  const itemsInRow = Math.min(columns, count - row * columns);
+  const left = ((column + 1) / (itemsInRow + 1)) * 100;
+  const top = count <= 4 ? 50 : row === 0 ? 30 : 70;
+  return (
+    <Box
+      component="button"
+      type="button"
+      className={`fantasy-pitch-player${selected ? ' is-selected' : ''}`}
+      sx={{ left: `${left}%`, top: `${top}%` }}
+      onClick={() => onSelect(entry.fantasyPlayerUuid)}
+      onDoubleClick={() => onCaptain(entry.fantasyPlayerUuid, 'captain')}
+      aria-label={`Select ${entry.player?.name ?? 'player'}`}
+    >
+      <Box className="fantasy-pitch-avatar-wrap">
+        <Avatar src={entry.player?.photoUrl ?? undefined} className="fantasy-pitch-avatar">
+          {entry.player?.name?.slice(0, 1)}
+        </Avatar>
+        {entry.isCaptain || entry.isViceCaptain ? (
+          <span className="fantasy-pitch-role">{entry.isCaptain ? 'C' : 'V'}</span>
+        ) : null}
+      </Box>
+      <strong>{shortName(entry.player?.name)}</strong>
+      <small>{entry.position?.name ?? entry.position?.code}</small>
+    </Box>
+  );
+}
+
+function SelectedPlayerBar({
+  entry,
+  onCaptain,
+  onBench,
+  onRemove,
+}: {
+  entry: FantasySquadEntry | undefined;
+  onCaptain: (uuid: string, role: 'captain' | 'vice') => void;
+  onBench: (uuid: string) => void;
+  onRemove: (uuid: string) => void;
+}) {
+  if (!entry) return null;
+  return (
+    <Stack className="fantasy-selected-player" direction={{ xs: 'column', sm: 'row' }} gap={2}>
+      <Stack direction="row" gap={1.5} alignItems="center" sx={{ flex: 1 }}>
+        <Box className="fantasy-selected-position">{entry.position?.code ?? '—'}</Box>
+        <Box>
+          <Typography fontWeight={900} color="inherit">
+            {entry.player?.name}
+          </Typography>
+          <Typography variant="body2" sx={{ opacity: 0.68 }}>
+            {entry.team?.name} · Starting {entry.position?.name}
+          </Typography>
+        </Box>
+      </Stack>
+      <Stack direction="row" flexWrap="wrap" gap={1}>
+        <Button
+          size="small"
+          variant={entry.isCaptain ? 'contained' : 'outlined'}
+          onClick={() => onCaptain(entry.fantasyPlayerUuid, 'captain')}
+        >
+          Captain
+        </Button>
+        <Button
+          size="small"
+          variant={entry.isViceCaptain ? 'contained' : 'outlined'}
+          onClick={() => onCaptain(entry.fantasyPlayerUuid, 'vice')}
+        >
+          Vice
+        </Button>
+        <Button size="small" color="inherit" onClick={() => onBench(entry.fantasyPlayerUuid)}>
+          Bench
+        </Button>
+        <Button size="small" color="error" onClick={() => onRemove(entry.fantasyPlayerUuid)}>
+          Remove
+        </Button>
+      </Stack>
+    </Stack>
+  );
+}
+
 function FormationGrid({
   entries,
   onRole,
@@ -498,4 +686,12 @@ function deadlineLabel(value?: string) {
   if (!value) return 'Deadline pending';
   const date = new Date(value.replace(' ', 'T') + 'Z');
   return `Deadline ${date.toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}`;
+}
+function isOffense(code?: string) {
+  return ['QB', 'WR', 'RB', 'REC', 'RUSH', 'ALL', 'ATH', 'C'].includes((code ?? '').toUpperCase());
+}
+function shortName(name?: string) {
+  if (!name) return 'Player';
+  const parts = name.trim().split(/\s+/);
+  return parts.length > 1 ? parts[parts.length - 1] : parts[0];
 }

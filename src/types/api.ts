@@ -871,7 +871,7 @@ export interface FantasySquadEntry {
   isViceCaptain: boolean;
   priceCents?: number;
   position?: { code: string; name: string };
-  player?: { uuid: string; name: string };
+  player?: { uuid: string; name: string; photoUrl?: string | null };
   team?: { uuid: string; name: string };
 }
 
