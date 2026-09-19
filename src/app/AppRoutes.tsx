@@ -29,6 +29,11 @@ const AdminRssPage = lazy(() =>
 const NewsPage = lazy(() =>
   import('../features/news/NewsPage').then((module) => ({ default: module.NewsPage })),
 );
+const NewsArticlePage = lazy(() =>
+  import('../features/news/NewsArticlePage').then((module) => ({
+    default: module.NewsArticlePage,
+  })),
+);
 const AdminAccountsPage = lazy(() =>
   import('../features/admin/AdminAccountsPage').then((module) => ({
     default: module.AdminAccountsPage,
@@ -445,6 +450,14 @@ export function AppRoutes(props: { loginUrl: string }) {
           element={
             <RouteSuspense>
               <NewsPage />
+            </RouteSuspense>
+          }
+        />
+        <Route
+          path="news/articles/:postId"
+          element={
+            <RouteSuspense>
+              <NewsArticlePage />
             </RouteSuspense>
           }
         />

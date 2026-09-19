@@ -138,8 +138,8 @@ function StoryCard({ item, featured = false }: { item: NewsItem; featured?: bool
     categorySlug === 'football' ? 'Soccer' : (item.categories[0]?.name ?? 'News');
   return (
     <Card
-      component="a"
-      href={item.url}
+      component={RouterLink}
+      to={new URL(item.url, window.location.origin).pathname}
       sx={{
         display: 'flex',
         position: 'relative',

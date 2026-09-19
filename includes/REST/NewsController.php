@@ -31,6 +31,26 @@ final class NewsController {
 				'permission_callback' => '__return_true',
 			)
 		);
+		register_rest_route(
+			'instascore/v1',
+			'/news/(?P<post_id>\d+)',
+			array(
+				'methods'             => 'GET',
+				'callback'            => array( $this, 'show' ),
+				'permission_callback' => '__return_true',
+			)
+		);
+	}
+
+	public function show( WP_REST_Request $request ): WP_REST_Response {
+		$post = get_post( (int) $request['post_id'] );
+		if ( ! $post instanceof \WP_Post || 'post' !== $post->post_type || 'publish' !== $post->post_status ) {
+			return Envelope::error( 'news_not_found', __( 'News story could not be found.', 'instascore-platform' ), array(), 404 );
+		}
+		$item = $this->serialize_post( $post );
+		$item['content'] = wp_kses_post( apply_filters( 'the_content', $post->post_content ) );
+		$item['sourceUrl'] = esc_url_raw( (string) get_post_meta( $post->ID, '_instascore_rss_original_url', true ) );
+		return Envelope::success( $item );
 	}
 
 	public function index( WP_REST_Request $request ): WP_REST_Response {
@@ -90,7 +110,7 @@ final class NewsController {
 			'id'          => (int) $post->ID,
 			'title'       => $this->decode_text( get_the_title( $post ) ),
 			'excerpt'     => $this->decode_text( wp_strip_all_tags( get_the_excerpt( $post ) ) ),
-			'url'         => get_permalink( $post ),
+			'url'         => home_url( '/news/articles/' . (int) $post->ID ),
 			'imageUrl'    => is_string( $image ) ? $image : null,
 			'publishedAt' => get_post_time( DATE_ATOM, true, $post ),
 			'categories'  => array_map(

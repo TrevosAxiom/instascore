@@ -268,6 +268,8 @@ export interface NewsItem {
   imageUrl: string | null;
   publishedAt: string;
   categories: { name: string; slug: string }[];
+  content?: string;
+  sourceUrl?: string;
 }
 
 export type NewsPage = Paginated<NewsItem>;

@@ -11,6 +11,7 @@ import {
 } from '@mui/material';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
+import { Link as RouterLink } from 'react-router';
 
 import { useApi } from '../../api/context';
 import { ErrorState, LoadingState } from '../../components/AsyncStates';
@@ -102,7 +103,11 @@ export function NewsPage() {
                       {item.title}
                     </Typography>
                     {item.excerpt && <Typography color="text.secondary">{item.excerpt}</Typography>}
-                    <Button component="a" href={item.url} sx={{ alignSelf: 'flex-start' }}>
+                    <Button
+                      component={RouterLink}
+                      to={new URL(item.url, window.location.origin).pathname}
+                      sx={{ alignSelf: 'flex-start' }}
+                    >
                       Read story
                     </Button>
                   </Stack>

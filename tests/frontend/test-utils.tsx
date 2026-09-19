@@ -278,6 +278,7 @@ export const testApi: ApiClient = {
       },
     ]),
   getNews: () => Promise.resolve([]),
+  getNewsItem: () => Promise.reject(new Error('News story not configured in test.')),
   getNewsArchive: (_category, page = 1) =>
     Promise.resolve({ items: [], page, perPage: 12, total: 0, totalPages: 0 }),
   sendContactMessage: () => Promise.resolve({ message: 'Thanks—your message has been sent.' }),

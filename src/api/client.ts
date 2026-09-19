@@ -282,6 +282,7 @@ export interface ApiClient {
   ) => Promise<FootballMatchDetails>;
   getNews: (category?: string) => Promise<NewsItem[]>;
   getNewsArchive: (category?: string, page?: number) => Promise<NewsPage>;
+  getNewsItem: (postId: string) => Promise<NewsItem>;
   sendContactMessage: (input: {
     name: string;
     email: string;
@@ -768,6 +769,7 @@ export function createApiClient(settings: BootstrapSettings): ApiClient {
       ),
     getNews: (category) =>
       request<NewsItem[]>(`/news${category ? `?category=${encodeURIComponent(category)}` : ''}`),
+    getNewsItem: (postId) => request<NewsItem>(`/news/${encodeURIComponent(postId)}`),
     getNewsArchive: async (category, page = 1) => {
       const params = new URLSearchParams({ page: String(page), per_page: '12' });
       if (category) params.set('category', category);

@@ -2,7 +2,7 @@
 Contributors: instascore
 Requires at least: 6.6
 Requires PHP: 8.2
-Stable tag: 0.22.0
+Stable tag: 0.22.1
 License: GPL-2.0-or-later
 
 WordPress backend and React application shell for InstaScore.
@@ -12,6 +12,11 @@ WordPress backend and React application shell for InstaScore.
 See README.md for the shortcode, development server and production build steps.
 
 == Changelog ==
+
+= 0.22.1 =
+* Added native InstaScore article pages with the application header, navigation, themes, footer and responsive PWA layout.
+* Routed homepage and archive story links through the application instead of the active WordPress theme.
+* Preserved original publisher links separately for imported RSS stories.
 
 = 0.22.0 =
 * Added API-American-Football support for NFL competitions, teams, players, fixtures, standings and statistics.
