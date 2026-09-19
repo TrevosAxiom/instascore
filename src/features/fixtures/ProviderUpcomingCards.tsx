@@ -7,9 +7,11 @@ import type { ProviderUpcomingMatch } from '../../types/api';
 export function ProviderUpcomingCards({
   matches,
   kind = 'upcoming',
+  sport,
 }: {
   matches: ProviderUpcomingMatch[];
   kind?: 'upcoming' | 'finished';
+  sport?: 'football' | 'basketball' | 'nfl';
 }) {
   const groups = Object.entries(
     matches.reduce<Record<string, ProviderUpcomingMatch[]>>((result, match) => {
@@ -25,13 +27,16 @@ export function ProviderUpcomingCards({
             {competition}
           </Typography>
           {competitionMatches.map((match) => {
-            const basketball = 'sport' in match && match.sport === 'basketball';
+            const matchSport = sport ?? ('sport' in match ? match.sport : 'football');
+            const basketball = matchSport === 'basketball';
             const href = basketball
               ? `/basketball/matches/${match.providerId}`
-              : `/football/matches/${match.providerId}`;
+              : matchSport === 'nfl'
+                ? `/nfl/matches/${match.providerId}`
+                : `/football/matches/${match.providerId}`;
             return (
               <Paper
-                key={`${basketball ? 'basketball' : 'football'}-${match.providerId}`}
+                key={`${matchSport}-${match.providerId}`}
                 component={RouterLink}
                 to={href}
                 elevation={0}

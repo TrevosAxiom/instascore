@@ -69,7 +69,7 @@ export interface NotificationAdminStatus {
 
 export interface ProviderHealth {
   provider: string;
-  sport: 'football' | 'basketball';
+  sport: 'football' | 'basketball' | 'nfl';
   configured: boolean;
   baseUrl: string;
   secretExposed: boolean;
@@ -132,6 +132,7 @@ export interface OperationsSettings {
   providerSettings: {
     football: ProviderApiSettings;
     basketball: ProviderApiSettings;
+    nfl: ProviderApiSettings;
   };
   oneSignalSettings: OneSignalAdminSettings;
 }
@@ -417,7 +418,7 @@ export interface ProviderCompetition {
   logoUrl?: string;
   currentSeason?: string;
   type: string;
-  sport: 'football' | 'basketball';
+  sport: 'football' | 'basketball' | 'nfl';
 }
 
 export interface ProviderStandingRow {

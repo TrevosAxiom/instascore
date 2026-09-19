@@ -9,7 +9,7 @@ import { EntityAvatar } from '../../components/EntityAvatar';
 import { PageScaffold } from '../../components/PageScaffold';
 import { SportSwitcher } from '../../components/SportSwitcher';
 
-type ProviderSport = 'football' | 'basketball';
+type ProviderSport = 'football' | 'basketball' | 'nfl';
 
 export function LeagueTablePage() {
   const api = useApi();
@@ -31,6 +31,11 @@ export function LeagueTablePage() {
     queryFn: () => api.getProviderCompetitions('basketball'),
     enabled: !sport || sport === 'basketball',
   });
+  const nflCompetitions = useQuery({
+    queryKey: ['provider-competitions', 'nfl'],
+    queryFn: () => api.getProviderCompetitions('nfl'),
+    enabled: !sport || sport === 'nfl',
+  });
 
   const options = useMemo(() => {
     const local = (competitions.data?.items ?? [])
@@ -50,6 +55,10 @@ export function LeagueTablePage() {
         ...competition,
         sport: 'basketball' as const,
       })),
+      ...(nflCompetitions.data ?? []).map((competition) => ({
+        ...competition,
+        sport: 'nfl' as const,
+      })),
     ]
       .filter((competition) => !sport || competition.sport === sport)
       .map((competition) => ({
@@ -59,7 +68,13 @@ export function LeagueTablePage() {
         season: competition.currentSeason ?? '',
       }));
     return [...local, ...providers].sort((left, right) => left.name.localeCompare(right.name));
-  }, [basketballCompetitions.data, competitions.data, footballCompetitions.data, sport]);
+  }, [
+    basketballCompetitions.data,
+    competitions.data,
+    footballCompetitions.data,
+    nflCompetitions.data,
+    sport,
+  ]);
 
   useEffect(() => {
     if (!options.some((option) => option.id === selection)) setSelection(options[0]?.id ?? '');
@@ -93,7 +108,7 @@ export function LeagueTablePage() {
     <PageScaffold
       eyebrow="Tables"
       title="League tables"
-      description="Switch sports and competitions to see current flag football, soccer and basketball standings."
+      description="Switch sports and competitions to see current flag football, soccer, NFL and basketball standings."
     >
       <SportSwitcher sports={sports.data ?? []} value={sport} onChange={setSport} />
       <TextField

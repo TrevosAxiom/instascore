@@ -1,0 +1,30 @@
+<?php
+/** Normalizes API-American-Football payloads. @package InstaScore_Platform */
+namespace InstaScore\Platform\Providers;
+
+final class NflNormalizer {
+	private function rows( array $payload ): array { return is_array( $payload['response'] ?? null ) ? $payload['response'] : array(); }
+	public function competitions( array $payload ): array { return array_map( fn( array $row ): array => array( 'providerId' => (string) ( $row['id'] ?? '' ), 'name' => (string) ( $row['name'] ?? '' ), 'country' => (string) ( is_array( $row['country'] ?? null ) ? ( $row['country']['name'] ?? '' ) : ( $row['country'] ?? '' ) ), 'logoUrl' => (string) ( $row['logo'] ?? '' ), 'currentSeason' => $this->current_season( $row ), 'type' => 'league', 'sport' => 'nfl' ), $this->rows( $payload ) ); }
+	public function teams( array $payload ): array { return array_map( static fn( array $row ): array => array( 'providerId' => (string) ( $row['id'] ?? $row['team']['id'] ?? '' ), 'name' => (string) ( $row['name'] ?? $row['team']['name'] ?? '' ), 'logoUrl' => (string) ( $row['logo'] ?? $row['team']['logo'] ?? '' ), 'sport' => 'nfl' ), $this->rows( $payload ) ); }
+	public function players( array $payload ): array { return array_map( static fn( array $row ): array => array( 'providerId' => (string) ( $row['id'] ?? $row['player']['id'] ?? '' ), 'name' => (string) ( $row['name'] ?? $row['player']['name'] ?? '' ), 'teamProviderId' => (string) ( $row['team']['id'] ?? '' ), 'position' => (string) ( $row['position'] ?? '' ), 'sport' => 'nfl' ), $this->rows( $payload ) ); }
+	public function fixtures( array $payload ): array { return array_map( fn( array $row ): array => array( 'providerId' => (string) ( $row['game']['id'] ?? $row['id'] ?? '' ), 'competitionProviderId' => (string) ( $row['league']['id'] ?? '' ), 'competitionName' => (string) ( $row['league']['name'] ?? 'NFL' ), 'seasonProviderId' => (string) ( $row['league']['season'] ?? '' ), 'homeTeamProviderId' => (string) ( $row['teams']['home']['id'] ?? '' ), 'awayTeamProviderId' => (string) ( $row['teams']['away']['id'] ?? '' ), 'homeTeamName' => (string) ( $row['teams']['home']['name'] ?? 'Home' ), 'awayTeamName' => (string) ( $row['teams']['away']['name'] ?? 'Away' ), 'homeTeamLogoUrl' => (string) ( $row['teams']['home']['logo'] ?? '' ), 'awayTeamLogoUrl' => (string) ( $row['teams']['away']['logo'] ?? '' ), 'homeScore' => (int) ( $row['scores']['home']['total'] ?? 0 ), 'awayScore' => (int) ( $row['scores']['away']['total'] ?? 0 ), 'kickoffAt' => (string) ( $row['game']['date']['date'] ?? $row['date'] ?? '' ), 'status' => $this->status( (string) ( $row['game']['status']['short'] ?? $row['status']['short'] ?? '' ) ), 'statusShort' => (string) ( $row['game']['status']['short'] ?? $row['status']['short'] ?? '' ), 'sport' => 'nfl' ), $this->rows( $payload ) ); }
+	public function standings( array $payload ): array { return array_map( static fn( array $row ): array => array( 'teamProviderId' => (string) ( $row['team']['id'] ?? '' ), 'teamName' => (string) ( $row['team']['name'] ?? '' ), 'teamLogoUrl' => (string) ( $row['team']['logo'] ?? '' ), 'position' => (int) ( $row['position'] ?? $row['rank'] ?? 0 ), 'played' => (int) ( $row['won'] ?? 0 ) + (int) ( $row['lost'] ?? 0 ) + (int) ( $row['ties'] ?? 0 ), 'wins' => (int) ( $row['won'] ?? 0 ), 'draws' => (int) ( $row['ties'] ?? 0 ), 'losses' => (int) ( $row['lost'] ?? 0 ), 'points' => (int) ( $row['points']['for'] ?? 0 ), 'pointDifference' => (int) ( $row['points']['difference'] ?? 0 ), 'sport' => 'nfl' ), $this->rows( $payload ) ); }
+	public function statistics( array $payload ): array { return array_map( static function ( array $row ): array { $statistics = (array) ( $row['statistics'] ?? array() ); return array( 'teamId' => (string) ( $row['team']['id'] ?? '' ), 'teamName' => (string) ( $row['team']['name'] ?? '' ), 'teamLogoUrl' => (string) ( $row['team']['logo'] ?? '' ), 'items' => array_values( array_map( static fn( $value, $label ): array => array( 'label' => ucwords( str_replace( array( '_', '-' ), ' ', (string) $label ) ), 'value' => is_scalar( $value ) || null === $value ? $value : wp_json_encode( $value ) ), array_values( $statistics ), array_keys( $statistics ) ) ) ); }, $this->rows( $payload ) ); }
+	private function current_season( array $row ): string {
+		if ( isset( $row['season'] ) && is_scalar( $row['season'] ) ) return (string) $row['season'];
+		$seasons = array_values( array_filter( (array) ( $row['seasons'] ?? array() ), 'is_array' ) );
+		foreach ( array_reverse( $seasons ) as $season ) if ( ! empty( $season['current'] ) ) return (string) ( $season['season'] ?? $season['year'] ?? '' );
+		$last = end( $seasons );
+		return is_array( $last ) ? (string) ( $last['season'] ?? $last['year'] ?? '' ) : '';
+	}
+	private function status( string $status ): string {
+		return match ( strtoupper( $status ) ) {
+			'Q1', 'Q2', 'Q3', 'Q4', 'OT', 'LIVE', 'IN_PLAY' => 'live',
+			'HT', 'HALFTIME' => 'halftime',
+			'FT', 'AOT', 'FINAL' => 'completed',
+			'CANC', 'CANCELLED' => 'cancelled',
+			'PST', 'POSTPONED' => 'postponed',
+			default => 'scheduled',
+		};
+	}
+}

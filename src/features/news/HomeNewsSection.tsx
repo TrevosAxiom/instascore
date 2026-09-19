@@ -133,8 +133,9 @@ export function HomeNewsSection() {
 }
 
 function StoryCard({ item, featured = false }: { item: NewsItem; featured?: boolean }) {
+  const categorySlug = item.categories[0]?.slug ?? 'all';
   const categoryLabel =
-    item.categories[0]?.slug === 'football' ? 'Soccer' : (item.categories[0]?.name ?? 'News');
+    categorySlug === 'football' ? 'Soccer' : (item.categories[0]?.name ?? 'News');
   return (
     <Card
       component="a"
@@ -171,8 +172,36 @@ function StoryCard({ item, featured = false }: { item: NewsItem; featured?: bool
             backgroundSize: 'cover',
             backgroundPosition: 'center',
           }}
-        />
+        >
+          {!item.imageUrl ? (
+            <Stack
+              alignItems="center"
+              justifyContent="center"
+              sx={{ width: '100%', height: '100%', color: '#f7c638' }}
+            >
+              <SportIcon sport={categorySlug} />
+              <Typography variant="caption" fontWeight={900} sx={{ mt: 0.75, color: '#fff5d6' }}>
+                {categoryLabel}
+              </Typography>
+            </Stack>
+          ) : null}
+        </Box>
       )}
+      {featured && !item.imageUrl ? (
+        <Box
+          sx={{
+            position: 'absolute',
+            inset: 0,
+            display: 'grid',
+            placeItems: 'center',
+            opacity: 0.16,
+            transform: 'scale(5)',
+            color: '#f7c638',
+          }}
+        >
+          <SportIcon sport={categorySlug} />
+        </Box>
+      ) : null}
       <CardContent
         sx={{
           mt: featured ? 'auto' : 0,
@@ -195,13 +224,15 @@ function StoryCard({ item, featured = false }: { item: NewsItem; featured?: bool
           fontWeight={950}
           sx={{
             lineHeight: featured ? 1.08 : 1.2,
+            color: '#fff5d6',
+            textShadow: featured ? '0 2px 14px rgba(0,0,0,.5)' : 'none',
             display: '-webkit-box',
             WebkitBoxOrient: 'vertical',
             WebkitLineClamp: featured ? 3 : 2,
             overflow: 'hidden',
           }}
         >
-          {item.title}
+          {decodeEntities(item.title)}
         </Typography>
         {featured && item.excerpt ? (
           <Typography
@@ -215,10 +246,18 @@ function StoryCard({ item, featured = false }: { item: NewsItem; featured?: bool
               overflow: 'hidden',
             }}
           >
-            {item.excerpt}
+            {decodeEntities(item.excerpt)}
           </Typography>
         ) : null}
       </CardContent>
     </Card>
   );
+}
+
+function decodeEntities(value: string): string {
+  const textarea = document.createElement('textarea');
+  textarea.innerHTML = value;
+  const once = textarea.value;
+  textarea.innerHTML = once;
+  return textarea.value;
 }

@@ -50,7 +50,7 @@ final class OperationsService {
 	}
 
 	public function action( string $action, array $input, int $user_id ): array {
-		$allowed = array( 'retry_failed_jobs', 'standings_rebuild', 'fantasy_recalculation', 'diagnostic_report', 'bootstrap_cffl_lagos', 'football_live_sync', 'basketball_live_sync' );
+		$allowed = array( 'retry_failed_jobs', 'standings_rebuild', 'fantasy_recalculation', 'diagnostic_report', 'bootstrap_cffl_lagos', 'football_live_sync', 'basketball_live_sync', 'nfl_live_sync' );
 		if ( ! in_array( $action, $allowed, true ) ) {
 			return array( 'status' => 'rejected', 'message' => 'Unsupported operation.' );
 		}
@@ -64,6 +64,8 @@ final class OperationsService {
 			$result = ProviderSyncService::create_for_sport( 'football' )->sync( 'live', array( 'source' => 'manual_operations_action' ), false );
 		} elseif ( 'basketball_live_sync' === $action ) {
 			$result = ProviderSyncService::create_for_sport( 'basketball' )->sync( 'live', array( 'source' => 'manual_operations_action' ), false );
+		} elseif ( 'nfl_live_sync' === $action ) {
+			$result = ProviderSyncService::create_for_sport( 'nfl' )->sync( 'live', array( 'source' => 'manual_operations_action' ), false );
 		} else {
 			$result = array(
 				'status'    => 'queued',

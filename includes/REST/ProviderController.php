@@ -16,7 +16,7 @@ final class ProviderController {
 	public function register(): void {
 		register_rest_route(
 			'instascore/v1',
-			'/admin/providers/(?P<sport>football|basketball)/health',
+			'/admin/providers/(?P<sport>football|basketball|nfl)/health',
 			array(
 				'methods'             => 'GET',
 				'callback'            => fn( WP_REST_Request $request ): WP_REST_Response => Envelope::success( ProviderSyncService::create_for_sport( sanitize_key( (string) $request['sport'] ) )->health() ),
@@ -26,7 +26,7 @@ final class ProviderController {
 
 		register_rest_route(
 			'instascore/v1',
-			'/admin/providers/(?P<sport>football|basketball)/sync',
+			'/admin/providers/(?P<sport>football|basketball|nfl)/sync',
 			array(
 				'methods'             => 'POST',
 				'callback'            => array( $this, 'sync' ),
@@ -54,17 +54,26 @@ final class ProviderController {
 		);
 		register_rest_route(
 			'instascore/v1',
-			'/providers/(?P<sport>football|basketball)/(?P<period>upcoming|previous)',
+			'/providers/(?P<sport>football|basketball|nfl)/live',
+			array(
+				'methods'             => 'GET',
+				'callback'            => fn( WP_REST_Request $request ): WP_REST_Response => $this->provider_live( sanitize_key( (string) $request['sport'] ) ),
+				'permission_callback' => '__return_true',
+			)
+		);
+		register_rest_route(
+			'instascore/v1',
+			'/providers/(?P<sport>football|basketball|nfl)/(?P<period>upcoming|previous)',
 			array(
 				'methods'             => 'GET',
 				'callback'            => fn( WP_REST_Request $request ): WP_REST_Response => $this->provider_matches( sanitize_key( (string) $request['sport'] ), sanitize_key( (string) $request['period'] ), sanitize_text_field( (string) $request->get_param( 'date' ) ) ),
 				'permission_callback' => '__return_true',
 			)
 		);
-		register_rest_route( 'instascore/v1', '/providers/(?P<sport>football|basketball)/competitions', array(
+		register_rest_route( 'instascore/v1', '/providers/(?P<sport>football|basketball|nfl)/competitions', array(
 			'methods' => 'GET', 'callback' => fn( WP_REST_Request $request ): WP_REST_Response => Envelope::success( ProviderSyncService::create_for_sport( sanitize_key( (string) $request['sport'] ) )->public_competitions() ), 'permission_callback' => '__return_true',
 		) );
-		register_rest_route( 'instascore/v1', '/providers/(?P<sport>football|basketball)/competitions/(?P<competition_id>\d+)/standings', array(
+		register_rest_route( 'instascore/v1', '/providers/(?P<sport>football|basketball|nfl)/competitions/(?P<competition_id>\d+)/standings', array(
 			'methods' => 'GET', 'callback' => array( $this, 'provider_standings' ), 'permission_callback' => '__return_true',
 		) );
 		register_rest_route(
@@ -85,6 +94,9 @@ final class ProviderController {
 				'permission_callback' => '__return_true',
 			)
 		);
+		register_rest_route( 'instascore/v1', '/providers/(?P<sport>basketball|nfl)/matches/(?P<provider_id>\\d+)', array(
+			'methods' => 'GET', 'callback' => fn( WP_REST_Request $request ): WP_REST_Response => $this->provider_match( sanitize_key( (string) $request['sport'] ), sanitize_text_field( (string) $request['provider_id'] ) ), 'permission_callback' => '__return_true',
+		) );
 	}
 
 	public function provider_standings( WP_REST_Request $request ): WP_REST_Response {
@@ -122,7 +134,7 @@ final class ProviderController {
 	}
 
 	public function provider_live( string $sport ): WP_REST_Response {
-		$sport = 'basketball' === $sport ? 'basketball' : 'football';
+		$sport = in_array( $sport, array( 'football', 'basketball', 'nfl' ), true ) ? $sport : 'football';
 		$cached   = ProviderSyncService::create_for_sport( $sport )->poll_live_if_stale();
 		$response = Envelope::success(
 			$cached['items'],
@@ -141,7 +153,7 @@ final class ProviderController {
 	}
 
 	public function provider_matches( string $sport, string $period, string $date = '' ): WP_REST_Response {
-		$sport = 'basketball' === $sport ? 'basketball' : 'football';
+		$sport = in_array( $sport, array( 'football', 'basketball', 'nfl' ), true ) ? $sport : 'football';
 		$period = 'previous' === $period ? 'previous' : 'upcoming';
 		$service = ProviderSyncService::create_for_sport( $sport );
 		$cached = '' !== $date
@@ -164,6 +176,14 @@ final class ProviderController {
 			return Envelope::error( 'football_match_not_found', __( 'Soccer match could not be found.', 'instascore-platform' ), array(), 404 );
 		}
 		$response = Envelope::success( $match, array( 'cached' => true, 'sport' => 'football' ) );
+		$this->prevent_polling_cache( $response );
+		return $response;
+	}
+
+	public function provider_match( string $sport, string $provider_id ): WP_REST_Response {
+		$match = ProviderSyncService::create_for_sport( $sport )->provider_match_details( $provider_id );
+		if ( null === $match ) return Envelope::error( 'provider_match_not_found', __( 'Match could not be found.', 'instascore-platform' ), array(), 404 );
+		$response = Envelope::success( $match, array( 'cached' => true, 'sport' => $sport ) );
 		$this->prevent_polling_cache( $response );
 		return $response;
 	}

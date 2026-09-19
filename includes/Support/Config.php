@@ -78,6 +78,12 @@ final class Config {
 		return self::league_ids( 'basketball' );
 	}
 
+	public static function nfl_provider_base_url(): string { return 'https://v1.american-football.api-sports.io'; }
+	public static function nfl_provider_api_key(): string { return self::value( 'INSTASCORE_NFL_API_KEY', (string) get_option( 'instascore_provider_nfl_api_key', self::football_provider_api_key() ) ); }
+	public static function nfl_provider_name(): string { return 'api_american_football'; }
+	/** @return array<int,string> */
+	public static function nfl_provider_league_ids(): array { return self::league_ids( 'nfl' ); }
+
 	/** @return array<int,string> */
 	private static function league_ids( string $sport ): array {
 		$value = get_option( "instascore_provider_{$sport}_league_ids", array() );

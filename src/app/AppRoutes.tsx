@@ -99,6 +99,11 @@ const FootballMatchDetailPage = lazy(() =>
     default: module.FootballMatchDetailPage,
   })),
 );
+const NflMatchDetailPage = lazy(() =>
+  import('../features/fixtures/NflMatchDetailPage').then((module) => ({
+    default: module.NflMatchDetailPage,
+  })),
+);
 const FixtureListPage = lazy(() =>
   import('../features/fixtures/FixtureListPage').then((module) => ({
     default: module.FixtureListPage,
@@ -248,6 +253,14 @@ export function AppRoutes(props: { loginUrl: string }) {
           element={
             <RouteSuspense>
               <FootballMatchDetailPage />
+            </RouteSuspense>
+          }
+        />
+        <Route
+          path="nfl/matches/:providerId"
+          element={
+            <RouteSuspense>
+              <NflMatchDetailPage />
             </RouteSuspense>
           }
         />

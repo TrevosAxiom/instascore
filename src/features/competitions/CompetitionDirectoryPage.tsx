@@ -44,9 +44,15 @@ export function CompetitionDirectoryPage() {
     queryFn: () => api.getProviderCompetitions('basketball'),
     enabled: !sport || sport === 'basketball',
   });
+  const nflCompetitions = useQuery({
+    queryKey: ['provider-competitions', 'nfl'],
+    queryFn: () => api.getProviderCompetitions('nfl'),
+    enabled: !sport || sport === 'nfl',
+  });
   const providerCompetitions = [
     ...(footballCompetitions.data ?? []),
     ...(basketballCompetitions.data ?? []),
+    ...(nflCompetitions.data ?? []),
   ].filter(
     (competition) =>
       (!sport || competition.sport === sport) &&
@@ -127,14 +133,20 @@ export function CompetitionDirectoryPage() {
           <Card key={`${competition.sport}-${competition.providerId}`} variant="outlined">
             <CardActionArea
               component={Link}
-              to={`/tables?sport=${competition.sport}&competition=provider:${competition.sport}:${competition.providerId}`}
+              to={`/standings?sport=${competition.sport}&competition=provider:${competition.sport}:${competition.providerId}`}
               sx={{ height: '100%' }}
             >
               <CardContent>
                 <Stack spacing={1.5}>
                   <Stack direction="row" justifyContent="space-between">
                     <Chip
-                      label={competition.sport === 'football' ? 'Soccer' : 'Basketball'}
+                      label={
+                        competition.sport === 'football'
+                          ? 'Soccer'
+                          : competition.sport === 'nfl'
+                            ? 'NFL'
+                            : 'Basketball'
+                      }
                       size="small"
                       color="primary"
                     />

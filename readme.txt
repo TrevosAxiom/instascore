@@ -2,7 +2,7 @@
 Contributors: instascore
 Requires at least: 6.6
 Requires PHP: 8.2
-Stable tag: 0.20.2
+Stable tag: 0.22.0
 License: GPL-2.0-or-later
 
 WordPress backend and React application shell for InstaScore.
@@ -12,6 +12,17 @@ WordPress backend and React application shell for InstaScore.
 See README.md for the shortcode, development server and production build steps.
 
 == Changelog ==
+
+= 0.22.0 =
+* Added API-American-Football support for NFL competitions, teams, players, fixtures, standings and statistics.
+* Added configured competition-ID allow-lists and database-first provider catalogues across soccer, basketball and NFL.
+* Added NFL match centres and corrected sport-specific fixture links.
+* Repaired live polling, NFL live-state mapping and immediate provider schedule reconciliation.
+* Improved homepage news readability, missing-image fallbacks and RSS entity decoding.
+
+= 0.21.0 =
+* Added role-specific workspace navigation and dashboards for administrators, managers and officials.
+* Added fixture CSV import with a downloadable sample template.
 
 = 0.20.2 =
 * Fixed a WordPress Plugins screen fatal when core passes a null forced-auto-update state.

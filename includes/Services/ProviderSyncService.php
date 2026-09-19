@@ -11,6 +11,8 @@ use InstaScore\Platform\Providers\BasketballNormalizer;
 use InstaScore\Platform\Providers\BasketballProviderAdapter;
 use InstaScore\Platform\Providers\FootballNormalizer;
 use InstaScore\Platform\Providers\FootballProviderAdapter;
+use InstaScore\Platform\Providers\NflNormalizer;
+use InstaScore\Platform\Providers\NflProviderAdapter;
 use InstaScore\Platform\Providers\SportsProviderInterface;
 use InstaScore\Platform\Repositories\ProviderRepository;
 use InstaScore\Platform\Support\Config;
@@ -20,7 +22,7 @@ final class ProviderSyncService {
 	public function __construct(
 		private readonly ProviderRepository $repository,
 		private readonly SportsProviderInterface $provider,
-		private readonly FootballNormalizer|BasketballNormalizer $normalizer,
+		private readonly FootballNormalizer|BasketballNormalizer|NflNormalizer $normalizer,
 		private readonly string $sport,
 		private readonly string $provider_name,
 		private readonly string $base_url,
@@ -33,6 +35,9 @@ final class ProviderSyncService {
 
 	public static function create_for_sport( string $sport ): self {
 		global $wpdb;
+		if ( 'nfl' === $sport ) {
+			return new self( new ProviderRepository( $wpdb ), new NflProviderAdapter(), new NflNormalizer(), 'nfl', Config::nfl_provider_name(), Config::nfl_provider_base_url(), '' !== Config::nfl_provider_api_key() );
+		}
 		if ( 'basketball' === $sport ) {
 			return new self(
 				new ProviderRepository( $wpdb ),
@@ -62,7 +67,7 @@ final class ProviderSyncService {
 	 */
 	public function sync( string $sync_type, array $filters = array(), bool $dry_run = false ): array {
 		$started = gmdate( 'Y-m-d H:i:s' );
-		$league_ids = 'basketball' === $this->sport ? Config::basketball_provider_league_ids() : Config::football_provider_league_ids();
+		$league_ids = $this->league_ids();
 		$cooldown_until = (int) get_option( "instascore_provider_{$this->sport}_cooldown_until", 0 );
 		if ( ! $dry_run && $cooldown_until > time() ) {
 			return array(
@@ -219,7 +224,7 @@ final class ProviderSyncService {
 			'configured'      => $this->configured,
 			'baseUrl'         => $this->base_url,
 			'secretExposed'   => false,
-			'leagueIds'       => 'basketball' === $this->sport ? Config::basketball_provider_league_ids() : Config::football_provider_league_ids(),
+			'leagueIds'       => $this->league_ids(),
 			'schedules'       => array(
 				'live'      => 'every_30_seconds_for_live_fixtures',
 				'nearStart' => 'every_5_minutes_within_2_hours',
@@ -252,7 +257,7 @@ final class ProviderSyncService {
 			return $this->discard_expired_live_snapshot( $cached );
 		}
 
-		$interval = max( 15, min( 3600, (int) get_option( "instascore_provider_{$this->sport}_live_interval_seconds", 60 ) ) );
+		$interval = max( 15, min( 3600, (int) get_option( "instascore_provider_{$this->sport}_live_interval_seconds", 30 ) ) );
 		$updated  = null === $cached['lastKnownAt'] ? 0 : strtotime( (string) $cached['lastKnownAt'] . ' UTC' );
 		if ( false !== $updated && $updated > time() - $interval ) {
 			return $cached;
@@ -309,18 +314,19 @@ final class ProviderSyncService {
 
 	/** Public competition catalogue sourced from the persistent provider snapshot. */
 	public function public_competitions(): array {
+		$allowed = array_map( 'strval', $this->league_ids() );
+		if ( array() === $allowed ) return array();
 		$cached = $this->repository->latest_preview( $this->provider_name, 'competitions' );
 		if ( empty( $cached['items'] ) && $this->configured ) {
 			$result = $this->sync( 'competitions', array( 'source' => 'public_catalogue_cache_miss' ), false );
 			if ( 'succeeded' === ( $result['status'] ?? '' ) ) $cached = $this->repository->latest_preview( $this->provider_name, 'competitions' );
 		}
-		$allowed = array_map( 'strval', 'basketball' === $this->sport ? Config::basketball_provider_league_ids() : Config::football_provider_league_ids() );
 		return array_values( array_filter( $cached['items'], static fn( array $item ): bool => in_array( (string) ( $item['providerId'] ?? '' ), $allowed, true ) ) );
 	}
 
 	/** Database-first provider table with an allow-listed API fallback. */
 	public function public_standings( string $competition_id, string $season = '' ): array {
-		$allowed = array_map( 'strval', 'basketball' === $this->sport ? Config::basketball_provider_league_ids() : Config::football_provider_league_ids() );
+		$allowed = array_map( 'strval', $this->league_ids() );
 		if ( ! in_array( $competition_id, $allowed, true ) ) throw new \InvalidArgumentException( 'Competition is not enabled for public provider data.' );
 		if ( '' === $season ) {
 			foreach ( $this->public_competitions() as $competition ) {
@@ -383,7 +389,7 @@ final class ProviderSyncService {
 		}
 		set_transient( $lock, '1', 90 );
 		try {
-			$league_ids = 'basketball' === $this->sport ? Config::basketball_provider_league_ids() : Config::football_provider_league_ids();
+			$league_ids = $this->league_ids();
 			$filters = $this->scope_to_configured_leagues(
 				array( 'date' => $date, 'timezone' => 'Africa/Lagos', 'source' => 'public_date_cache_miss' ),
 				$league_ids,
@@ -532,6 +538,25 @@ final class ProviderSyncService {
 		}
 	}
 
+	/** @return array<string,mixed>|null */
+	public function provider_match_details( string $provider_id ): ?array {
+		if ( 'football' === $this->sport ) return $this->football_match_details( $provider_id );
+		$match = $this->cached_match( $provider_id );
+		if ( null === $match ) return null;
+		$key = 'match_details_' . $provider_id;
+		$cached = $this->repository->latest_preview( $this->provider_name, $key );
+		$updated = null === $cached['lastKnownAt'] ? 0 : strtotime( (string) $cached['lastKnownAt'] . ' UTC' );
+		if ( ! empty( $cached['items']['match'] ) && false !== $updated && $updated > time() - 3600 ) return $cached['items'];
+		$stats = $this->safe_provider_call( fn(): array => $this->provider->getStatistics( array( 'game' => $provider_id ) ) );
+		$standings = array();
+		if ( ! empty( $match['competitionProviderId'] ) && ! empty( $match['seasonProviderId'] ) ) {
+			$standings = $this->normalizer->standings( $this->safe_provider_call( fn(): array => $this->provider->getStandings( (string) $match['competitionProviderId'], (string) $match['seasonProviderId'] ) ) );
+		}
+		$details = array( 'match' => $match, 'events' => array(), 'lineups' => array(), 'statistics' => $this->normalizer->statistics( $stats ), 'standings' => $standings, 'updatedAt' => gmdate( DATE_ATOM ) );
+		$this->repository->store_snapshot( $this->provider_name, $this->sport, $key, $details );
+		return $details;
+	}
+
 	/** @return array<string,mixed> */
 	private function safe_provider_call( callable $callback ): array {
 		try {
@@ -591,5 +616,14 @@ final class ProviderSyncService {
 				'label' => (string) ( $item['type'] ?? '' ), 'value' => $item['value'] ?? null,
 			), array_filter( (array) ( $row['statistics'] ?? array() ), 'is_array' ) ) ),
 		), array_values( array_filter( $rows, 'is_array' ) ) );
+	}
+
+	/** @return array<int,string> */
+	private function league_ids(): array {
+		return match ( $this->sport ) {
+			'basketball' => Config::basketball_provider_league_ids(),
+			'nfl'        => Config::nfl_provider_league_ids(),
+			default      => Config::football_provider_league_ids(),
+		};
 	}
 }

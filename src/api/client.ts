@@ -92,9 +92,11 @@ export interface ApiClient {
   getSports: () => Promise<Sport[]>;
   getAdminSports: () => Promise<Sport[]>;
   getCompetitions: (query?: URLSearchParams) => Promise<CompetitionPage>;
-  getProviderCompetitions: (sport: 'football' | 'basketball') => Promise<ProviderCompetition[]>;
+  getProviderCompetitions: (
+    sport: 'football' | 'basketball' | 'nfl',
+  ) => Promise<ProviderCompetition[]>;
   getProviderStandings: (
-    sport: 'football' | 'basketball',
+    sport: 'football' | 'basketball' | 'nfl',
     competitionId: string,
     season?: string,
   ) => Promise<ProviderStandingRow[]>;
@@ -247,9 +249,9 @@ export interface ApiClient {
     dryRun: boolean;
     filters?: Record<string, unknown>;
   }) => Promise<ProviderSyncResult>;
-  getProviderHealth: (sport: 'football' | 'basketball') => Promise<ProviderHealth>;
+  getProviderHealth: (sport: 'football' | 'basketball' | 'nfl') => Promise<ProviderHealth>;
   syncProvider: (
-    sport: 'football' | 'basketball',
+    sport: 'football' | 'basketball' | 'nfl',
     input: {
       syncType:
         | 'competitions'
@@ -267,12 +269,17 @@ export interface ApiClient {
   ) => Promise<ProviderSyncResult>;
   getBasketballLive: () => Promise<BasketballLiveGame[]>;
   getFootballLive: () => Promise<FootballProviderLiveGame[]>;
+  getProviderLive: (sport: 'football' | 'basketball' | 'nfl') => Promise<ProviderUpcomingMatch[]>;
   getProviderMatches: (
-    sport: 'football' | 'basketball',
+    sport: 'football' | 'basketball' | 'nfl',
     period: 'upcoming' | 'previous',
     date?: string,
   ) => Promise<ProviderUpcomingMatch[]>;
   getFootballMatch: (providerId: string) => Promise<FootballMatchDetails>;
+  getProviderMatch: (
+    sport: 'basketball' | 'nfl',
+    providerId: string,
+  ) => Promise<FootballMatchDetails>;
   getNews: (category?: string) => Promise<NewsItem[]>;
   getNewsArchive: (category?: string, page?: number) => Promise<NewsPage>;
   sendContactMessage: (input: {
@@ -341,7 +348,8 @@ export interface ApiClient {
       | 'diagnostic_report'
       | 'bootstrap_cffl_lagos'
       | 'football_live_sync'
-      | 'basketball_live_sync',
+      | 'basketball_live_sync'
+      | 'nfl_live_sync',
     input?: Record<string, unknown>,
   ) => Promise<OperationsActionResult>;
   exportOperations: (type: string) => Promise<OperationsExport>;
@@ -743,6 +751,8 @@ export function createApiClient(settings: BootstrapSettings): ApiClient {
     getBasketballLive: () => request<BasketballLiveGame[]>(`/basketball/live?_poll=${Date.now()}`),
     getFootballLive: () =>
       request<FootballProviderLiveGame[]>(`/football/live?_poll=${Date.now()}`),
+    getProviderLive: (sport) =>
+      request<ProviderUpcomingMatch[]>(`/providers/${sport}/live?_poll=${Date.now()}`),
     getProviderMatches: (sport, period, date) =>
       request<ProviderUpcomingMatch[]>(
         `/providers/${sport}/${period}?${new URLSearchParams({
@@ -752,6 +762,10 @@ export function createApiClient(settings: BootstrapSettings): ApiClient {
       ),
     getFootballMatch: (providerId) =>
       request<FootballMatchDetails>(`/football/matches/${encodeURIComponent(providerId)}`),
+    getProviderMatch: (sport, providerId) =>
+      request<FootballMatchDetails>(
+        `/providers/${sport}/matches/${encodeURIComponent(providerId)}`,
+      ),
     getNews: (category) =>
       request<NewsItem[]>(`/news${category ? `?category=${encodeURIComponent(category)}` : ''}`),
     getNewsArchive: async (category, page = 1) => {

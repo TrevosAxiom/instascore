@@ -7,6 +7,9 @@
 
 namespace InstaScore\Platform\Repositories;
 
+use InstaScore\Platform\Support\ProviderScheduler;
+
+use InstaScore\Platform\Support\Config;
 use wpdb;
 
 final class OperationsRepository {
@@ -72,6 +75,7 @@ final class OperationsRepository {
 			'providerSettings'                => array(
 				'football'   => $this->provider_settings( 'football' ),
 				'basketball' => $this->provider_settings( 'basketball' ),
+				'nfl'        => $this->provider_settings( 'nfl' ),
 			),
 		);
 	}
@@ -91,6 +95,7 @@ final class OperationsRepository {
 		}
 		if ( isset( $input['providerSettings'] ) && is_array( $input['providerSettings'] ) ) {
 			$this->update_provider_settings( $input['providerSettings'] );
+			ProviderScheduler::reconcile_live_events();
 		}
 		if ( isset( $input['oneSignalSettings'] ) && is_array( $input['oneSignalSettings'] ) ) {
 			$this->update_onesignal_settings( $input['oneSignalSettings'] );
@@ -99,14 +104,14 @@ final class OperationsRepository {
 	}
 
 	private function provider_settings( string $sport ): array {
-		$sport = 'basketball' === $sport ? 'basketball' : 'football';
-		$key   = (string) get_option( "instascore_provider_{$sport}_api_key", '' );
+		$sport = in_array( $sport, array( 'football', 'basketball', 'nfl' ), true ) ? $sport : 'football';
+		$key   = match ( $sport ) { 'basketball' => Config::basketball_provider_api_key(), 'nfl' => Config::nfl_provider_api_key(), default => Config::football_provider_api_key() };
 		return array(
 			'providerName'         => (string) get_option( "instascore_provider_{$sport}_name", "approved_{$sport}_provider" ),
-			'baseUrl'             => 'football' === $sport ? 'https://v3.football.api-sports.io' : 'https://v1.basketball.api-sports.io',
+			'baseUrl'             => match ( $sport ) { 'basketball' => 'https://v1.basketball.api-sports.io', 'nfl' => 'https://v1.american-football.api-sports.io', default => 'https://v3.football.api-sports.io' },
 			'apiKeyConfigured'    => '' !== $key,
 			'pollingEnabled'      => (bool) get_option( "instascore_provider_{$sport}_polling_enabled", false ),
-			'liveIntervalSeconds' => (int) get_option( "instascore_provider_{$sport}_live_interval_seconds", 60 ),
+			'liveIntervalSeconds' => (int) get_option( "instascore_provider_{$sport}_live_interval_seconds", 30 ),
 			'leagueIds'          => array_values( array_filter( array_map( 'strval', (array) get_option( "instascore_provider_{$sport}_league_ids", array() ) ) ) ),
 		);
 	}
@@ -141,7 +146,7 @@ final class OperationsRepository {
 	}
 
 	private function update_provider_settings( array $settings ): void {
-		foreach ( array( 'football', 'basketball' ) as $sport ) {
+		foreach ( array( 'football', 'basketball', 'nfl' ) as $sport ) {
 			if ( ! isset( $settings[ $sport ] ) || ! is_array( $settings[ $sport ] ) ) {
 				continue;
 			}
@@ -159,7 +164,8 @@ final class OperationsRepository {
 				$enabled = rest_sanitize_boolean( $input['pollingEnabled'] );
 				update_option( "instascore_provider_{$sport}_polling_enabled", $enabled, false );
 				if ( ! $enabled ) {
-					wp_clear_scheduled_hook( 'football' === $sport ? 'instascore_football_provider_sync' : 'instascore_basketball_provider_sync', array( 'live' ) );
+					$hook = match ( $sport ) { 'basketball' => 'instascore_basketball_provider_sync', 'nfl' => 'instascore_nfl_provider_sync', default => 'instascore_football_provider_sync' };
+					wp_clear_scheduled_hook( $hook, array( 'live' ) );
 				}
 			}
 			if ( array_key_exists( 'liveIntervalSeconds', $input ) ) {

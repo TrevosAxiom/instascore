@@ -88,8 +88,8 @@ final class NewsController {
 		}
 		return array(
 			'id'          => (int) $post->ID,
-			'title'       => get_the_title( $post ),
-			'excerpt'     => wp_strip_all_tags( get_the_excerpt( $post ) ),
+			'title'       => $this->decode_text( get_the_title( $post ) ),
+			'excerpt'     => $this->decode_text( wp_strip_all_tags( get_the_excerpt( $post ) ) ),
 			'url'         => get_permalink( $post ),
 			'imageUrl'    => is_string( $image ) ? $image : null,
 			'publishedAt' => get_post_time( DATE_ATOM, true, $post ),
@@ -98,5 +98,11 @@ final class NewsController {
 				$categories
 			),
 		);
+	}
+
+	private function decode_text( string $text ): string {
+		// Some publishers double-encode apostrophes and punctuation in their feeds.
+		// Decode twice so `&amp;#039;` and `&#039;` both become readable text.
+		return html_entity_decode( html_entity_decode( $text, ENT_QUOTES | ENT_HTML5, 'UTF-8' ), ENT_QUOTES | ENT_HTML5, 'UTF-8' );
 	}
 }

@@ -180,9 +180,9 @@ final class RssImportService {
 			$content = wp_kses_post( (string) $item->get_content() );
 			$post_id = wp_insert_post( array(
 				'post_type' => 'post', 'post_status' => $settings['postStatus'],
-				'post_title' => sanitize_text_field( (string) $item->get_title() ),
+				'post_title' => sanitize_text_field( self::decode_text( (string) $item->get_title() ) ),
 				'post_content' => $content,
-				'post_excerpt' => wp_trim_words( wp_strip_all_tags( $item->get_description() ), 45 ),
+				'post_excerpt' => wp_trim_words( self::decode_text( wp_strip_all_tags( $item->get_description() ) ), 45 ),
 				'post_date_gmt' => $item->get_date( 'Y-m-d H:i:s' ) ?: current_time( 'mysql', true ),
 				'post_category' => $category_id ? array( $category_id ) : array(),
 			), true );
@@ -207,6 +207,10 @@ final class RssImportService {
 		if ( $enclosure && str_starts_with( (string) $enclosure->get_type(), 'image/' ) ) return esc_url_raw( (string) $enclosure->get_link() );
 		if ( preg_match( '/<img[^>]+src=["\']([^"\']+)["\']/i', $content, $match ) ) return esc_url_raw( $match[1] );
 		return '';
+	}
+
+	private static function decode_text( string $text ): string {
+		return html_entity_decode( html_entity_decode( $text, ENT_QUOTES | ENT_HTML5, 'UTF-8' ), ENT_QUOTES | ENT_HTML5, 'UTF-8' );
 	}
 
 	/** @param array<string,mixed> $source @param array<string,mixed> $result */

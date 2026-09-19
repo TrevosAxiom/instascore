@@ -6,7 +6,7 @@ import { useApi } from '../../api/context';
 import { ErrorState, LoadingState } from '../../components/AsyncStates';
 import { PageScaffold } from '../../components/PageScaffold';
 
-type ProviderSport = 'football' | 'basketball';
+type ProviderSport = 'football' | 'basketball' | 'nfl';
 type SyncType =
   | 'competitions'
   | 'teams'
@@ -78,7 +78,7 @@ export function AdminProvidersPage() {
     <PageScaffold
       eyebrow="Provider"
       title="External sports providers"
-      description="Monitor football and basketball imports, mapping conflicts, dry-run previews and provider health."
+      description="Monitor soccer, NFL and basketball imports, mapping conflicts, dry-run previews and provider health."
       status="Administrator"
     >
       {health.isLoading ? <LoadingState label="Loading provider health" /> : null}
@@ -95,6 +95,7 @@ export function AdminProvidersPage() {
               >
                 <MenuItem value="football">Football</MenuItem>
                 <MenuItem value="basketball">Basketball</MenuItem>
+                <MenuItem value="nfl">NFL</MenuItem>
               </TextField>
             </Stack>
             <Stack
@@ -117,7 +118,9 @@ export function AdminProvidersPage() {
           </Box>
 
           <Box className="instascore-panel">
-            <Typography variant="h3">Manual football data calls</Typography>
+            <Typography variant="h3">
+              Manual {sport === 'football' ? 'soccer' : sport.toUpperCase()} data calls
+            </Typography>
             <Typography color="text.secondary" sx={{ mt: 1 }}>
               Fetch a targeted API-Football dataset, preview its normalized records, then commit it
               to InstaScore's provider cache and mapping database.
@@ -147,12 +150,8 @@ export function AdminProvidersPage() {
                 <MenuItem value="teams">Teams</MenuItem>
                 <MenuItem value="players">Players</MenuItem>
                 <MenuItem value="fixtures">Fixtures/games</MenuItem>
-                {sport === 'football' ? (
-                  <MenuItem value="upcoming">Upcoming matches</MenuItem>
-                ) : null}
-                {sport === 'football' ? (
-                  <MenuItem value="previous">Previous matches/results</MenuItem>
-                ) : null}
+                <MenuItem value="upcoming">Upcoming matches</MenuItem>
+                <MenuItem value="previous">Previous matches/results</MenuItem>
                 <MenuItem value="live">Live scores</MenuItem>
                 <MenuItem value="standings">Standings</MenuItem>
                 <MenuItem value="statistics">Statistics</MenuItem>

@@ -86,6 +86,15 @@ export function AdminSettingsPage() {
     leagueIds: [],
     apiKey: '',
   });
+  const [nflDraft, setNflDraft] = useState<OperationsSettings['providerSettings']['nfl']>({
+    providerName: 'api_american_football',
+    baseUrl: '',
+    apiKeyConfigured: false,
+    pollingEnabled: false,
+    liveIntervalSeconds: 60,
+    leagueIds: [],
+    apiKey: '',
+  });
   const [oneSignalDraft, setOneSignalDraft] = useState<OperationsSettings['oneSignalSettings']>({
     appIdConfigured: false,
     restKeyConfigured: false,
@@ -122,6 +131,7 @@ export function AdminSettingsPage() {
     if (!query.data?.settings.providerSettings) return;
     setFootballDraft({ ...query.data.settings.providerSettings.football, apiKey: '' });
     setBasketballDraft({ ...query.data.settings.providerSettings.basketball, apiKey: '' });
+    setNflDraft({ ...query.data.settings.providerSettings.nfl, apiKey: '' });
   }, [query.data?.settings.providerSettings]);
 
   useEffect(() => {
@@ -147,6 +157,7 @@ export function AdminSettingsPage() {
       providerSettings: {
         football: footballDraft,
         basketball: basketballDraft,
+        nfl: nflDraft,
       },
     });
 
@@ -398,7 +409,7 @@ export function AdminSettingsPage() {
         <Card>
           <CardContent>
             <Stack spacing={2}>
-              <Typography variant="h6">Football and basketball API polling</Typography>
+              <Typography variant="h6">Soccer, NFL and basketball API polling</Typography>
               <Typography color="text.secondary">
                 Add API-Sports keys and league IDs, then poll live matches and scores through the
                 normalized provider pipeline into the database. Service endpoints are managed by
@@ -413,6 +424,18 @@ export function AdminSettingsPage() {
                   onPoll={() =>
                     actionMutation.mutate({
                       action: 'football_live_sync',
+                      input: { source: 'admin_settings' },
+                    })
+                  }
+                />
+                <ProviderSettingsCard
+                  label="NFL / American Football API"
+                  configured={settings.providerSettings.nfl.apiKeyConfigured}
+                  values={nflDraft}
+                  onChange={setNflDraft}
+                  onPoll={() =>
+                    actionMutation.mutate({
+                      action: 'nfl_live_sync',
                       input: { source: 'admin_settings' },
                     })
                   }

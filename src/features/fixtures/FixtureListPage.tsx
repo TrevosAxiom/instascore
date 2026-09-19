@@ -51,6 +51,11 @@ export function FixtureListPage({ mode = 'fixtures' }: { mode?: 'scores' | 'fixt
     queryFn: () => api.getProviderMatches('basketball', 'upcoming', date),
     enabled: !sport || sport === 'basketball',
   });
+  const nflUpcoming = useQuery({
+    queryKey: ['provider-upcoming', 'nfl', date],
+    queryFn: () => api.getProviderMatches('nfl', 'upcoming', date),
+    enabled: !sport || sport === 'nfl',
+  });
   const fixtures = query.data?.items ?? [];
   const displayedFixtures =
     mode === 'scores'
@@ -63,6 +68,7 @@ export function FixtureListPage({ mode = 'fixtures' }: { mode?: 'scores' | 'fixt
   const providerFixtures = [
     ...(footballUpcoming.data ?? []),
     ...(basketballUpcoming.data ?? []),
+    ...(nflUpcoming.data ?? []),
   ].filter((match) => (match.kickoffAt ?? '').slice(0, 10) === date);
   const fixtureGroups = Object.entries(
     displayedFixtures.reduce<Record<string, typeof displayedFixtures>>((groups, fixture) => {

@@ -248,8 +248,10 @@ export const testApi: ApiClient = {
     }),
   syncProvider: () => Promise.resolve({ status: 'succeeded', dryRun: true, count: 0, preview: [] }),
   getFootballLive: () => Promise.resolve([]),
+  getProviderLive: () => Promise.resolve([]),
   getProviderMatches: () => Promise.resolve([]),
   getFootballMatch: () => Promise.reject(new Error('Football match not configured in test.')),
+  getProviderMatch: () => Promise.reject(new Error('Provider match not configured in test.')),
   getBasketballLive: () =>
     Promise.resolve([
       {
@@ -591,6 +593,13 @@ export const testApi: ApiClient = {
             pollingEnabled: false,
             liveIntervalSeconds: 60,
           },
+          nfl: {
+            providerName: 'api_american_football',
+            baseUrl: 'https://v1.american-football.api-sports.io',
+            apiKeyConfigured: false,
+            pollingEnabled: false,
+            liveIntervalSeconds: 60,
+          },
         },
         oneSignalSettings: {
           appIdConfigured: false,
@@ -635,6 +644,13 @@ export const testApi: ApiClient = {
         basketball: {
           providerName: 'approved_basketball_provider',
           baseUrl: 'https://api-basketball.instascore.local/v1',
+          apiKeyConfigured: false,
+          pollingEnabled: false,
+          liveIntervalSeconds: 60,
+        },
+        nfl: {
+          providerName: 'api_american_football',
+          baseUrl: 'https://v1.american-football.api-sports.io',
           apiKeyConfigured: false,
           pollingEnabled: false,
           liveIntervalSeconds: 60,

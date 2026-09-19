@@ -19,7 +19,7 @@ describe('security hardening guardrails', () => {
     const combined = browserFiles.map((file) => readFileSync(file, 'utf8')).join('\n');
 
     expect(combined).not.toMatch(
-      /onesignal_rest_api_key|football_provider_api_key|basketball_provider_api_key/i,
+      /onesignal_rest_api_key|football_provider_api_key|basketball_provider_api_key|nfl_provider_api_key/i,
     );
     expect(combined).not.toMatch(/Bearer\s+[A-Za-z0-9._-]{16,}/);
   });

@@ -21,7 +21,7 @@ import { statusLabel } from './fixtureFormat';
 import { ProviderUpcomingCards } from './ProviderUpcomingCards';
 import { usePwa } from '../../pwa/PwaProvider';
 
-type SportTab = 'flag' | 'football' | 'basketball';
+type SportTab = 'flag' | 'football' | 'basketball' | 'nfl';
 type ScoreFilter = 'all' | 'live' | 'finished' | 'upcoming';
 
 const liveStatuses: FixtureStatus[] = ['warmup', 'live', 'halftime', 'interval'];
@@ -48,6 +48,7 @@ function matchesFilter(status: FixtureStatus, filter: ScoreFilter) {
 
 function initialSportTab(value?: string): SportTab {
   if (value === 'basketball') return 'basketball';
+  if (value === 'nfl') return 'nfl';
   if (value === 'flag' || value === 'flag-football') return 'flag';
   return 'football';
 }
@@ -69,7 +70,7 @@ export function LiveScoresBoard({
   const football = useQuery({
     queryKey: ['live-scores', 'football', date],
     queryFn: () => api.getFixtures(params),
-    enabled: sport !== 'basketball',
+    enabled: sport === 'flag' || sport === 'football',
     refetchInterval: () => (document.visibilityState === 'visible' ? 30_000 : false),
     refetchIntervalInBackground: false,
   });
@@ -87,17 +88,22 @@ export function LiveScoresBoard({
     refetchInterval: () => (document.visibilityState === 'visible' ? 30_000 : false),
     refetchIntervalInBackground: false,
   });
+  const nflLive = useQuery({
+    queryKey: ['live-scores', 'api-nfl-live'],
+    queryFn: () => api.getProviderLive('nfl'),
+    enabled: sport === 'nfl' && date === today,
+    refetchInterval: () => (document.visibilityState === 'visible' ? 30_000 : false),
+    refetchIntervalInBackground: false,
+  });
   const providerUpcoming = useQuery({
     queryKey: ['provider-upcoming', sport, date],
-    queryFn: () =>
-      api.getProviderMatches(sport === 'basketball' ? 'basketball' : 'football', 'upcoming', date),
-    enabled: sport === 'football' || sport === 'basketball',
+    queryFn: () => api.getProviderMatches(sport === 'flag' ? 'football' : sport, 'upcoming', date),
+    enabled: sport !== 'flag',
   });
   const providerPrevious = useQuery({
     queryKey: ['provider-previous', sport, date],
-    queryFn: () =>
-      api.getProviderMatches(sport === 'basketball' ? 'basketball' : 'football', 'previous', date),
-    enabled: sport === 'football' || sport === 'basketball',
+    queryFn: () => api.getProviderMatches(sport === 'flag' ? 'football' : sport, 'previous', date),
+    enabled: sport !== 'flag',
   });
   const fixtures = (football.data?.items ?? []).filter((fixture) => {
     if (sport === 'flag') return fixture.sport.slug.includes('flag-football');
@@ -129,6 +135,8 @@ export function LiveScoresBoard({
   // today's live feed bleed into a previous or future match day after navigation.
   const datedFootballLive = date === today ? (providerFootball.data ?? []) : [];
   const datedBasketballLive = date === today ? (basketball.data ?? []) : [];
+  const datedNflLive = date === today ? (nflLive.data ?? []) : [];
+  const datedFieldLive = sport === 'nfl' ? datedNflLive : datedFootballLive;
   const grouped = Object.entries(
     filteredFixtures.reduce<Record<string, Fixture[]>>((groups, fixture) => {
       (groups[fixture.competition.name] ??= []).push(fixture);
@@ -138,12 +146,24 @@ export function LiveScoresBoard({
   const counts = {
     all:
       fixtures.length +
-      (sport === 'football' ? datedFootballLive.length : datedBasketballLive.length) +
+      (sport === 'football'
+        ? datedFootballLive.length
+        : sport === 'basketball'
+          ? datedBasketballLive.length
+          : sport === 'nfl'
+            ? datedNflLive.length
+            : 0) +
       datedProviderUpcoming.length +
       datedProviderPrevious.length,
     live:
       fixtures.filter((fixture) => liveStatuses.includes(fixture.status)).length +
-      (sport === 'football' ? datedFootballLive.length : datedBasketballLive.length),
+      (sport === 'football'
+        ? datedFootballLive.length
+        : sport === 'basketball'
+          ? datedBasketballLive.length
+          : sport === 'nfl'
+            ? datedNflLive.length
+            : 0),
     finished:
       fixtures.filter((fixture) => finishedStatuses.includes(fixture.status)).length +
       datedProviderPrevious.length,
@@ -152,8 +172,8 @@ export function LiveScoresBoard({
       datedProviderUpcoming.length,
   };
   const providerGroups = Object.entries(
-    datedFootballLive.reduce<Record<string, typeof datedFootballLive>>((groups, game) => {
-      (groups[game.competitionName] ??= []).push(game);
+    datedFieldLive.reduce<Record<string, typeof datedFieldLive>>((groups, game) => {
+      (groups[game.competitionName ?? 'American football'] ??= []).push(game);
       return groups;
     }, {}),
   );
@@ -249,6 +269,7 @@ export function LiveScoresBoard({
             { uuid: 'flag', slug: 'flag-football', name: 'Flag' },
             { uuid: 'football', slug: 'football', name: 'Soccer' },
             { uuid: 'basketball', slug: 'basketball', name: 'Basketball' },
+            { uuid: 'nfl', slug: 'nfl', name: 'NFL' },
           ]}
           value={sport === 'flag' ? 'flag-football' : sport}
           onChange={(value) => {
@@ -279,7 +300,7 @@ export function LiveScoresBoard({
           {sport === 'football' && providerFootball.isError ? (
             <ErrorState title="The soccer live feed could not be loaded." />
           ) : null}
-          {sport === 'football' && (filter === 'all' || filter === 'live')
+          {(sport === 'football' || sport === 'nfl') && (filter === 'all' || filter === 'live')
             ? providerGroups.map(([competition, games]) => (
                 <Paper
                   key={competition}
@@ -296,7 +317,7 @@ export function LiveScoresBoard({
                     <Box
                       key={game.providerId}
                       component={RouterLink}
-                      to={`/football/matches/${game.providerId}`}
+                      to={`/${sport === 'nfl' ? 'nfl' : 'football'}/matches/${game.providerId}`}
                       sx={{
                         display: 'grid',
                         gridTemplateColumns: {
@@ -317,7 +338,11 @@ export function LiveScoresBoard({
                       <Stack spacing={0.1}>
                         <Chip size="small" color="success" label="LIVE" />
                         <Typography variant="caption" textAlign="center" fontWeight={900}>
-                          {game.elapsed ? `${game.elapsed}'` : game.statusShort}
+                          {'elapsed' in game && game.elapsed
+                            ? `${game.elapsed}'`
+                            : 'statusShort' in game
+                              ? game.statusShort
+                              : 'LIVE'}
                         </Typography>
                       </Stack>
                       <Stack spacing={0.35}>
@@ -349,26 +374,35 @@ export function LiveScoresBoard({
                 </Paper>
               ))
             : null}
-          {sport === 'football' && (filter === 'all' || filter === 'upcoming') ? (
-            <ProviderUpcomingCards matches={datedProviderUpcoming} />
+          {(sport === 'football' || sport === 'nfl') &&
+          (filter === 'all' || filter === 'upcoming') ? (
+            <ProviderUpcomingCards
+              matches={datedProviderUpcoming}
+              sport={sport === 'nfl' ? 'nfl' : 'football'}
+            />
           ) : null}
-          {sport === 'football' && (filter === 'all' || filter === 'finished') ? (
-            <ProviderUpcomingCards matches={datedProviderPrevious} kind="finished" />
+          {(sport === 'football' || sport === 'nfl') &&
+          (filter === 'all' || filter === 'finished') ? (
+            <ProviderUpcomingCards
+              matches={datedProviderPrevious}
+              kind="finished"
+              sport={sport === 'nfl' ? 'nfl' : 'football'}
+            />
           ) : null}
           {!football.isLoading &&
           !grouped.length &&
           !(
-            sport === 'football' &&
+            (sport === 'football' || sport === 'nfl') &&
             (filter === 'all' || filter === 'live') &&
-            datedFootballLive.length
+            datedFieldLive.length
           ) &&
           !(
-            sport === 'football' &&
+            (sport === 'football' || sport === 'nfl') &&
             (filter === 'all' || filter === 'finished') &&
             datedProviderPrevious.length
           ) &&
           !(
-            sport === 'football' &&
+            (sport === 'football' || sport === 'nfl') &&
             (filter === 'all' || filter === 'upcoming') &&
             datedProviderUpcoming.length
           ) ? (

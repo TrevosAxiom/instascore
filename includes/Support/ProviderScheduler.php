@@ -12,15 +12,26 @@ use InstaScore\Platform\Services\ProviderSyncService;
 final class ProviderScheduler {
 	public const HOOK = 'instascore_football_provider_sync';
 	public const BASKETBALL_HOOK = 'instascore_basketball_provider_sync';
+	public const NFL_HOOK = 'instascore_nfl_provider_sync';
 
 	public static function register(): void {
 		add_filter( 'cron_schedules', array( self::class, 'schedules' ) );
 		add_action( self::HOOK, array( self::class, 'run' ), 10, 1 );
 		add_action( self::BASKETBALL_HOOK, array( self::class, 'run_basketball' ), 10, 1 );
+		add_action( self::NFL_HOOK, array( self::class, 'run_nfl' ), 10, 1 );
 		self::ensure_upcoming_event( self::HOOK );
 		self::ensure_upcoming_event( self::BASKETBALL_HOOK );
+		self::ensure_upcoming_event( self::NFL_HOOK );
 		self::ensure_live_event( 'football', self::HOOK, 'instascore_football_provider_live' );
 		self::ensure_live_event( 'basketball', self::BASKETBALL_HOOK, 'instascore_basketball_provider_live' );
+		self::ensure_live_event( 'nfl', self::NFL_HOOK, 'instascore_nfl_provider_live' );
+	}
+
+	/** Reconcile live events immediately after an administrator saves settings. */
+	public static function reconcile_live_events(): void {
+		self::ensure_live_event( 'football', self::HOOK, 'instascore_football_provider_live' );
+		self::ensure_live_event( 'basketball', self::BASKETBALL_HOOK, 'instascore_basketball_provider_live' );
+		self::ensure_live_event( 'nfl', self::NFL_HOOK, 'instascore_nfl_provider_live' );
 	}
 
 	private static function ensure_upcoming_event( string $hook ): void {
@@ -36,8 +47,9 @@ final class ProviderScheduler {
 	}
 
 	public static function schedules( array $schedules ): array {
-		$football   = (int) get_option( 'instascore_provider_football_live_interval_seconds', 60 );
-		$basketball = (int) get_option( 'instascore_provider_basketball_live_interval_seconds', 60 );
+		$football   = (int) get_option( 'instascore_provider_football_live_interval_seconds', 30 );
+		$basketball = (int) get_option( 'instascore_provider_basketball_live_interval_seconds', 30 );
+		$nfl        = (int) get_option( 'instascore_provider_nfl_live_interval_seconds', 30 );
 		$schedules['instascore_football_provider_live'] = array(
 			'interval' => max( 15, min( 3600, $football ) ),
 			'display'  => 'InstaScore football provider live polling',
@@ -46,6 +58,7 @@ final class ProviderScheduler {
 			'interval' => max( 15, min( 3600, $basketball ) ),
 			'display'  => 'InstaScore basketball provider live polling',
 		);
+		$schedules['instascore_nfl_provider_live'] = array( 'interval' => max( 15, min( 3600, $nfl ) ), 'display' => 'InstaScore NFL provider live polling' );
 		return $schedules;
 	}
 
@@ -89,6 +102,12 @@ final class ProviderScheduler {
 		};
 		ProviderSyncService::create_for_sport( 'basketball' )->sync( $sync_type, self::filters( $cadence ), false );
 		if ( 'upcoming' === $cadence ) ProviderSyncService::create_for_sport( 'basketball' )->sync( 'previous', array( 'last' => 50, 'source' => 'scheduled_previous_poll' ), false );
+	}
+
+	public static function run_nfl( string $cadence = 'future' ): void {
+		$sync_type = match ( $cadence ) { 'live' => 'live', 'upcoming' => 'upcoming', default => 'fixtures' };
+		ProviderSyncService::create_for_sport( 'nfl' )->sync( $sync_type, self::filters( $cadence ), false );
+		if ( 'upcoming' === $cadence ) ProviderSyncService::create_for_sport( 'nfl' )->sync( 'previous', array( 'last' => 50, 'source' => 'scheduled_previous_poll' ), false );
 	}
 
 	/** @return array<string,string> */

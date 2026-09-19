@@ -16,6 +16,7 @@ import { useApi } from '../../api/context';
 import { ErrorState, LoadingState } from '../../components/AsyncStates';
 import { PageScaffold } from '../../components/PageScaffold';
 import { SportSwitcher } from '../../components/SportSwitcher';
+import { SportIcon } from '../../components/SportSwitcher';
 
 export function NewsPage() {
   const api = useApi();
@@ -65,7 +66,22 @@ export function NewsPage() {
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
                   }}
-                />
+                >
+                  {!item.imageUrl ? (
+                    <Stack
+                      alignItems="center"
+                      justifyContent="center"
+                      sx={{ height: '100%', color: '#f7c638' }}
+                    >
+                      <SportIcon sport={item.categories[0]?.slug ?? 'all'} />
+                      <Typography sx={{ mt: 1, color: '#fff5d6', fontWeight: 900 }}>
+                        {item.categories[0]?.slug === 'football'
+                          ? 'Soccer'
+                          : (item.categories[0]?.name ?? 'Sports news')}
+                      </Typography>
+                    </Stack>
+                  ) : null}
+                </Box>
                 <CardContent>
                   <Stack spacing={1.25}>
                     <Stack direction="row" spacing={1} alignItems="center">
