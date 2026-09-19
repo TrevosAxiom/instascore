@@ -486,6 +486,25 @@ final class ProviderSyncService {
 	 * @return array<string,mixed>|null
 	 */
 	public function cached_match( string $provider_id ): ?array {
+		$provider_id = sanitize_text_field( $provider_id );
+		if ( '' === $provider_id ) {
+			return null;
+		}
+
+		// A previously-built detail payload is the strongest local source for an old
+		// match and must remain usable after the rolling "previous" list advances.
+		$details = $this->repository->latest_preview( $this->provider_name, 'match_details_' . $provider_id );
+		if ( is_array( $details['items']['match'] ?? null ) ) {
+			return $details['items']['match'];
+		}
+
+		$lookup = $this->repository->latest_preview( $this->provider_name, 'match_lookup_' . $provider_id );
+		foreach ( $lookup['items'] as $item ) {
+			if ( $provider_id === (string) ( $item['providerId'] ?? '' ) ) {
+				return $item;
+			}
+		}
+
 		foreach ( array( 'live', 'upcoming', 'previous', 'fixtures' ) as $period ) {
 			$snapshot = $this->repository->latest_preview( $this->provider_name, $period );
 			foreach ( $snapshot['items'] as $item ) {
@@ -494,6 +513,51 @@ final class ProviderSyncService {
 				}
 			}
 		}
+
+		// Rolling snapshots intentionally contain only a bounded number of matches.
+		// Resolve an older match by its provider ID, then persist it so subsequent
+		// visitors remain database-first. Never expose a match outside the saved
+		// competition allow-list.
+		if ( ! $this->configured ) {
+			return null;
+		}
+		$allowed_leagues = array_values( array_filter( array_map( 'strval', $this->league_ids() ) ) );
+		if ( array() === $allowed_leagues ) {
+			return null;
+		}
+
+		try {
+			$filters = 'football' === $this->sport
+				? array( 'fixtureId' => $provider_id )
+				: array( 'id' => $provider_id );
+			if ( 'nfl' === $this->sport ) {
+				// The NFL adapter requires an explicit league scope for every request.
+				$filters['leagueIds'] = $allowed_leagues;
+			}
+			$matches = $this->normalizer->fixtures( $this->provider->getFixtures( $filters ) );
+			foreach ( $matches as $match ) {
+				if (
+					$provider_id === (string) ( $match['providerId'] ?? '' )
+					&& in_array( (string) ( $match['competitionProviderId'] ?? '' ), $allowed_leagues, true )
+				) {
+					$this->repository->store_snapshot( $this->provider_name, $this->sport, 'match_lookup_' . $provider_id, array( $match ) );
+					return $match;
+				}
+			}
+		} catch ( Throwable $error ) {
+			$this->repository->record_sync_log(
+				array(
+					'provider'     => $this->provider_name,
+					'syncType'     => 'match_lookup_' . $provider_id,
+					'status'       => 'failed',
+					'filters'      => array( 'providerId' => $provider_id ),
+					'errorCode'    => 'provider_match_lookup_failed',
+					'errorMessage' => $error->getMessage(),
+					'startedAt'    => gmdate( 'Y-m-d H:i:s' ),
+				)
+			);
+		}
+
 		return null;
 	}
 

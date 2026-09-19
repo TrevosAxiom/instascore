@@ -99,7 +99,7 @@ final class Shortcode {
 		}
 
 		$roots = array(
-			'scores', 'competitions', 'fixtures', 'results', 'standings', 'basketball',
+			'scores', 'competitions', 'fixtures', 'results', 'standings', 'football', 'basketball', 'nfl',
 			'favourites', 'search', 'teams', 'players', 'fantasy', 'news', 'more',
 			'embed', 'portal', 'notifications', 'login', 'admin', 'operations',
 		);

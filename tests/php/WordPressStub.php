@@ -109,7 +109,9 @@ function sanitize_title( string $value ): string { return trim( strtolower( preg
 function remove_accents( string $value ): string { return $value; }
 function esc_url_raw( string $value ): string { return filter_var( trim( $value ), FILTER_SANITIZE_URL ); }
 function wp_http_validate_url( string $value ): string|false { return filter_var( $value, FILTER_VALIDATE_URL ); }
-function wp_parse_url( string $value ): array|false { return parse_url( $value ); }
+function wp_parse_url( string $value, int $component = -1 ): array|string|int|false|null {
+	return -1 === $component ? parse_url( $value ) : parse_url( $value, $component );
+}
 function untrailingslashit( string $value ): string { return rtrim( $value, '/\\' ); }
 function wp_is_uuid( string $value ): bool { return 1 === preg_match( '/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $value ); }
 function current_user_can( string $capability ): bool { return in_array( $capability, $GLOBALS['instascore_test_capabilities'], true ); }
