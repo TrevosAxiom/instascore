@@ -55,6 +55,15 @@ final class FantasyController {
 		);
 		register_rest_route(
 			'instascore/v1',
+			'/fantasy/games/(?P<uuid>[0-9a-f-]{36})/table',
+			array(
+				'methods'             => 'GET',
+				'callback'            => fn( WP_REST_Request $request ): WP_REST_Response => $this->execute( fn(): array => FantasyService::create()->performance_table( (string) $request['uuid'] ) ),
+				'permission_callback' => '__return_true',
+			)
+		);
+		register_rest_route(
+			'instascore/v1',
 			'/fantasy/games/(?P<uuid>[0-9a-f-]{36})/squad',
 			array(
 				array(

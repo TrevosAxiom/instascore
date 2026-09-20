@@ -38,6 +38,29 @@ final class FantasyService {
 		return $this->present_game_with_rules( $game );
 	}
 
+	/** @return array<int,array<string,mixed>> */
+	public function performance_table( string $game_uuid ): array {
+		$game = $this->repository->find_game( $game_uuid );
+		if ( null === $game ) {
+			throw new ValidationException( array( 'game' => 'not_found' ) );
+		}
+		return array_map(
+			fn( array $row ): array => array(
+				'gameweekUuid'    => $row['gameweek_uuid'],
+				'gameweekName'    => $row['gameweek_name'],
+				'sequenceNumber'  => (int) $row['sequence_number'],
+				'rank'            => (int) $row['rank_position'],
+				'previousRank'    => null === $row['previous_rank_position'] ? null : (int) $row['previous_rank_position'],
+				'teamName'        => $row['team_name'] ?: 'Fantasy team',
+				'managerName'     => $row['manager_name'] ?: 'Fantasy manager',
+				'gameweekPoints'  => (int) $row['gameweek_points'],
+				'totalPoints'     => (int) $row['season_points'],
+				'status'          => $row['status'],
+			),
+			$this->repository->performance_table( (int) $game['id'] )
+		);
+	}
+
 	/**
 	 * @param array<string,mixed> $query Query.
 	 * @return array<int,array<string,mixed>>
@@ -48,6 +71,49 @@ final class FantasyService {
 			throw new ValidationException( array( 'game' => 'not_found' ) );
 		}
 		return array_map( array( $this, 'present_player' ), $this->repository->player_pool( (int) $game['id'], $query ) );
+	}
+
+	/** @return array<string,mixed> */
+	public function admin_player_pricing( string $game_uuid, array $query = array() ): array {
+		$game = $this->repository->find_game( $game_uuid );
+		if ( null === $game ) {
+			throw new ValidationException( array( 'game' => 'not_found' ) );
+		}
+		$query['limit'] = 1000;
+		return array(
+			'locked'  => $this->repository->submitted_squad_count( (int) $game['id'] ) > 0,
+			'players' => array_map( array( $this, 'present_player' ), $this->repository->player_pool( (int) $game['id'], $query ) ),
+		);
+	}
+
+	/** @param array<string,mixed> $input */
+	public function update_player_prices( string $game_uuid, array $input ): array {
+		$game = $this->repository->find_game( $game_uuid );
+		if ( null === $game ) {
+			throw new ValidationException( array( 'game' => 'not_found' ) );
+		}
+		if ( $this->repository->submitted_squad_count( (int) $game['id'] ) > 0 ) {
+			throw new ValidationException( array( 'prices' => 'locked_after_first_squad_submission' ) );
+		}
+		$rows = is_array( $input['updates'] ?? null ) ? $input['updates'] : array();
+		if ( empty( $rows ) || count( $rows ) > 1000 ) {
+			throw new ValidationException( array( 'updates' => 'one_to_1000_rows_required' ) );
+		}
+		$updates = array();
+		foreach ( $rows as $index => $row ) {
+			$uuid  = sanitize_text_field( (string) ( is_array( $row ) ? ( $row['fantasyPlayerUuid'] ?? '' ) : '' ) );
+			$price = (int) ( is_array( $row ) ? ( $row['priceCents'] ?? 0 ) : 0 );
+			if ( ! wp_is_uuid( $uuid ) || $price < 100 || $price > (int) $game['budget_cents'] ) {
+				throw new ValidationException( array( 'updates.' . $index => 'valid_player_and_price_required' ) );
+			}
+			$updates[] = array( 'uuid' => $uuid, 'price_cents' => $price );
+		}
+		$known = $this->repository->fantasy_players_by_uuid( (int) $game['id'], array_column( $updates, 'uuid' ) );
+		if ( count( $known ) !== count( array_unique( array_column( $updates, 'uuid' ) ) ) ) {
+			throw new ValidationException( array( 'updates' => 'player_not_found_in_this_season' ) );
+		}
+		$this->repository->update_player_prices( (int) $game['id'], $updates );
+		return $this->admin_player_pricing( $game_uuid );
 	}
 
 	public function current_squad( int $user_id, string $game_uuid ): array {
@@ -156,6 +222,64 @@ final class FantasyService {
 		} catch ( \InvalidArgumentException $error ) {
 			throw new ValidationException( array( 'seasonUuid' => 'not_found_for_competition' ) );
 		}
+	}
+
+	/**
+	 * Update editable fantasy game settings without changing its competition or season identity.
+	 *
+	 * @param array<string,mixed> $input Admin input.
+	 */
+	public function update_game( string $uuid, array $input, int $user_id ): array {
+		$game = $this->repository->find_game( $uuid );
+		if ( null === $game ) {
+			throw new ValidationException( array( 'game' => 'not_found' ) );
+		}
+
+		$name          = sanitize_text_field( (string) ( $input['name'] ?? $game['name'] ) );
+		$status        = sanitize_key( (string) ( $input['status'] ?? $game['status'] ) );
+		$squad_size    = (int) ( $input['squadSize'] ?? $game['squad_size'] );
+		$starting_size = (int) ( $input['startingSize'] ?? $game['starting_size'] );
+		$bench_size    = (int) ( $input['benchSize'] ?? $game['bench_size'] );
+		$budget_cents  = (int) ( $input['budgetCents'] ?? $game['budget_cents'] );
+		$team_limit    = (int) ( $input['maxPlayersPerTeam'] ?? $game['max_players_per_team'] );
+		$errors        = array();
+
+		if ( '' === $name ) {
+			$errors['name'] = 'required';
+		}
+		if ( ! in_array( $status, array( 'draft', 'open', 'active' ), true ) ) {
+			$errors['status'] = 'invalid';
+		}
+		if ( $squad_size < 5 || $squad_size > 30 || $starting_size < 1 || $bench_size < 0 || $starting_size + $bench_size !== $squad_size ) {
+			$errors['squadSize'] = 'starting_and_bench_must_equal_squad_size';
+		}
+		if ( $budget_cents < 1 ) {
+			$errors['budgetCents'] = 'must_be_positive';
+		}
+		if ( $team_limit < 1 || $team_limit > $squad_size ) {
+			$errors['maxPlayersPerTeam'] = 'invalid';
+		}
+		if ( $errors ) {
+			throw new ValidationException( $errors );
+		}
+
+		$updated = $this->repository->update_game(
+			(int) $game['id'],
+			array(
+				'name'                 => $name,
+				'description'          => sanitize_textarea_field( (string) ( $input['description'] ?? $game['description'] ?? '' ) ),
+				'status'               => $status,
+				'budget_cents'         => $budget_cents,
+				'squad_size'           => $squad_size,
+				'starting_size'        => $starting_size,
+				'bench_size'           => $bench_size,
+				'max_players_per_team' => $team_limit,
+				'updated_by'           => $user_id,
+				'updated_at'           => gmdate( 'Y-m-d H:i:s' ),
+			)
+		);
+
+		return $this->present_game( $updated );
 	}
 
 	/** @return array<int,array<string,mixed>> */
@@ -296,6 +420,7 @@ final class FantasyService {
 			'startingSize'      => (int) $row['starting_size'],
 			'benchSize'         => (int) $row['bench_size'],
 			'maxPlayersPerTeam' => (int) $row['max_players_per_team'],
+			'season'            => isset( $row['fantasy_season_uuid'] ) ? array( 'uuid' => $row['fantasy_season_uuid'], 'name' => $row['fantasy_season_name'] ) : null,
 			'sport'             => array(
 				'uuid' => $row['sport_uuid'] ?? '',
 				'name' => $row['sport_name'] ?? '',

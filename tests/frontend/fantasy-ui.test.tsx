@@ -2,8 +2,9 @@ import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 import { FantasyDashboardPage } from '../../src/features/fantasy/FantasyDashboardPage';
+import { AppRoutes } from '../../src/app/AppRoutes';
 import type { FantasySquadEntry } from '../../src/types/api';
-import { adminAuth, renderApp, testApi } from './test-utils';
+import { adminAuth, guestAuth, renderApp, testApi } from './test-utils';
 
 describe('fantasy foundation UI', () => {
   it('renders player pool, tracks budget and saves a squad through the server API', async () => {
@@ -14,6 +15,9 @@ describe('fantasy foundation UI', () => {
     });
 
     expect(await screen.findByText('InstaScore Fantasy')).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText(/fantasy team name/i), {
+      target: { value: 'Lagos Blitz Crew' },
+    });
     expect(await screen.findByText(/Ada Touchdown/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /select Ada Touchdown/i }));
 
@@ -22,12 +26,23 @@ describe('fantasy foundation UI', () => {
 
     await waitFor(() => expect(saveFantasySquad).toHaveBeenCalled());
     const payload = saveFantasySquad.mock.calls[0]?.[1] as
-      { baseRevision: number; players: FantasySquadEntry[] } | undefined;
+      { name: string; baseRevision: number; players: FantasySquadEntry[] } | undefined;
+    expect(payload?.name).toBe('Lagos Blitz Crew');
     expect(payload?.baseRevision).toBe(0);
     expect(payload?.players[0]).toMatchObject({
       fantasyPlayerUuid: '00000000-0000-4000-8000-000000000121',
       isCaptain: true,
     });
+  });
+
+  it('allows guests to browse the fantasy builder and weekly performance table', async () => {
+    renderApp(<AppRoutes loginUrl="/login" />, { route: '/fantasy', auth: guestAuth });
+
+    expect(await screen.findByText('InstaScore Fantasy')).toBeInTheDocument();
+    expect(await screen.findByText(/weekly performance table/i)).toBeInTheDocument();
+    expect(screen.getByText('Touchdown Kings')).toBeInTheDocument();
+    expect(screen.getByText(/sign in only when you are ready/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /save draft/i })).toBeDisabled();
   });
 
   it('places every manager in the official competition without private league controls', async () => {

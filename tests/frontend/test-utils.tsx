@@ -414,6 +414,21 @@ export const testApi: ApiClient = {
       },
       positions: [],
     }),
+  getFantasyPerformanceTable: () =>
+    Promise.resolve([
+      {
+        gameweekUuid: '00000000-0000-4000-8000-000000000122',
+        gameweekName: 'Gameweek 1',
+        sequenceNumber: 1,
+        rank: 1,
+        previousRank: 2,
+        teamName: 'Touchdown Kings',
+        managerName: 'Ada Manager',
+        gameweekPoints: 74,
+        totalPoints: 74,
+        status: 'confirmed',
+      },
+    ]),
   getFantasyPlayers: () =>
     Promise.resolve([
       {
@@ -437,6 +452,44 @@ export const testApi: ApiClient = {
         ownershipPercent: 12,
       },
     ]),
+  getFantasyPricing: () =>
+    Promise.resolve({
+      locked: false,
+      players: [
+        {
+          uuid: '00000000-0000-4000-8000-000000000140',
+          priceCents: 7500,
+          status: 'available',
+          position: { code: 'QB', name: 'Quarterback' },
+          player: {
+            uuid: '00000000-0000-4000-8000-000000000141',
+            name: 'Ada Touchdown',
+          },
+          team: { uuid: '00000000-0000-4000-8000-000000000142', name: 'Lagos Waves' },
+          totalPoints: 42,
+          ownershipPercent: 18,
+        },
+      ],
+    }),
+  updateFantasyPricing: (_uuid, updates) =>
+    Promise.resolve({
+      locked: false,
+      players: [
+        {
+          uuid: updates[0]?.fantasyPlayerUuid ?? '00000000-0000-4000-8000-000000000140',
+          priceCents: updates[0]?.priceCents ?? 7500,
+          status: 'available',
+          position: { code: 'QB', name: 'Quarterback' },
+          player: {
+            uuid: '00000000-0000-4000-8000-000000000141',
+            name: 'Ada Touchdown',
+          },
+          team: { uuid: '00000000-0000-4000-8000-000000000142', name: 'Lagos Waves' },
+          totalPoints: 42,
+          ownershipPercent: 18,
+        },
+      ],
+    }),
   getFantasySquad: () =>
     Promise.resolve({
       game: {
@@ -551,6 +604,20 @@ export const testApi: ApiClient = {
       benchSize: 8,
       maxPlayersPerTeam: 3,
       sport: { uuid: '', name: '', slug: '' },
+    }),
+  updateFantasyGame: (uuid, input) =>
+    Promise.resolve({
+      uuid,
+      name: input.name,
+      slug: 'instascore-fantasy',
+      description: input.description ?? '',
+      status: input.status,
+      budgetCents: input.budgetCents,
+      squadSize: input.squadSize,
+      startingSize: input.startingSize,
+      benchSize: input.benchSize,
+      maxPlayersPerTeam: input.maxPlayersPerTeam,
+      sport: { uuid: '', name: 'Flag football', slug: 'flag-football' },
     }),
   getFantasyGameweeks: () =>
     Promise.resolve([

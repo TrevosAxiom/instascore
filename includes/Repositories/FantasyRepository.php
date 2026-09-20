@@ -30,9 +30,11 @@ final class FantasyRepository {
 	/** @return array<int,array<string,mixed>> */
 	public function admin_games(): array {
 		$rows = $this->database->get_results(
-			"SELECT g.*,s.uuid sport_uuid,s.name sport_name,s.slug sport_slug
+			"SELECT g.*,s.uuid sport_uuid,s.name sport_name,s.slug sport_slug,
+				fs.uuid fantasy_season_uuid,fs.name fantasy_season_name
 			FROM {$this->database->prefix}instascore_fantasy_games g
 			JOIN {$this->database->prefix}instascore_sports s ON s.id = g.sport_id
+			LEFT JOIN {$this->database->prefix}instascore_fantasy_seasons fs ON fs.fantasy_game_id = g.id AND fs.status = 'active'
 			ORDER BY g.updated_at DESC",
 			ARRAY_A
 		);
@@ -51,6 +53,32 @@ final class FantasyRepository {
 			ARRAY_A
 		);
 		return is_array( $row ) ? $row : null;
+	}
+
+	/** @param array<string,mixed> $changes */
+	public function update_game( int $game_id, array $changes ): array {
+		$updated = $this->database->update(
+			$this->database->prefix . 'instascore_fantasy_games',
+			$changes,
+			array( 'id' => $game_id )
+		);
+		if ( false === $updated ) {
+			throw new \RuntimeException( 'Fantasy game update failed.' );
+		}
+		$row = $this->database->get_row(
+			$this->database->prepare(
+				"SELECT g.*,s.uuid sport_uuid,s.name sport_name,s.slug sport_slug
+				FROM {$this->database->prefix}instascore_fantasy_games g
+				JOIN {$this->database->prefix}instascore_sports s ON s.id = g.sport_id
+				WHERE g.id = %d LIMIT 1",
+				$game_id
+			),
+			ARRAY_A
+		);
+		if ( ! is_array( $row ) ) {
+			throw new \RuntimeException( 'Updated fantasy game could not be loaded.' );
+		}
+		return $row;
 	}
 
 	public function current_gameweek( int $game_id ): ?array {
@@ -75,6 +103,27 @@ final class FantasyRepository {
 				"SELECT gw.* FROM {$this->database->prefix}instascore_fantasy_gameweeks gw
 				JOIN {$this->database->prefix}instascore_fantasy_seasons fs ON fs.id = gw.fantasy_season_id
 				WHERE fs.fantasy_game_id = %d ORDER BY gw.sequence_number DESC",
+				$game_id
+			),
+			ARRAY_A
+		);
+		return is_array( $rows ) ? $rows : array();
+	}
+
+	/** @return array<int,array<string,mixed>> */
+	public function performance_table( int $game_id ): array {
+		$rows = $this->database->get_results(
+			$this->database->prepare(
+				"SELECT gw.uuid gameweek_uuid,gw.name gameweek_name,gw.sequence_number,
+					sq.name team_name,u.display_name manager_name,t.gameweek_points,t.season_points,
+					t.rank_position,t.previous_rank_position,t.status
+				FROM {$this->database->prefix}instascore_fantasy_squad_totals t
+				JOIN {$this->database->prefix}instascore_fantasy_squads sq ON sq.id = t.squad_id
+				JOIN {$this->database->prefix}instascore_fantasy_gameweeks gw ON gw.id = t.gameweek_id
+				JOIN {$this->database->prefix}instascore_fantasy_seasons fs ON fs.id = gw.fantasy_season_id
+				LEFT JOIN {$this->database->users} u ON u.ID = t.user_id
+				WHERE fs.fantasy_game_id = %d
+				ORDER BY gw.sequence_number DESC,t.rank_position ASC,t.season_points DESC,sq.name ASC",
 				$game_id
 			),
 			ARRAY_A
@@ -165,6 +214,7 @@ final class FantasyRepository {
 		}
 		$sorts = array( 'price' => 'fp.price_cents DESC', 'points' => 'total_points DESC', 'ownership' => 'ownership_count DESC', 'name' => 'p.display_name ASC' );
 		$sort  = $sorts[ $query['sort'] ?? 'points' ] ?? $sorts['points'];
+		$limit = min( 1000, max( 1, (int) ( $query['limit'] ?? 100 ) ) );
 		$sql = "SELECT fp.*,p.uuid player_uuid,p.display_name player_name,p.photo_url,t.uuid team_uuid,t.name team_name,pos.code position_code,pos.name position_name,
 			(SELECT COALESCE(SUM(fpt.points),0) FROM {$this->database->prefix}instascore_fantasy_points fpt
 				WHERE fpt.fantasy_player_id = fp.id AND NOT EXISTS (SELECT 1 FROM {$this->database->prefix}instascore_fantasy_points newer WHERE newer.match_event_id = fpt.match_event_id AND newer.fantasy_player_id = fpt.fantasy_player_id AND newer.revision > fpt.revision)) total_points,
@@ -174,9 +224,41 @@ final class FantasyRepository {
 			JOIN {$this->database->prefix}instascore_players p ON p.id = fp.player_id
 			LEFT JOIN {$this->database->prefix}instascore_teams t ON t.id = fp.team_id
 			JOIN {$this->database->prefix}instascore_fantasy_positions pos ON pos.id = fp.position_id
-			WHERE " . implode( ' AND ', $where ) . " ORDER BY {$sort}, p.display_name ASC LIMIT 100";
+			WHERE " . implode( ' AND ', $where ) . " ORDER BY {$sort}, p.display_name ASC LIMIT {$limit}";
 		$rows = $this->database->get_results( $this->database->prepare( $sql, $args ), ARRAY_A );
 		return is_array( $rows ) ? $rows : array();
+	}
+
+	public function submitted_squad_count( int $game_id ): int {
+		return (int) $this->database->get_var(
+			$this->database->prepare(
+				"SELECT COUNT(*) FROM {$this->database->prefix}instascore_fantasy_squads WHERE fantasy_game_id = %d AND status = 'submitted'",
+				$game_id
+			)
+		);
+	}
+
+	/** @param array<int,array{uuid:string,price_cents:int}> $updates */
+	public function update_player_prices( int $game_id, array $updates ): void {
+		$this->database->query( 'START TRANSACTION' );
+		try {
+			foreach ( $updates as $update ) {
+				$result = $this->database->update(
+					$this->database->prefix . 'instascore_fantasy_players',
+					array( 'price_cents' => $update['price_cents'], 'updated_at' => gmdate( 'Y-m-d H:i:s' ) ),
+					array( 'fantasy_game_id' => $game_id, 'uuid' => $update['uuid'] ),
+					array( '%d', '%s' ),
+					array( '%d', '%s' )
+				);
+				if ( false === $result ) {
+					throw new \RuntimeException( 'Fantasy player price update failed.' );
+				}
+			}
+			$this->database->query( 'COMMIT' );
+		} catch ( \Throwable $error ) {
+			$this->database->query( 'ROLLBACK' );
+			throw $error;
+		}
 	}
 
 	public function squad_for_user( int $user_id, int $game_id, int $gameweek_id ): ?array {
@@ -421,7 +503,7 @@ final class FantasyRepository {
 					'player_id'       => (int) $registration['player_id'],
 					'team_id'         => (int) $registration['team_id'],
 					'position_id'     => $position_ids[ $code ],
-					'price_cents'     => 7500,
+					'price_cents'     => (int) apply_filters( 'instascore_fantasy_default_player_price_cents', 7500, $registration, $game_id ),
 					'status'          => 'available',
 					'metadata_json'   => wp_json_encode( array( 'sourcePosition' => $registration['position_code'] ) ),
 					'created_at'      => gmdate( 'Y-m-d H:i:s' ),

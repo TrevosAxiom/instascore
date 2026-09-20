@@ -458,12 +458,13 @@ body.instascore-standalone .instascore-app-bar .MuiIconButton-root {
 }
 .fantasy-squad-shell {
   overflow: hidden;
+  padding: 16px !important;
 }
 
 .fantasy-builder-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.65fr) minmax(340px, 1fr);
-  gap: 24px;
+  grid-template-columns: minmax(0, 1.5fr) minmax(390px, 0.9fr);
+  gap: 16px;
   align-items: start;
 }
 
@@ -473,17 +474,58 @@ body.instascore-standalone .instascore-app-bar .MuiIconButton-root {
 }
 
 .fantasy-market-panel {
+  padding: 16px !important;
   max-height: calc(100vh - 112px);
   overflow: auto;
   overscroll-behavior: contain;
 }
 
 .fantasy-market-filters {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
   position: sticky;
   z-index: 5;
-  top: -24px;
-  padding-block: 24px 12px;
+  top: -16px;
+  padding-block: 16px 10px;
   background: var(--instascore-surface, #fff);
+}
+
+.fantasy-market-search,
+.fantasy-affordable-toggle {
+  grid-column: 1 / -1;
+}
+
+.fantasy-affordable-toggle {
+  min-height: 34px;
+  margin: 0 !important;
+}
+
+.fantasy-player-row {
+  min-height: 58px;
+  transition:
+    border-color 0.16s ease,
+    background-color 0.16s ease,
+    transform 0.16s ease;
+}
+
+.fantasy-player-row:hover {
+  transform: translateY(-1px);
+  border-color: rgba(243, 198, 67, 0.7);
+}
+
+.fantasy-command-bar,
+.fantasy-performance-panel,
+.fantasy-official-league {
+  padding: 16px !important;
+}
+
+.fantasy-performance-panel {
+  order: 20;
+}
+
+.fantasy-command-bar .MuiFormHelperText-root {
+  margin-bottom: -10px;
 }
 
 .fantasy-mobile-tabs,
@@ -493,7 +535,7 @@ body.instascore-standalone .instascore-app-bar .MuiIconButton-root {
 
 .fantasy-pitch {
   position: relative;
-  min-height: 500px;
+  min-height: 390px;
   overflow: hidden;
   border: 2px solid rgba(206, 231, 197, 0.55);
   border-radius: 18px;
@@ -536,7 +578,7 @@ body.instascore-standalone .instascore-app-bar .MuiIconButton-root {
   left: 0;
   width: 100%;
   color: rgba(255, 255, 255, 0.12);
-  font-size: clamp(2rem, 5vw, 4.5rem);
+  font-size: clamp(1.75rem, 4vw, 3.4rem);
   font-weight: 1000;
   font-style: italic;
   letter-spacing: 0.16em;
@@ -544,10 +586,10 @@ body.instascore-standalone .instascore-app-bar .MuiIconButton-root {
 }
 
 .fantasy-pitch-word--top {
-  top: 18px;
+  top: 10px;
 }
 .fantasy-pitch-word--bottom {
-  bottom: 18px;
+  bottom: 10px;
 }
 .fantasy-pitch-label {
   position: absolute;
@@ -600,7 +642,7 @@ body.instascore-standalone .instascore-app-bar .MuiIconButton-root {
   position: absolute;
   z-index: 4;
   display: flex;
-  width: 130px;
+  width: 112px;
   padding: 0;
   transform: translate(-50%, -50%);
   flex-direction: column;
@@ -638,8 +680,8 @@ body.instascore-standalone .instascore-app-bar .MuiIconButton-root {
   position: relative;
 }
 .fantasy-pitch-avatar {
-  width: 54px !important;
-  height: 54px !important;
+  width: 46px !important;
+  height: 46px !important;
   border: 3px solid rgba(255, 255, 255, 0.92);
   background: rgb(7, 25, 45) !important;
   box-shadow: 0 8px 18px rgba(0, 0, 0, 0.3);
@@ -691,8 +733,8 @@ body.instascore-standalone .instascore-app-bar .MuiIconButton-root {
 }
 .fantasy-selected-player {
   align-items: center;
-  margin: 16px -24px 0;
-  padding: 16px 24px;
+  margin: 10px -16px 0;
+  padding: 10px 16px;
   border-top: 1px solid rgba(255, 255, 255, 0.12);
   border-bottom: 1px solid rgba(255, 255, 255, 0.12);
   background: rgba(0, 0, 0, 0.16);
@@ -708,7 +750,7 @@ body.instascore-standalone .instascore-app-bar .MuiIconButton-root {
   font-weight: 1000;
 }
 .fantasy-squad-accordion {
-  margin: 16px -24px -24px !important;
+  margin: 10px -16px -16px !important;
   background: #fff !important;
   color: rgb(7, 25, 45) !important;
 }
@@ -723,6 +765,9 @@ body.instascore-standalone .instascore-app-bar .MuiIconButton-root {
   .fantasy-market-panel {
     max-height: none;
     overflow: visible;
+  }
+  .fantasy-market-filters {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
@@ -753,12 +798,17 @@ body.instascore-standalone .instascore-app-bar .MuiIconButton-root {
   }
   .fantasy-market-filters {
     top: 112px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .fantasy-market-search,
+  .fantasy-affordable-toggle {
+    grid-column: 1 / -1;
   }
   .fantasy-squad-accordion {
     display: none;
   }
   .fantasy-pitch {
-    min-height: 460px;
+    min-height: 360px;
     border-radius: 12px;
   }
   .fantasy-pitch-player {
@@ -789,7 +839,20 @@ body.instascore-standalone .instascore-app-bar .MuiIconButton-root {
     margin-bottom: -16px !important;
   }
   .fantasy-official-league {
-    padding: 16px !important;
+    padding: 12px !important;
+  }
+  .fantasy-command-bar,
+  .fantasy-performance-panel {
+    padding: 12px !important;
+  }
+  .fantasy-player-row {
+    min-height: 54px;
+  }
+  .fantasy-player-row .MuiChip-root {
+    display: none;
+  }
+  .fantasy-player-row .MuiButton-root {
+    min-width: 58px;
   }
   #instascore-root {
     padding-bottom: calc(76px + env(safe-area-inset-bottom));

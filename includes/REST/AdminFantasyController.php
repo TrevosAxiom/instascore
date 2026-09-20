@@ -25,6 +25,31 @@ final class AdminFantasyController {
 		);
 		register_rest_route(
 			'instascore/v1',
+			'/admin/fantasy/games/(?P<uuid>[0-9a-f-]{36})/pricing',
+			array(
+				array(
+					'methods'             => 'GET',
+					'callback'            => fn( WP_REST_Request $request ): WP_REST_Response => $this->execute( fn(): array => FantasyService::create()->admin_player_pricing( (string) $request['uuid'], $request->get_params() ) ),
+					'permission_callback' => array( $this, 'can_manage' ),
+				),
+				array(
+					'methods'             => 'PUT',
+					'callback'            => fn( WP_REST_Request $request ): WP_REST_Response => $this->execute( fn(): array => FantasyService::create()->update_player_prices( (string) $request['uuid'], (array) $request->get_json_params() ) ),
+					'permission_callback' => array( $this, 'can_manage' ),
+				),
+			)
+		);
+		register_rest_route(
+			'instascore/v1',
+			'/admin/fantasy/games/(?P<uuid>[0-9a-f-]{36})',
+			array(
+				'methods'             => 'PUT',
+				'callback'            => fn( WP_REST_Request $request ): WP_REST_Response => $this->execute( fn(): array => FantasyService::create()->update_game( (string) $request['uuid'], (array) $request->get_json_params(), get_current_user_id() ) ),
+				'permission_callback' => array( $this, 'can_manage' ),
+			)
+		);
+		register_rest_route(
+			'instascore/v1',
 			'/admin/fantasy/games',
 			array(
 				'methods'             => 'POST',

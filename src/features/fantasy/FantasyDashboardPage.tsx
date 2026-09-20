@@ -13,12 +13,18 @@ import {
   Stack,
   Switch,
   Tab,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
   Tabs,
   TextField,
   Typography,
 } from '@mui/material';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { useApi } from '../../api/context';
 import { useAuth } from '../../app/auth-context';
@@ -41,6 +47,8 @@ export function FantasyDashboardPage() {
   const [affordableOnly, setAffordableOnly] = useState(false);
   const [workspaceTab, setWorkspaceTab] = useState<'squad' | 'players' | 'bench'>('squad');
   const [selectionMessage, setSelectionMessage] = useState('');
+  const [teamName, setTeamName] = useState('My InstaScore Squad');
+  const [tableGameweek, setTableGameweek] = useState('');
   const games = useQuery({ queryKey: ['fantasy', 'games'], queryFn: api.getFantasyGames });
   const activeGameUuid = selectedGameUuid || games.data?.[0]?.uuid || '';
   const activeGame = games.data?.find((game) => game.uuid === activeGameUuid);
@@ -61,6 +69,11 @@ export function FantasyDashboardPage() {
     queryFn: () => api.getFantasySquad(activeGameUuid),
     enabled: Boolean(activeGameUuid && state?.authenticated),
   });
+  const performance = useQuery({
+    queryKey: ['fantasy', activeGameUuid, 'performance-table'],
+    queryFn: () => api.getFantasyPerformanceTable(activeGameUuid),
+    enabled: Boolean(activeGameUuid),
+  });
   const squadEntries = draft ?? squad.data?.squad?.players ?? [];
   const selectedIds = new Set(squadEntries.map((entry) => entry.fantasyPlayerUuid));
   const game = squad.data?.game ?? activeGame;
@@ -78,10 +91,18 @@ export function FantasyDashboardPage() {
     .slice(0, visiblePlayers);
   const isComplete =
     squadEntries.length === game?.squadSize && starting.length === game.startingSize;
+  const performanceWeeks = uniqueBy(performance.data ?? [], (row) => row.gameweekUuid);
+  const activeTableGameweek = tableGameweek || performanceWeeks[0]?.gameweekUuid || '';
+  const performanceRows = (performance.data ?? []).filter(
+    (row) => row.gameweekUuid === activeTableGameweek,
+  );
+  useEffect(() => {
+    if (squad.data?.squad?.name) setTeamName(squad.data.squad.name);
+  }, [squad.data?.squad?.name]);
   const save = useMutation({
     mutationFn: (submit: boolean) => {
       const payload = {
-        name: squad.data?.squad?.name ?? 'My InstaScore Squad',
+        name: teamName.trim() || 'My InstaScore Squad',
         baseRevision: squad.data?.squad?.revision ?? 0,
         players: renumber(squadEntries),
       };
@@ -113,7 +134,10 @@ export function FantasyDashboardPage() {
       {activeGameUuid && game ? (
         <Stack spacing={3}>
           {!state?.authenticated ? (
-            <Alert severity="info">Sign in to save or submit your fantasy team.</Alert>
+            <Alert severity="info">
+              You can browse the player market, build a temporary squad and view the weekly table.
+              Sign in only when you are ready to save or submit your team.
+            </Alert>
           ) : null}
           <Box className="instascore-panel fantasy-official-league">
             <Stack direction={{ xs: 'column', md: 'row' }} gap={2} alignItems={{ md: 'center' }}>
@@ -135,24 +159,36 @@ export function FantasyDashboardPage() {
               </Stack>
             </Stack>
           </Box>
-          <Box className="instascore-panel">
+          <Box className="instascore-panel fantasy-command-bar">
             <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" gap={2}>
-              <TextField
-                select
-                label="Fantasy competition"
-                value={activeGameUuid}
-                onChange={(event) => {
-                  setSelectedGameUuid(event.target.value);
-                  setDraft(null);
-                }}
-                sx={{ minWidth: 260 }}
-              >
-                {(games.data ?? []).map((item) => (
-                  <MenuItem key={item.uuid} value={item.uuid}>
-                    {item.name}
-                  </MenuItem>
-                ))}
-              </TextField>
+              <Stack direction={{ xs: 'column', sm: 'row' }} gap={1.5} sx={{ flex: 1 }}>
+                <TextField
+                  select
+                  label="Fantasy competition"
+                  value={activeGameUuid}
+                  onChange={(event) => {
+                    setSelectedGameUuid(event.target.value);
+                    setDraft(null);
+                  }}
+                  sx={{ minWidth: 240 }}
+                >
+                  {(games.data ?? []).map((item) => (
+                    <MenuItem key={item.uuid} value={item.uuid}>
+                      {item.name}
+                    </MenuItem>
+                  ))}
+                </TextField>
+                <TextField
+                  label="Fantasy team name"
+                  value={teamName}
+                  onChange={(event) => setTeamName(event.target.value)}
+                  inputProps={{ maxLength: 80 }}
+                  helperText={
+                    state?.authenticated ? 'Saved with your squad' : 'Sign in to save this name'
+                  }
+                  fullWidth
+                />
+              </Stack>
               <Stack direction="row" flexWrap="wrap" gap={1} alignItems="center">
                 <Chip label={`Budget ${money(budgetCents)}`} color="primary" />
                 <Chip
@@ -172,6 +208,72 @@ export function FantasyDashboardPage() {
               value={Math.min(100, (squadEntries.length / game.squadSize) * 100)}
               sx={{ mt: 2 }}
             />
+          </Box>
+
+          <Box className="instascore-panel fantasy-performance-panel">
+            <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" gap={2}>
+              <Box>
+                <Typography variant="overline" color="primary.main" fontWeight={900}>
+                  Official standings
+                </Typography>
+                <Typography variant="h3">Weekly performance table</Typography>
+                <Typography color="text.secondary">
+                  Compare each fantasy team’s gameweek score and season total.
+                </Typography>
+              </Box>
+              {performanceWeeks.length ? (
+                <TextField
+                  select
+                  label="Gameweek"
+                  value={activeTableGameweek}
+                  onChange={(event) => setTableGameweek(event.target.value)}
+                  sx={{ minWidth: 190 }}
+                >
+                  {performanceWeeks.map((week) => (
+                    <MenuItem key={week.gameweekUuid} value={week.gameweekUuid}>
+                      {week.gameweekName}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              ) : null}
+            </Stack>
+            {performance.isLoading ? <LoadingState label="Loading weekly fantasy table" /> : null}
+            {performance.isError ? (
+              <ErrorState description="The weekly fantasy table could not be loaded." />
+            ) : null}
+            {performanceRows.length ? (
+              <TableContainer sx={{ mt: 2 }}>
+                <Table size="small" aria-label="Weekly fantasy performance table">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Rank</TableCell>
+                      <TableCell>Fantasy team</TableCell>
+                      <TableCell>Manager</TableCell>
+                      <TableCell align="right">GW points</TableCell>
+                      <TableCell align="right">Total</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {performanceRows.map((row) => (
+                      <TableRow key={`${row.gameweekUuid}-${row.rank}-${row.teamName}`}>
+                        <TableCell>#{row.rank}</TableCell>
+                        <TableCell sx={{ fontWeight: 900 }}>{row.teamName}</TableCell>
+                        <TableCell>{row.managerName}</TableCell>
+                        <TableCell align="right">{row.gameweekPoints}</TableCell>
+                        <TableCell align="right" sx={{ fontWeight: 900 }}>
+                          {row.totalPoints}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            ) : !performance.isLoading && !performance.isError ? (
+              <EmptyState
+                title="No weekly scores yet"
+                description="Submitted teams will appear after the first fantasy points are calculated."
+              />
+            ) : null}
           </Box>
 
           <Tabs
@@ -197,7 +299,12 @@ export function FantasyDashboardPage() {
                 color: 'white',
               }}
             >
-              <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" gap={2}>
+              <Stack
+                direction={{ xs: 'column', md: 'row' }}
+                justifyContent="space-between"
+                gap={1}
+                alignItems={{ md: 'center' }}
+              >
                 <Box>
                   <Typography
                     variant="overline"
@@ -205,10 +312,10 @@ export function FantasyDashboardPage() {
                   >
                     Fantasy · {squad.data?.gameweek.name ?? 'Current gameweek'}
                   </Typography>
-                  <Typography variant="h3" color="inherit">
+                  <Typography variant="h4" color="inherit">
                     My starting lineup
                   </Typography>
-                  <Typography sx={{ opacity: 0.72 }}>
+                  <Typography variant="body2" sx={{ opacity: 0.72 }}>
                     Captain scores double. Vice-captain is ready if the captain does not play.
                   </Typography>
                 </Box>
@@ -268,13 +375,7 @@ export function FantasyDashboardPage() {
                   />
                 </AccordionDetails>
               </Accordion>
-              {!squadEntries.length ? (
-                <EmptyState
-                  title="Your pitch is empty"
-                  description="Select players from the market below."
-                />
-              ) : null}
-              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mt: 3 }}>
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ mt: 1.5 }}>
                 <Button
                   variant="contained"
                   disabled={
@@ -318,9 +419,29 @@ export function FantasyDashboardPage() {
               className="instascore-panel fantasy-market-panel"
               sx={{ display: { xs: workspaceTab === 'players' ? 'block' : 'none', md: 'block' } }}
             >
-              <Typography variant="h3">Player market</Typography>
-              <Stack className="fantasy-market-filters" spacing={1.5} sx={{ my: 2 }}>
+              <Stack direction="row" justifyContent="space-between" alignItems="center" gap={1}>
+                <Box>
+                  <Typography variant="h4">Player market</Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {players.data?.length ?? 0} players · {squadEntries.length} selected
+                  </Typography>
+                </Box>
+                {(search || position || team) && (
+                  <Button
+                    size="small"
+                    onClick={() => {
+                      setSearch('');
+                      setPosition('');
+                      setTeam('');
+                    }}
+                  >
+                    Clear
+                  </Button>
+                )}
+              </Stack>
+              <Box className="fantasy-market-filters" sx={{ my: 1.5 }}>
                 <TextField
+                  className="fantasy-market-search"
                   label="Search players or teams"
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
@@ -367,6 +488,7 @@ export function FantasyDashboardPage() {
                   <MenuItem value="name">Name</MenuItem>
                 </TextField>
                 <FormControlLabel
+                  className="fantasy-affordable-toggle"
                   control={
                     <Switch
                       checked={affordableOnly}
@@ -375,13 +497,13 @@ export function FantasyDashboardPage() {
                   }
                   label="Affordable only"
                 />
-              </Stack>
+              </Box>
               {players.isLoading ? <LoadingState label="Loading player market" /> : null}
               <Box
                 sx={{
                   display: 'grid',
                   gridTemplateColumns: '1fr',
-                  gap: 1.5,
+                  gap: 0.75,
                 }}
               >
                 {marketPlayers.map((player) => (
@@ -811,51 +933,46 @@ function PlayerRow({
 }) {
   return (
     <Stack
-      spacing={1.5}
+      className="fantasy-player-row"
+      direction="row"
+      spacing={1}
+      alignItems="center"
       sx={{
-        p: 2,
+        p: 1,
         minWidth: 0,
         border: '1px solid',
         borderColor: selected ? 'primary.main' : 'divider',
-        borderRadius: 2.5,
+        borderRadius: 2,
         backgroundColor: selected ? 'action.selected' : 'background.paper',
       }}
     >
-      <Stack direction="row" spacing={1.5} alignItems="center">
-        <Avatar src={player.player.photoUrl ?? undefined} sx={{ width: 52, height: 52 }}>
-          {player.player.name.slice(0, 1)}
-        </Avatar>
-        <Box sx={{ minWidth: 0, flex: 1 }}>
-          <Typography fontWeight={900} noWrap>
-            {player.player.name}
-          </Typography>
-          <Typography color="text.secondary" variant="body2" noWrap>
-            {player.team.name}
-          </Typography>
-        </Box>
-        <Chip label={player.position.code} size="small" color="primary" variant="outlined" />
-      </Stack>
-      <Stack direction="row" gap={1} alignItems="center" justifyContent="space-between">
-        <Box>
-          <Typography fontWeight={900}>{money(player.priceCents)}</Typography>
-          <Typography variant="caption" color="text.secondary">
-            {player.totalPoints} pts · {player.ownershipPercent}% selected
-          </Typography>
-        </Box>
-        <Button
-          aria-label={`${selected ? 'Remove' : 'Select'} ${player.player.name}`}
-          variant={selected ? 'outlined' : 'contained'}
-          disabled={disabled || Boolean(disabledReason)}
-          onClick={onToggle}
-        >
-          {selected ? 'Added · Remove' : 'Add'}
-        </Button>
-      </Stack>
-      {disabledReason ? (
-        <Typography variant="caption" color="error.main">
-          {disabledReason}
+      <Avatar src={player.player.photoUrl ?? undefined} sx={{ width: 38, height: 38 }}>
+        {player.player.name.slice(0, 1)}
+      </Avatar>
+      <Box sx={{ minWidth: 0, flex: 1 }}>
+        <Typography fontWeight={900} noWrap fontSize=".88rem">
+          {player.player.name}
         </Typography>
-      ) : null}
+        <Typography color="text.secondary" variant="caption" noWrap display="block">
+          {player.team.name} · {player.totalPoints} pts · {player.ownershipPercent}%
+        </Typography>
+      </Box>
+      <Chip label={player.position.code} size="small" color="primary" variant="outlined" />
+      <Typography fontWeight={950} fontSize=".88rem" sx={{ minWidth: 46, textAlign: 'right' }}>
+        {money(player.priceCents)}
+      </Typography>
+      <Button
+        aria-label={`${selected ? 'Remove' : 'Select'} ${player.player.name}`}
+        variant={selected ? 'outlined' : 'contained'}
+        color={selected ? 'error' : 'primary'}
+        size="small"
+        disabled={disabled || Boolean(disabledReason)}
+        onClick={onToggle}
+        title={disabledReason || undefined}
+        sx={{ minWidth: 70 }}
+      >
+        {selected ? 'Remove' : compactBlockReason(disabledReason)}
+      </Button>
     </Stack>
   );
 }
@@ -881,4 +998,10 @@ function shortName(name?: string) {
   if (!name) return 'Player';
   const parts = name.trim().split(/\s+/);
   return parts.length > 1 ? parts[parts.length - 1] : parts[0];
+}
+function compactBlockReason(reason: string) {
+  if (!reason) return 'Add';
+  if (reason.includes('budget')) return 'Budget';
+  if (reason.includes('full')) return 'Full';
+  return 'Unavailable';
 }

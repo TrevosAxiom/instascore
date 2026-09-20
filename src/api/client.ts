@@ -30,9 +30,12 @@ import type {
   FantasyGame,
   FantasyGameweek,
   CreateFantasyGameInput,
+  UpdateFantasyGameInput,
   FantasyLeague,
   FantasyLiveRow,
   FantasyPlayer,
+  FantasyPricing,
+  FantasyPerformanceRow,
   FantasyPointBreakdown,
   FantasySquadEntry,
   FantasySquadState,
@@ -345,7 +348,13 @@ export interface ApiClient {
   getFantasyGames: () => Promise<FantasyGame[]>;
   getAdminFantasyGames: () => Promise<FantasyGame[]>;
   getFantasyGame: (uuid: string) => Promise<FantasyGame>;
+  getFantasyPerformanceTable: (uuid: string) => Promise<FantasyPerformanceRow[]>;
   getFantasyPlayers: (uuid: string, query?: URLSearchParams) => Promise<FantasyPlayer[]>;
+  getFantasyPricing: (uuid: string, query?: URLSearchParams) => Promise<FantasyPricing>;
+  updateFantasyPricing: (
+    uuid: string,
+    updates: Array<{ fantasyPlayerUuid: string; priceCents: number }>,
+  ) => Promise<FantasyPricing>;
   getFantasySquad: (uuid: string) => Promise<FantasySquadState>;
   saveFantasySquad: (
     uuid: string,
@@ -356,6 +365,7 @@ export interface ApiClient {
     input: { name: string; baseRevision: number; players: FantasySquadEntry[] },
   ) => Promise<FantasySquadState>;
   createFantasyGame: (input: CreateFantasyGameInput) => Promise<FantasyGame>;
+  updateFantasyGame: (uuid: string, input: UpdateFantasyGameInput) => Promise<FantasyGame>;
   getFantasyGameweeks: (uuid: string) => Promise<FantasyGameweek[]>;
   createFantasyGameweek: (
     uuid: string,
@@ -913,8 +923,19 @@ export function createApiClient(settings: BootstrapSettings): ApiClient {
     getFantasyGames: () => request<FantasyGame[]>('/fantasy/games'),
     getAdminFantasyGames: () => request<FantasyGame[]>('/admin/fantasy/games'),
     getFantasyGame: (uuid) => request<FantasyGame>(`/fantasy/games/${uuid}`),
+    getFantasyPerformanceTable: (uuid) =>
+      request<FantasyPerformanceRow[]>(`/fantasy/games/${uuid}/table`),
     getFantasyPlayers: (uuid, query = new URLSearchParams()) =>
       request<FantasyPlayer[]>(`/fantasy/games/${uuid}/players${query.size ? `?${query}` : ''}`),
+    getFantasyPricing: (uuid, query = new URLSearchParams()) =>
+      request<FantasyPricing>(
+        `/admin/fantasy/games/${uuid}/pricing${query.size ? `?${query}` : ''}`,
+      ),
+    updateFantasyPricing: (uuid, updates) =>
+      request<FantasyPricing>(`/admin/fantasy/games/${uuid}/pricing`, {
+        method: 'PUT',
+        body: JSON.stringify({ updates }),
+      }),
     getFantasySquad: (uuid) => request<FantasySquadState>(`/fantasy/games/${uuid}/squad`),
     saveFantasySquad: (uuid, input) =>
       request<FantasySquadState>(`/fantasy/games/${uuid}/squad`, {
@@ -929,6 +950,11 @@ export function createApiClient(settings: BootstrapSettings): ApiClient {
     createFantasyGame: (input) =>
       request<FantasyGame>('/admin/fantasy/games', {
         method: 'POST',
+        body: JSON.stringify(input),
+      }),
+    updateFantasyGame: (uuid, input) =>
+      request<FantasyGame>(`/admin/fantasy/games/${uuid}`, {
+        method: 'PUT',
         body: JSON.stringify(input),
       }),
     getFantasyGameweeks: (uuid) =>

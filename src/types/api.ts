@@ -1060,8 +1060,14 @@ export interface FantasyGame {
   benchSize: number;
   maxPlayersPerTeam: number;
   sport: Sport;
+  season?: { uuid: string; name: string } | null;
   positions?: FantasyPosition[];
   formationRules?: Record<string, unknown>;
+}
+
+export interface FantasyPricing {
+  locked: boolean;
+  players: FantasyPlayer[];
 }
 
 export interface CreateFantasyGameInput {
@@ -1078,6 +1084,18 @@ export interface CreateFantasyGameInput {
   benchSize: number;
   maxPlayersPerTeam: number;
 }
+
+export type UpdateFantasyGameInput = Pick<
+  CreateFantasyGameInput,
+  | 'name'
+  | 'description'
+  | 'status'
+  | 'budgetCents'
+  | 'squadSize'
+  | 'startingSize'
+  | 'benchSize'
+  | 'maxPlayersPerTeam'
+>;
 
 export interface FantasyPlayer {
   uuid: string;
@@ -1173,6 +1191,19 @@ export interface FantasyGameweek {
   deadlineAt: string;
   status: 'scheduled' | 'open' | 'locked' | 'completed';
   locked: boolean;
+}
+
+export interface FantasyPerformanceRow {
+  gameweekUuid: string;
+  gameweekName: string;
+  sequenceNumber: number;
+  rank: number;
+  previousRank: number | null;
+  teamName: string;
+  managerName: string;
+  gameweekPoints: number;
+  totalPoints: number;
+  status: string;
 }
 
 export interface FantasyLeague {

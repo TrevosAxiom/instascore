@@ -2,7 +2,7 @@
 Contributors: instascore
 Requires at least: 6.6
 Requires PHP: 8.2
-Stable tag: 0.23.0-rc.4
+Stable tag: 0.23.0-rc.5
 License: GPL-2.0-or-later
 
 WordPress backend and React application shell for InstaScore.
@@ -12,6 +12,12 @@ WordPress backend and React application shell for InstaScore.
 See README.md for the shortcode, development server and production build steps.
 
 == Changelog ==
+
+= 0.23.0-rc.5 =
+* Added guest fantasy browsing, custom fantasy team names and an official weekly performance table.
+* Added season-isolated player pricing with search, position filters, bulk editing and CSV import/export.
+* Locked opening prices after the first submitted squad to protect existing fantasy-team costs.
+* Rebuilt the fantasy team builder with a compact pitch, dense player market, responsive controls and clearer selection states.
 
 = 0.23.0-rc.4 =
 * Completed database-first reliability, polling recovery, diagnostics and permanent match history.
