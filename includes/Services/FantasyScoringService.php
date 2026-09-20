@@ -181,6 +181,21 @@ final class FantasyScoringService {
 		return $this->present_league( $row, true );
 	}
 
+	/** @return array<int,array<string,mixed>> */
+	public function leagues( int $user_id, string $game_uuid ): array {
+		$game = $this->repository->game_by_uuid( $game_uuid );
+		if ( null === $game ) { throw new ValidationException( array( 'game' => 'not_found' ) ); }
+		return array_map( fn( array $row ): array => $this->present_league( $row, $this->repository->is_member( (int) $row['id'], $user_id ) ), $this->repository->leagues_for_user( $user_id, (int) $game['id'] ) );
+	}
+
+	public function join_league( int $user_id, array $input ): array {
+		$code = strtoupper( sanitize_text_field( (string) ( $input['inviteCode'] ?? '' ) ) );
+		$league = '' === $code ? null : $this->repository->league_by_invite_code( $code );
+		if ( null === $league ) { throw new ValidationException( array( 'inviteCode' => 'invalid' ) ); }
+		$this->repository->join_league( (int) $league['id'], $user_id );
+		return $this->present_league( $league, true );
+	}
+
 	public function league( int $user_id, string $league_uuid ): array {
 		$league = $this->repository->league_by_uuid( $league_uuid );
 		if ( null === $league ) {

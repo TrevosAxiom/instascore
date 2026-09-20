@@ -172,7 +172,7 @@ export function ScorekeeperControlsPage() {
   }
 
   const sportSlug = query.data?.fixture.sport?.slug ?? 'flag-football';
-  const actions = sportActions[sportSlug] ?? sportActions['flag-football'];
+  const actions = sportActions[sportSlug] ?? sportActions['flag-football'] ?? [];
   const sportName = query.data?.fixture.sport?.name ?? 'Flag Football';
 
   return (

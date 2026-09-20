@@ -1081,6 +1081,15 @@ export interface FantasyRecalculationResult {
   gameweekUuid: string;
 }
 
+export interface FantasyGameweek {
+  uuid: string;
+  name: string;
+  sequenceNumber: number;
+  deadlineAt: string;
+  status: 'scheduled' | 'open' | 'locked' | 'completed';
+  locked: boolean;
+}
+
 export interface FantasyLeague {
   uuid: string;
   name: string;

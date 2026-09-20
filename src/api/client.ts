@@ -27,6 +27,7 @@ import type {
   Favourite,
   FavouriteEntityType,
   FantasyGame,
+  FantasyGameweek,
   CreateFantasyGameInput,
   FantasyLeague,
   FantasyLiveRow,
@@ -348,6 +349,16 @@ export interface ApiClient {
     input: { name: string; baseRevision: number; players: FantasySquadEntry[] },
   ) => Promise<FantasySquadState>;
   createFantasyGame: (input: CreateFantasyGameInput) => Promise<FantasyGame>;
+  getFantasyGameweeks: (uuid: string) => Promise<FantasyGameweek[]>;
+  createFantasyGameweek: (
+    uuid: string,
+    input: { name: string; deadlineAt: string },
+  ) => Promise<FantasyGameweek>;
+  setFantasyGameweekStatus: (
+    uuid: string,
+    gameweekUuid: string,
+    status: 'scheduled' | 'open' | 'locked',
+  ) => Promise<FantasyGameweek>;
   getFantasyPoints: (uuid: string) => Promise<FantasyPointBreakdown[]>;
   getFantasyLiveTracker: (uuid: string) => Promise<FantasyLiveRow[]>;
   makeFantasyTransfer: (
@@ -355,6 +366,8 @@ export interface ApiClient {
     input: Record<string, unknown>,
   ) => Promise<FantasyTransferResult>;
   createFantasyLeague: (uuid: string, input: Record<string, unknown>) => Promise<FantasyLeague>;
+  getFantasyLeagues: (uuid: string) => Promise<FantasyLeague[]>;
+  joinFantasyLeague: (inviteCode: string) => Promise<FantasyLeague>;
   getFantasyLeague: (uuid: string) => Promise<FantasyLeague>;
   createFantasyRule: (uuid: string, input: Record<string, unknown>) => Promise<unknown>;
   getFantasyRules: (uuid: string) => Promise<FantasyScoringRule[]>;
@@ -890,6 +903,18 @@ export function createApiClient(settings: BootstrapSettings): ApiClient {
         method: 'POST',
         body: JSON.stringify(input),
       }),
+    getFantasyGameweeks: (uuid) =>
+      request<FantasyGameweek[]>(`/admin/fantasy/games/${uuid}/gameweeks`),
+    createFantasyGameweek: (uuid, input) =>
+      request<FantasyGameweek>(`/admin/fantasy/games/${uuid}/gameweeks`, {
+        method: 'POST',
+        body: JSON.stringify(input),
+      }),
+    setFantasyGameweekStatus: (uuid, gameweekUuid, status) =>
+      request<FantasyGameweek>(`/admin/fantasy/games/${uuid}/gameweeks/${gameweekUuid}/status`, {
+        method: 'PUT',
+        body: JSON.stringify({ status }),
+      }),
     getFantasyPoints: (uuid) => request<FantasyPointBreakdown[]>(`/fantasy/games/${uuid}/points`),
     getFantasyLiveTracker: (uuid) =>
       request<FantasyLiveRow[]>(`/fantasy/games/${uuid}/live-tracker`),
@@ -902,6 +927,12 @@ export function createApiClient(settings: BootstrapSettings): ApiClient {
       request<FantasyLeague>(`/fantasy/games/${uuid}/leagues`, {
         method: 'POST',
         body: JSON.stringify(input),
+      }),
+    getFantasyLeagues: (uuid) => request<FantasyLeague[]>(`/fantasy/games/${uuid}/leagues`),
+    joinFantasyLeague: (inviteCode) =>
+      request<FantasyLeague>('/fantasy/leagues/join', {
+        method: 'POST',
+        body: JSON.stringify({ inviteCode }),
       }),
     getFantasyLeague: (uuid) => request<FantasyLeague>(`/fantasy/leagues/${uuid}`),
     createFantasyRule: (uuid, input) =>

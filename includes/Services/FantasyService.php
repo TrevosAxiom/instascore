@@ -158,6 +158,35 @@ final class FantasyService {
 		}
 	}
 
+	/** @return array<int,array<string,mixed>> */
+	public function gameweeks( string $game_uuid ): array {
+		$game = $this->repository->find_game( $game_uuid );
+		if ( null === $game ) { throw new ValidationException( array( 'game' => 'not_found' ) ); }
+		return array_map( array( $this, 'present_gameweek' ), $this->repository->gameweeks( (int) $game['id'] ) );
+	}
+
+	public function create_gameweek( string $game_uuid, array $input ): array {
+		$game = $this->repository->find_game( $game_uuid );
+		$deadline = strtotime( (string) ( $input['deadlineAt'] ?? '' ) );
+		if ( null === $game || false === $deadline || $deadline <= time() ) { throw new ValidationException( array( 'deadlineAt' => 'future_deadline_required' ) ); }
+		$name = sanitize_text_field( (string) ( $input['name'] ?? '' ) );
+		if ( '' === $name ) { $name = 'Next gameweek'; }
+		return $this->present_gameweek( $this->repository->create_gameweek( (int) $game['id'], $name, gmdate( 'Y-m-d H:i:s', $deadline ) ) );
+	}
+
+	public function change_gameweek_status( string $game_uuid, string $gameweek_uuid, string $status ): array {
+		$allowed = array( 'scheduled', 'open', 'locked' );
+		if ( ! in_array( $status, $allowed, true ) ) { throw new ValidationException( array( 'status' => 'invalid' ) ); }
+		$game = $this->repository->find_game( $game_uuid );
+		$row = null === $game ? null : $this->repository->set_gameweek_status( (int) $game['id'], $gameweek_uuid, $status );
+		if ( null === $row ) { throw new ValidationException( array( 'gameweek' => 'not_found' ) ); }
+		return $this->present_gameweek( $row );
+	}
+
+	private function present_gameweek( array $row ): array {
+		return array( 'uuid' => $row['uuid'], 'name' => $row['name'], 'sequenceNumber' => (int) $row['sequence_number'], 'deadlineAt' => $row['deadline_at'], 'status' => $row['status'], 'locked' => 'locked' === $row['status'] || strtotime( (string) $row['deadline_at'] . ' UTC' ) <= time() );
+	}
+
 	/**
 	 * @return array{game:array<string,mixed>,gameweek:array<string,mixed>,positions:array<int,array<string,mixed>>}
 	 */

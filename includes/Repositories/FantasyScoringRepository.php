@@ -391,6 +391,22 @@ final class FantasyScoringRepository {
 		return is_array( $row ) ? $row : null;
 	}
 
+	public function league_by_invite_code( string $code ): ?array {
+		$row = $this->database->get_row( $this->database->prepare( "SELECT * FROM {$this->database->prefix}instascore_fantasy_leagues WHERE invite_code = %s AND status = 'active' LIMIT 1", strtoupper( $code ) ), ARRAY_A );
+		return is_array( $row ) ? $row : null;
+	}
+
+	/** @return array<int,array<string,mixed>> */
+	public function leagues_for_user( int $user_id, int $game_id ): array {
+		$rows = $this->database->get_results( $this->database->prepare(
+			"SELECT l.* FROM {$this->database->prefix}instascore_fantasy_leagues l
+			LEFT JOIN {$this->database->prefix}instascore_fantasy_league_members m ON m.league_id = l.id AND m.user_id = %d AND m.status = 'active'
+			WHERE l.fantasy_game_id = %d AND l.status = 'active' AND (l.visibility = 'public' OR m.id IS NOT NULL)
+			ORDER BY (m.id IS NOT NULL) DESC,l.name ASC", $user_id, $game_id
+		), ARRAY_A );
+		return is_array( $rows ) ? $rows : array();
+	}
+
 	public function is_member( int $league_id, int $user_id ): bool {
 		return (bool) $this->database->get_var(
 			$this->database->prepare( "SELECT id FROM {$this->database->prefix}instascore_fantasy_league_members WHERE league_id = %d AND user_id = %d AND status = 'active' LIMIT 1", $league_id, $user_id )
@@ -419,7 +435,9 @@ final class FantasyScoringRepository {
 			$this->database->prepare(
 				"SELECT m.user_id,u.display_name,COALESCE(SUM(t.gameweek_points),0) points,MIN(t.previous_rank_position) previous_rank
 				FROM {$this->database->prefix}instascore_fantasy_league_members m
-				LEFT JOIN {$this->database->prefix}instascore_fantasy_squad_totals t ON t.user_id = m.user_id
+				JOIN {$this->database->prefix}instascore_fantasy_leagues l ON l.id = m.league_id
+				LEFT JOIN {$this->database->prefix}instascore_fantasy_squads sq ON sq.user_id = m.user_id AND sq.fantasy_game_id = l.fantasy_game_id
+				LEFT JOIN {$this->database->prefix}instascore_fantasy_squad_totals t ON t.squad_id = sq.id
 				LEFT JOIN {$this->database->users} u ON u.ID = m.user_id
 				WHERE m.league_id = %d AND m.status = 'active'
 				GROUP BY m.user_id,u.display_name
@@ -476,21 +494,29 @@ final class FantasyScoringRepository {
 		);
 		foreach ( is_array( $squads ) ? $squads : array() as $squad ) {
 			$points = (int) $this->database->get_var( $this->database->prepare(
-				"SELECT COALESCE(SUM(latest.points * CASE WHEN sp.is_captain = 1 THEN 2 ELSE 1 END),0)
+				"SELECT COALESCE(SUM(latest.points),0) + CASE
+				WHEN EXISTS (SELECT 1 FROM {$this->database->prefix}instascore_fantasy_squad_players captain JOIN {$this->database->prefix}instascore_fantasy_points cp ON cp.fantasy_player_id = captain.fantasy_player_id AND cp.gameweek_id = %d WHERE captain.squad_id = %d AND captain.is_captain = 1) THEN COALESCE(SUM(CASE WHEN sp.is_captain = 1 THEN latest.points ELSE 0 END),0)
+				ELSE COALESCE(SUM(CASE WHEN sp.is_vice_captain = 1 THEN latest.points ELSE 0 END),0) END
 				FROM {$this->database->prefix}instascore_fantasy_squad_players sp
 				JOIN {$this->database->prefix}instascore_fantasy_points latest ON latest.fantasy_player_id = sp.fantasy_player_id AND latest.gameweek_id = %d
 				WHERE sp.squad_id = %d AND sp.slot_type = 'starting'
 				AND NOT EXISTS (SELECT 1 FROM {$this->database->prefix}instascore_fantasy_points newer WHERE newer.match_event_id = latest.match_event_id AND newer.fantasy_player_id = latest.fantasy_player_id AND newer.revision > latest.revision)",
-				$gameweek_id, (int) $squad['id']
+				$gameweek_id, (int) $squad['id'], $gameweek_id, (int) $squad['id']
 			) );
 			$transfer_cost = (int) $this->database->get_var( $this->database->prepare( "SELECT COALESCE(SUM(cost_points),0) FROM {$this->database->prefix}instascore_fantasy_transfers WHERE squad_id = %d AND gameweek_id = %d AND status = 'completed'", (int) $squad['id'], $gameweek_id ) );
 			$existing = $this->database->get_row( $this->database->prepare( "SELECT * FROM {$this->database->prefix}instascore_fantasy_squad_totals WHERE squad_id = %d AND gameweek_id = %d LIMIT 1", (int) $squad['id'], $gameweek_id ), ARRAY_A );
-			$row = array( 'gameweek_points' => $points - $transfer_cost, 'season_points' => $points - $transfer_cost, 'revision' => is_array( $existing ) ? (int) $existing['revision'] + 1 : 1, 'status' => 'provisional', 'updated_at' => gmdate( 'Y-m-d H:i:s' ) );
+			$gameweek_points = $points - $transfer_cost;
+			$prior_points = (int) $this->database->get_var( $this->database->prepare( "SELECT COALESCE(SUM(gameweek_points),0) FROM {$this->database->prefix}instascore_fantasy_squad_totals WHERE user_id = %d AND gameweek_id <> %d AND status = 'confirmed'", (int) $squad['user_id'], $gameweek_id ) );
+			$row = array( 'gameweek_points' => $gameweek_points, 'season_points' => $prior_points + $gameweek_points, 'revision' => is_array( $existing ) ? (int) $existing['revision'] + 1 : 1, 'status' => 'provisional', 'updated_at' => gmdate( 'Y-m-d H:i:s' ) );
 			if ( is_array( $existing ) ) {
 				$this->database->update( $this->database->prefix . 'instascore_fantasy_squad_totals', $row, array( 'id' => (int) $existing['id'] ) );
 			} else {
 				$this->database->insert( $this->database->prefix . 'instascore_fantasy_squad_totals', array_merge( $row, array( 'uuid' => wp_generate_uuid4(), 'squad_id' => (int) $squad['id'], 'gameweek_id' => $gameweek_id, 'user_id' => (int) $squad['user_id'], 'rank_position' => null, 'previous_rank_position' => null ) ) );
 			}
+		}
+		$ranked = $this->database->get_results( $this->database->prepare( "SELECT id,rank_position FROM {$this->database->prefix}instascore_fantasy_squad_totals WHERE gameweek_id = %d ORDER BY season_points DESC,gameweek_points DESC,user_id ASC", $gameweek_id ), ARRAY_A );
+		foreach ( is_array( $ranked ) ? $ranked : array() as $index => $total ) {
+			$this->database->update( $this->database->prefix . 'instascore_fantasy_squad_totals', array( 'previous_rank_position' => $total['rank_position'], 'rank_position' => $index + 1 ), array( 'id' => (int) $total['id'] ) );
 		}
 	}
 }

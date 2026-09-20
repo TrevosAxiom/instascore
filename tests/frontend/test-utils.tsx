@@ -29,6 +29,9 @@ export const testApi: ApiClient = {
   getProviderCompetitions: () => Promise.resolve([]),
   getProviderStandings: () => Promise.resolve([]),
   getCompetition: () => Promise.reject(new Error('Not configured')),
+  getCompetitionStructure: () => Promise.reject(new Error('Not configured')),
+  generateCompetitionFixtures: () => Promise.reject(new Error('Not configured')),
+  generateCompetitionPlayoffs: () => Promise.reject(new Error('Not configured')),
   getTeams: () => Promise.resolve({ items: [], page: 1, perPage: 12, total: 0, totalPages: 0 }),
   getTeam: () => Promise.reject(new Error('Not configured')),
   getPlayers: () => Promise.resolve({ items: [], page: 1, perPage: 12, total: 0, totalPages: 0 }),
@@ -544,6 +547,35 @@ export const testApi: ApiClient = {
       maxPlayersPerTeam: 3,
       sport: { uuid: '', name: '', slug: '' },
     }),
+  getFantasyGameweeks: () =>
+    Promise.resolve([
+      {
+        uuid: '00000000-0000-4000-8000-000000000122',
+        name: 'Gameweek 1',
+        sequenceNumber: 1,
+        deadlineAt: '2026-08-01 12:00:00',
+        status: 'open',
+        locked: false,
+      },
+    ]),
+  createFantasyGameweek: (_uuid, input) =>
+    Promise.resolve({
+      uuid: '00000000-0000-4000-8000-000000000125',
+      name: input.name,
+      sequenceNumber: 2,
+      deadlineAt: input.deadlineAt,
+      status: 'scheduled',
+      locked: false,
+    }),
+  setFantasyGameweekStatus: (_uuid, gameweekUuid, status) =>
+    Promise.resolve({
+      uuid: gameweekUuid,
+      name: 'Gameweek 1',
+      sequenceNumber: 1,
+      deadlineAt: '2026-08-01 12:00:00',
+      status,
+      locked: status === 'locked',
+    }),
   getFantasyPoints: () =>
     Promise.resolve([
       {
@@ -568,6 +600,16 @@ export const testApi: ApiClient = {
       inPlayerName: 'Tola Blitz',
     }),
   createFantasyLeague: () =>
+    Promise.resolve({
+      uuid: '00000000-0000-4000-8000-000000000150',
+      name: 'Lagos Super League',
+      visibility: 'private',
+      inviteCode: 'ABC123',
+      isMember: true,
+      status: 'active',
+    }),
+  getFantasyLeagues: () => Promise.resolve([]),
+  joinFantasyLeague: () =>
     Promise.resolve({
       uuid: '00000000-0000-4000-8000-000000000150',
       name: 'Lagos Super League',

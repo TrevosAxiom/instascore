@@ -32,6 +32,13 @@ final class AdminFantasyController {
 				'permission_callback' => array( $this, 'can_manage' ),
 			)
 		);
+		register_rest_route( 'instascore/v1', '/admin/fantasy/games/(?P<uuid>[0-9a-f-]{36})/gameweeks', array(
+			array( 'methods' => 'GET', 'callback' => fn( WP_REST_Request $request ): WP_REST_Response => $this->execute( fn(): array => FantasyService::create()->gameweeks( (string) $request['uuid'] ) ), 'permission_callback' => array( $this, 'can_manage' ) ),
+			array( 'methods' => 'POST', 'callback' => fn( WP_REST_Request $request ): WP_REST_Response => $this->execute( fn(): array => FantasyService::create()->create_gameweek( (string) $request['uuid'], (array) $request->get_json_params() ), 201 ), 'permission_callback' => array( $this, 'can_manage' ) ),
+		) );
+		register_rest_route( 'instascore/v1', '/admin/fantasy/games/(?P<uuid>[0-9a-f-]{36})/gameweeks/(?P<gameweek>[0-9a-f-]{36})/status', array(
+			'methods' => 'PUT', 'callback' => fn( WP_REST_Request $request ): WP_REST_Response => $this->execute( fn(): array => FantasyService::create()->change_gameweek_status( (string) $request['uuid'], (string) $request['gameweek'], sanitize_key( (string) ( $request->get_json_params()['status'] ?? '' ) ) ) ), 'permission_callback' => array( $this, 'can_manage' ),
+		) );
 	}
 
 	public function can_manage(): bool {

@@ -31,10 +31,10 @@ final class FantasyScoringController {
 			'permission_callback' => array( $this, 'authenticated' ),
 		) );
 		register_rest_route( 'instascore/v1', '/fantasy/games/(?P<uuid>[0-9a-f-]{36})/leagues', array(
-			'methods'             => 'POST',
-			'callback'            => fn( WP_REST_Request $request ): WP_REST_Response => $this->execute( fn(): array => FantasyScoringService::create()->create_league( get_current_user_id(), (string) $request['uuid'], (array) $request->get_json_params() ), 201 ),
-			'permission_callback' => array( $this, 'authenticated' ),
+			array( 'methods' => 'GET', 'callback' => fn( WP_REST_Request $request ): WP_REST_Response => $this->execute( fn(): array => FantasyScoringService::create()->leagues( get_current_user_id(), (string) $request['uuid'] ) ), 'permission_callback' => array( $this, 'authenticated' ) ),
+			array( 'methods' => 'POST', 'callback' => fn( WP_REST_Request $request ): WP_REST_Response => $this->execute( fn(): array => FantasyScoringService::create()->create_league( get_current_user_id(), (string) $request['uuid'], (array) $request->get_json_params() ), 201 ), 'permission_callback' => array( $this, 'authenticated' ) ),
 		) );
+		register_rest_route( 'instascore/v1', '/fantasy/leagues/join', array( 'methods' => 'POST', 'callback' => fn( WP_REST_Request $request ): WP_REST_Response => $this->execute( fn(): array => FantasyScoringService::create()->join_league( get_current_user_id(), (array) $request->get_json_params() ) ), 'permission_callback' => array( $this, 'authenticated' ) ) );
 		register_rest_route( 'instascore/v1', '/fantasy/leagues/(?P<uuid>[0-9a-f-]{36})', array(
 			'methods'             => 'GET',
 			'callback'            => fn( WP_REST_Request $request ): WP_REST_Response => $this->execute( fn(): array => FantasyScoringService::create()->league( get_current_user_id(), (string) $request['uuid'] ) ),

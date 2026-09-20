@@ -91,7 +91,7 @@ describe('Competition administration form', () => {
           getCompetition: vi.fn().mockResolvedValue(competition),
           getCompetitionStructure: vi.fn().mockResolvedValue({
             competitionUuid: competition.uuid,
-            seasonUuid: competition.seasons[0].uuid,
+            seasonUuid: competition.seasons[0]!.uuid,
             stages: [],
             fixtures: [],
           }),
@@ -109,7 +109,7 @@ describe('Competition administration form', () => {
     ).toBeInTheDocument();
     expect(generateCompetitionFixtures).toHaveBeenCalledWith(
       competition.uuid,
-      expect.objectContaining({ seasonUuid: competition.seasons[0].uuid }),
+      expect.objectContaining({ seasonUuid: competition.seasons[0]!.uuid }),
     );
   });
 });

@@ -34,6 +34,8 @@ export function FantasyDashboardPage() {
   const [sort, setSort] = useState('points');
   const [draft, setDraft] = useState<FantasySquadEntry[] | null>(null);
   const [focusedPlayerUuid, setFocusedPlayerUuid] = useState('');
+  const [leagueName, setLeagueName] = useState('');
+  const [inviteCode, setInviteCode] = useState('');
   const games = useQuery({ queryKey: ['fantasy', 'games'], queryFn: api.getFantasyGames });
   const activeGameUuid = selectedGameUuid || games.data?.[0]?.uuid || '';
   const activeGame = games.data?.find((game) => game.uuid === activeGameUuid);
@@ -52,6 +54,11 @@ export function FantasyDashboardPage() {
   const squad = useQuery({
     queryKey: ['fantasy', activeGameUuid, 'squad'],
     queryFn: () => api.getFantasySquad(activeGameUuid),
+    enabled: Boolean(activeGameUuid && state?.authenticated),
+  });
+  const leagues = useQuery({
+    queryKey: ['fantasy', activeGameUuid, 'leagues'],
+    queryFn: () => api.getFantasyLeagues(activeGameUuid),
     enabled: Boolean(activeGameUuid && state?.authenticated),
   });
   const squadEntries = draft ?? squad.data?.squad?.players ?? [];
@@ -82,6 +89,21 @@ export function FantasyDashboardPage() {
       queryClient.setQueryData(['fantasy', activeGameUuid, 'squad'], data);
     },
   });
+  const createLeague = useMutation({
+    mutationFn: () =>
+      api.createFantasyLeague(activeGameUuid, { name: leagueName, visibility: 'private' }),
+    onSuccess: () => {
+      setLeagueName('');
+      void queryClient.invalidateQueries({ queryKey: ['fantasy', activeGameUuid, 'leagues'] });
+    },
+  });
+  const joinLeague = useMutation({
+    mutationFn: () => api.joinFantasyLeague(inviteCode),
+    onSuccess: () => {
+      setInviteCode('');
+      void queryClient.invalidateQueries({ queryKey: ['fantasy', activeGameUuid, 'leagues'] });
+    },
+  });
 
   return (
     <PageScaffold
@@ -102,6 +124,56 @@ export function FantasyDashboardPage() {
         <Stack spacing={3}>
           {!state?.authenticated ? (
             <Alert severity="info">Sign in to save or submit your fantasy team.</Alert>
+          ) : null}
+          {state?.authenticated ? (
+            <Box className="instascore-panel">
+              <Typography variant="h3">Mini leagues</Typography>
+              <Typography color="text.secondary" sx={{ mb: 2 }}>
+                Create a private competition for friends or join one with its invite code.
+              </Typography>
+              <Stack direction={{ xs: 'column', md: 'row' }} gap={2}>
+                <TextField
+                  label="New league name"
+                  value={leagueName}
+                  onChange={(event) => setLeagueName(event.target.value)}
+                  fullWidth
+                />
+                <Button
+                  variant="outlined"
+                  disabled={!leagueName.trim() || createLeague.isPending}
+                  onClick={() => createLeague.mutate()}
+                >
+                  Create league
+                </Button>
+                <TextField
+                  label="Invite code"
+                  value={inviteCode}
+                  onChange={(event) => setInviteCode(event.target.value.toUpperCase())}
+                  fullWidth
+                />
+                <Button
+                  variant="outlined"
+                  disabled={!inviteCode.trim() || joinLeague.isPending}
+                  onClick={() => joinLeague.mutate()}
+                >
+                  Join league
+                </Button>
+              </Stack>
+              <Stack direction="row" flexWrap="wrap" gap={1} sx={{ mt: 2 }}>
+                {leagues.data?.map((league) => (
+                  <Chip
+                    key={league.uuid}
+                    label={`${league.name}${league.isMember ? ' · Joined' : ''}`}
+                    color={league.isMember ? 'primary' : 'default'}
+                  />
+                ))}
+              </Stack>
+              {createLeague.isError || joinLeague.isError ? (
+                <Alert severity="error">
+                  The league request failed. Check the name or invite code and try again.
+                </Alert>
+              ) : null}
+            </Box>
           ) : null}
           <Box className="instascore-panel">
             <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" gap={2}>

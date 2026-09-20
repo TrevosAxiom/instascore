@@ -44,6 +44,8 @@ export function AdminFantasyPage() {
   const [reason, setReason] = useState('Verified against official match events.');
   const [ruleEvent, setRuleEvent] = useState('touchdown');
   const [rulePoints, setRulePoints] = useState(6);
+  const [gameweekName, setGameweekName] = useState('');
+  const [gameweekDeadline, setGameweekDeadline] = useState('');
   const games = useQuery({ queryKey: ['admin-fantasy-games'], queryFn: api.getAdminFantasyGames });
   const competitions = useQuery({
     queryKey: ['fantasy-form', 'competitions'],
@@ -59,6 +61,11 @@ export function AdminFantasyPage() {
   const rules = useQuery({
     queryKey: ['admin-fantasy-rules', activeGameUuid],
     queryFn: () => api.getFantasyRules(activeGameUuid),
+    enabled: Boolean(activeGameUuid),
+  });
+  const gameweeks = useQuery({
+    queryKey: ['admin-fantasy-gameweeks', activeGameUuid],
+    queryFn: () => api.getFantasyGameweeks(activeGameUuid),
     enabled: Boolean(activeGameUuid),
   });
   const selectedCompetitionName = useMemo(
@@ -107,6 +114,24 @@ export function AdminFantasyPage() {
   });
   const finalize = useMutation({
     mutationFn: () => api.finalizeFantasyGameweek(activeGameUuid, reason),
+  });
+  const createGameweek = useMutation({
+    mutationFn: () =>
+      api.createFantasyGameweek(activeGameUuid, {
+        name: gameweekName || `Gameweek ${(gameweeks.data?.length ?? 0) + 1}`,
+        deadlineAt: toUtcDatabaseDate(gameweekDeadline),
+      }),
+    onSuccess: () => {
+      setGameweekName('');
+      setGameweekDeadline('');
+      void client.invalidateQueries({ queryKey: ['admin-fantasy-gameweeks', activeGameUuid] });
+    },
+  });
+  const changeGameweek = useMutation({
+    mutationFn: ({ uuid, status }: { uuid: string; status: 'scheduled' | 'open' | 'locked' }) =>
+      api.setFantasyGameweekStatus(activeGameUuid, uuid, status),
+    onSuccess: () =>
+      void client.invalidateQueries({ queryKey: ['admin-fantasy-gameweeks', activeGameUuid] }),
   });
   const sizesValid = form.startingSize + form.benchSize === form.squadSize;
   const canCreate = Boolean(
@@ -249,6 +274,81 @@ export function AdminFantasyPage() {
                 </Stack>
               ))}
             </Stack>
+            <Divider />
+            <Box>
+              <Typography variant="h3">Gameweek lifecycle</Typography>
+              <Typography color="text.secondary">
+                Create the next round, roll every manager's latest squad forward as a draft, then
+                open or lock entries deliberately.
+              </Typography>
+            </Box>
+            <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
+              <TextField
+                label="Gameweek name"
+                value={gameweekName}
+                onChange={(event) => setGameweekName(event.target.value)}
+                fullWidth
+              />
+              <TextField
+                label="Deadline"
+                type="datetime-local"
+                value={gameweekDeadline}
+                onChange={(event) => setGameweekDeadline(event.target.value)}
+                InputLabelProps={{ shrink: true }}
+                fullWidth
+              />
+              <Button
+                variant="outlined"
+                disabled={!gameweekDeadline || createGameweek.isPending}
+                onClick={() => createGameweek.mutate()}
+              >
+                Create next gameweek
+              </Button>
+            </Stack>
+            <Stack divider={<Divider />}>
+              {gameweeks.data?.map((gameweek) => (
+                <Stack
+                  key={gameweek.uuid}
+                  direction={{ xs: 'column', sm: 'row' }}
+                  justifyContent="space-between"
+                  alignItems={{ sm: 'center' }}
+                  gap={1}
+                  sx={{ py: 1 }}
+                >
+                  <Box>
+                    <Typography fontWeight={900}>
+                      {gameweek.sequenceNumber}. {gameweek.name}
+                    </Typography>
+                    <Typography color="text.secondary">
+                      {new Date(gameweek.deadlineAt.replace(' ', 'T') + 'Z').toLocaleString()} ·{' '}
+                      {gameweek.status}
+                    </Typography>
+                  </Box>
+                  {gameweek.status !== 'completed' ? (
+                    <Stack direction="row" gap={1}>
+                      {(['scheduled', 'open', 'locked'] as const).map((status) => (
+                        <Button
+                          key={status}
+                          size="small"
+                          variant={gameweek.status === status ? 'contained' : 'outlined'}
+                          disabled={changeGameweek.isPending}
+                          onClick={() => changeGameweek.mutate({ uuid: gameweek.uuid, status })}
+                        >
+                          {status}
+                        </Button>
+                      ))}
+                    </Stack>
+                  ) : (
+                    <Chip label="Completed" color="success" />
+                  )}
+                </Stack>
+              ))}
+            </Stack>
+            {createGameweek.isError || changeGameweek.isError ? (
+              <Alert severity="error">
+                The gameweek change could not be saved. Check the deadline and lifecycle state.
+              </Alert>
+            ) : null}
             <Divider />
             <TextField
               label="Audit reason"

@@ -29,4 +29,21 @@ describe('fantasy foundation UI', () => {
       isCaptain: true,
     });
   });
+
+  it('creates and joins private mini leagues from the fantasy workspace', async () => {
+    const createFantasyLeague = vi.fn(testApi.createFantasyLeague);
+    const joinFantasyLeague = vi.fn(testApi.joinFantasyLeague);
+    renderApp(<FantasyDashboardPage />, {
+      auth: adminAuth,
+      api: { ...testApi, createFantasyLeague, joinFantasyLeague },
+    });
+
+    fireEvent.change(await screen.findByLabelText(/new league name/i), { target: { value: 'Weekend rivals' } });
+    fireEvent.click(screen.getByRole('button', { name: /create league/i }));
+    await waitFor(() => expect(createFantasyLeague).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({ name: 'Weekend rivals', visibility: 'private' })));
+
+    fireEvent.change(screen.getByLabelText(/invite code/i), { target: { value: 'abc123' } });
+    fireEvent.click(screen.getByRole('button', { name: /join league/i }));
+    await waitFor(() => expect(joinFantasyLeague).toHaveBeenCalledWith('ABC123'));
+  });
 });

@@ -68,6 +68,63 @@ final class FantasyRepository {
 		return is_array( $row ) ? $row : null;
 	}
 
+	/** @return array<int,array<string,mixed>> */
+	public function gameweeks( int $game_id ): array {
+		$rows = $this->database->get_results(
+			$this->database->prepare(
+				"SELECT gw.* FROM {$this->database->prefix}instascore_fantasy_gameweeks gw
+				JOIN {$this->database->prefix}instascore_fantasy_seasons fs ON fs.id = gw.fantasy_season_id
+				WHERE fs.fantasy_game_id = %d ORDER BY gw.sequence_number DESC",
+				$game_id
+			),
+			ARRAY_A
+		);
+		return is_array( $rows ) ? $rows : array();
+	}
+
+	public function create_gameweek( int $game_id, string $name, string $deadline ): array {
+		$season_id = (int) $this->database->get_var( $this->database->prepare( "SELECT id FROM {$this->database->prefix}instascore_fantasy_seasons WHERE fantasy_game_id = %d AND status = 'active' LIMIT 1", $game_id ) );
+		if ( $season_id < 1 ) {
+			throw new \RuntimeException( 'Active fantasy season not found.' );
+		}
+		$sequence = 1 + (int) $this->database->get_var( $this->database->prepare( "SELECT COALESCE(MAX(sequence_number),0) FROM {$this->database->prefix}instascore_fantasy_gameweeks WHERE fantasy_season_id = %d", $season_id ) );
+		$now = gmdate( 'Y-m-d H:i:s' );
+		$row = array( 'uuid' => wp_generate_uuid4(), 'fantasy_season_id' => $season_id, 'name' => $name, 'sequence_number' => $sequence, 'deadline_at' => $deadline, 'status' => 'scheduled', 'created_at' => $now, 'updated_at' => $now );
+		$this->database->query( 'START TRANSACTION' );
+		try {
+			$row['id'] = $this->insert_or_fail( $this->database->prefix . 'instascore_fantasy_gameweeks', $row );
+			$previous = $this->database->get_results( $this->database->prepare( "SELECT * FROM {$this->database->prefix}instascore_fantasy_squads WHERE fantasy_game_id = %d AND status = 'submitted' AND gameweek_id <> %d ORDER BY gameweek_id DESC", $game_id, (int) $row['id'] ), ARRAY_A );
+			$seen = array();
+			foreach ( is_array( $previous ) ? $previous : array() as $squad ) {
+				$user_id = (int) $squad['user_id'];
+				if ( isset( $seen[ $user_id ] ) ) { continue; }
+				$seen[ $user_id ] = true;
+				$old_id = (int) $squad['id'];
+				unset( $squad['id'] );
+				$squad['uuid'] = wp_generate_uuid4();
+				$squad['gameweek_id'] = (int) $row['id'];
+				$squad['revision'] = 1;
+				$squad['status'] = 'draft';
+				$squad['submitted_at'] = null;
+				$squad['created_at'] = $now;
+				$squad['updated_at'] = $now;
+				$new_id = $this->insert_or_fail( $this->database->prefix . 'instascore_fantasy_squads', $squad );
+				$players = $this->database->get_results( $this->database->prepare( "SELECT * FROM {$this->database->prefix}instascore_fantasy_squad_players WHERE squad_id = %d", $old_id ), ARRAY_A );
+				foreach ( is_array( $players ) ? $players : array() as $player ) { unset( $player['id'] ); $player['uuid'] = wp_generate_uuid4(); $player['squad_id'] = $new_id; $this->insert_or_fail( $this->database->prefix . 'instascore_fantasy_squad_players', $player ); }
+			}
+			$this->database->query( 'COMMIT' );
+		} catch ( \Throwable $error ) { $this->database->query( 'ROLLBACK' ); throw $error; }
+		return $row;
+	}
+
+	public function set_gameweek_status( int $game_id, string $gameweek_uuid, string $status ): ?array {
+		$row = $this->database->get_row( $this->database->prepare( "SELECT gw.* FROM {$this->database->prefix}instascore_fantasy_gameweeks gw JOIN {$this->database->prefix}instascore_fantasy_seasons fs ON fs.id = gw.fantasy_season_id WHERE fs.fantasy_game_id = %d AND gw.uuid = %s LIMIT 1", $game_id, $gameweek_uuid ), ARRAY_A );
+		if ( ! is_array( $row ) ) { return null; }
+		$this->database->update( $this->database->prefix . 'instascore_fantasy_gameweeks', array( 'status' => $status, 'updated_at' => gmdate( 'Y-m-d H:i:s' ) ), array( 'id' => (int) $row['id'] ) );
+		$row['status'] = $status;
+		return $row;
+	}
+
 	/**
 	 * @return array<int,array<string,mixed>>
 	 */

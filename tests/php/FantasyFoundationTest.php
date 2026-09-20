@@ -81,4 +81,14 @@ final class FantasyFoundationTest extends TestCase {
 		);
 		self::assertSame( 21, $points );
 	}
+
+	public function test_vice_captain_takes_multiplier_when_captain_does_not_appear(): void {
+		$points = ( new FantasyRuleEngine() )->squad_total(
+			array(
+				array( 'points' => 0, 'slot_type' => 'starting', 'is_captain' => 1, 'appeared' => false ),
+				array( 'points' => 5, 'slot_type' => 'starting', 'is_vice_captain' => 1, 'appeared' => true ),
+			)
+		);
+		self::assertSame( 10, $points );
+	}
 }

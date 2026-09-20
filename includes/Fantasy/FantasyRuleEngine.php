@@ -64,10 +64,14 @@ final class FantasyRuleEngine {
 	 * @param array<int,array<string,mixed>> $squad_entries Squad entries with points.
 	 */
 	public function squad_total( array $squad_entries ): int {
+		$captain_appeared = false;
+		foreach ( $squad_entries as $entry ) {
+			if ( ! empty( $entry['is_captain'] ) && 'bench' !== ( $entry['slot_type'] ?? $entry['slotType'] ?? '' ) && (bool) ( $entry['appeared'] ?? true ) ) { $captain_appeared = true; break; }
+		}
 		return array_sum(
 			array_map(
-				function ( array $entry ): int {
-					$multiplier = ! empty( $entry['is_captain'] ) ? 2 : ( ! empty( $entry['is_vice_captain'] ) ? 1 : 1 );
+				function ( array $entry ) use ( $captain_appeared ): int {
+					$multiplier = ( ! empty( $entry['is_captain'] ) && $captain_appeared ) || ( ! empty( $entry['is_vice_captain'] ) && ! $captain_appeared ) ? 2 : 1;
 					$bench      = 'bench' === ( $entry['slot_type'] ?? $entry['slotType'] ?? '' ) ? 0 : 1;
 					return (int) ( $entry['points'] ?? 0 ) * $multiplier * $bench;
 				},
