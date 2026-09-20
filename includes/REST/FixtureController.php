@@ -53,6 +53,7 @@ final class FixtureController {
 			'date'        => $request->get_param( 'date' ),
 			'sport'       => $request->get_param( 'sport' ),
 			'competition' => $request->get_param( 'competition' ),
+			'season'      => $request->get_param( 'season' ),
 			'fromUtc'     => $request->get_param( 'from_utc' ),
 			'toUtc'       => $request->get_param( 'to_utc' ),
 			'results'     => $results,

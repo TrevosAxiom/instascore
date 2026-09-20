@@ -2,6 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Alert,
   Button,
+  Chip,
   Dialog,
   DialogContent,
   DialogTitle,
@@ -14,7 +15,7 @@ import {
   Typography,
 } from '@mui/material';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 
@@ -45,6 +46,7 @@ const competitionSchema = z.object({
   pointsWin: z.number().int().min(0).max(20),
   pointsDraw: z.number().int().min(0).max(20),
   pointsLoss: z.number().int().min(0).max(20),
+  tiebreakers: z.array(z.string()).min(1),
 });
 type CompetitionForm = z.infer<typeof competitionSchema>;
 
@@ -71,14 +73,246 @@ export function AdminCompetitionsPage() {
       status="Audited changes"
     >
       <Tabs value={tab} onChange={(_, value: number) => setTab(value)} variant="scrollable">
-        {['Sports', 'Competitions & rules', 'Seasons'].map((label) => (
+        {['Sports', 'Competitions & rules', 'Seasons', 'Format & schedule'].map((label) => (
           <Tab key={label} label={label} />
         ))}
       </Tabs>
       {tab === 0 && <CatalogForm entity="sports" title="Create sport" parentLabel={null} />}
       {tab === 1 && <CompetitionEditor />}
       {tab === 2 && <SeasonEditor />}
+      {tab === 3 && <CompetitionStructureEditor />}
     </PageScaffold>
+  );
+}
+
+function CompetitionStructureEditor() {
+  const api = useApi();
+  const client = useQueryClient();
+  const [competitionUuid, setCompetitionUuid] = useState('');
+  const [seasonUuid, setSeasonUuid] = useState('');
+  const [startDate, setStartDate] = useState(new Date().toISOString().slice(0, 10));
+  const [kickoffTime, setKickoffTime] = useState('15:00');
+  const [intervalDays, setIntervalDays] = useState(7);
+  const [doubleRoundRobin, setDoubleRoundRobin] = useState(false);
+  const [qualifiers, setQualifiers] = useState(4);
+  const competitions = useQuery({
+    queryKey: ['competitions', 'format-picker'],
+    queryFn: () => api.getCompetitions(new URLSearchParams({ per_page: '50' })),
+  });
+  const activeCompetitionUuid = competitionUuid || competitions.data?.items[0]?.uuid || '';
+  const competition = useQuery({
+    queryKey: ['competition', activeCompetitionUuid, 'format'],
+    queryFn: () => api.getCompetition(activeCompetitionUuid),
+    enabled: Boolean(activeCompetitionUuid),
+  });
+  const activeSeasonUuid =
+    seasonUuid ||
+    String(competition.data?.rules.default_season_uuid ?? '') ||
+    competition.data?.seasons?.[0]?.uuid ||
+    '';
+  const activeSeason = competition.data?.seasons?.find((item) => item.uuid === activeSeasonUuid);
+  useEffect(() => {
+    if (activeSeason?.startDate) setStartDate(activeSeason.startDate);
+  }, [activeSeason?.startDate]);
+  const structure = useQuery({
+    queryKey: ['competition-structure', activeCompetitionUuid, activeSeasonUuid],
+    queryFn: () => api.getCompetitionStructure(activeCompetitionUuid, activeSeasonUuid),
+    enabled: Boolean(activeCompetitionUuid && activeSeasonUuid),
+  });
+  const refresh = () => {
+    void client.invalidateQueries({ queryKey: ['competition-structure'] });
+    void client.invalidateQueries({ queryKey: ['admin-fixtures'] });
+    void client.invalidateQueries({ queryKey: ['fixtures'] });
+  };
+  const generate = useMutation({
+    mutationFn: () =>
+      api.generateCompetitionFixtures(activeCompetitionUuid, {
+        seasonUuid: activeSeasonUuid,
+        startDate,
+        kickoffTime,
+        intervalDays,
+        doubleRoundRobin,
+      }),
+    onSuccess: refresh,
+  });
+  const playoffs = useMutation({
+    mutationFn: () =>
+      api.generateCompetitionPlayoffs(activeCompetitionUuid, {
+        seasonUuid: activeSeasonUuid,
+        startDate,
+        kickoffTime,
+        qualifiers,
+      }),
+    onSuccess: refresh,
+  });
+
+  return (
+    <Stack spacing={2}>
+      <Alert severity="info">
+        Generated fixtures start as drafts. Review venues, officials and kickoff times in Fixture
+        Manager before publishing them.
+      </Alert>
+      <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5}>
+        <TextField
+          select
+          fullWidth
+          label="Competition"
+          value={activeCompetitionUuid}
+          onChange={(event) => {
+            setCompetitionUuid(event.target.value);
+            setSeasonUuid('');
+          }}
+        >
+          {(competitions.data?.items ?? []).map((item) => (
+            <MenuItem key={item.uuid} value={item.uuid}>
+              {item.name}
+            </MenuItem>
+          ))}
+        </TextField>
+        <TextField
+          select
+          fullWidth
+          label="Season"
+          value={activeSeasonUuid}
+          onChange={(event) => setSeasonUuid(event.target.value)}
+        >
+          {(competition.data?.seasons ?? [])
+            .filter((item) => item.status === 'active')
+            .map((item) => (
+              <MenuItem key={item.uuid} value={item.uuid}>
+                {item.name}
+              </MenuItem>
+            ))}
+        </TextField>
+      </Stack>
+      <Paper variant="outlined" sx={{ p: 2 }}>
+        <Stack spacing={2}>
+          <Typography variant="h6" fontWeight={900}>
+            Regular-season generator
+          </Typography>
+          <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5}>
+            <TextField
+              type="date"
+              label="First match date"
+              InputLabelProps={{ shrink: true }}
+              value={startDate}
+              onChange={(event) => setStartDate(event.target.value)}
+            />
+            <TextField
+              type="time"
+              label="Kickoff time"
+              InputLabelProps={{ shrink: true }}
+              value={kickoffTime}
+              onChange={(event) => setKickoffTime(event.target.value)}
+            />
+            <TextField
+              select
+              label="Days between rounds"
+              value={intervalDays}
+              onChange={(event) => setIntervalDays(Number(event.target.value))}
+            >
+              {[1, 2, 3, 7, 14].map((days) => (
+                <MenuItem key={days} value={days}>
+                  {days}
+                </MenuItem>
+              ))}
+            </TextField>
+            <TextField
+              select
+              label="Format"
+              value={doubleRoundRobin ? 'double' : 'single'}
+              onChange={(event) => setDoubleRoundRobin(event.target.value === 'double')}
+            >
+              <MenuItem value="single">Single round robin</MenuItem>
+              <MenuItem value="double">Home and away</MenuItem>
+            </TextField>
+          </Stack>
+          <Button
+            variant="contained"
+            disabled={!activeSeasonUuid || generate.isPending}
+            onClick={() => generate.mutate()}
+          >
+            Generate league fixtures
+          </Button>
+          {generate.data ? (
+            <Alert severity="success">
+              Created {generate.data.created} draft fixtures across {generate.data.rounds} rounds
+              for {generate.data.teams} teams.
+            </Alert>
+          ) : null}
+          {generate.isError ? (
+            <Alert severity="error">
+              {generate.error instanceof ApiError
+                ? generate.error.message
+                : 'Fixtures could not be generated.'}
+            </Alert>
+          ) : null}
+        </Stack>
+      </Paper>
+      <Paper variant="outlined" sx={{ p: 2 }}>
+        <Stack spacing={2}>
+          <Typography variant="h6" fontWeight={900}>
+            Playoff seeding
+          </Typography>
+          <Typography color="text.secondary">
+            Seeds are taken from the current confirmed standings: 1 vs last, 2 vs second-last.
+          </Typography>
+          <TextField
+            select
+            label="Qualifying teams"
+            value={qualifiers}
+            onChange={(event) => setQualifiers(Number(event.target.value))}
+          >
+            {[2, 4, 8].map((count) => (
+              <MenuItem key={count} value={count}>
+                {count}
+              </MenuItem>
+            ))}
+          </TextField>
+          <Button
+            variant="outlined"
+            disabled={!activeSeasonUuid || playoffs.isPending}
+            onClick={() => playoffs.mutate()}
+          >
+            Seed playoff bracket
+          </Button>
+          {playoffs.data ? (
+            <Alert severity="success">
+              Created {playoffs.data.created} playoff fixtures from {playoffs.data.qualifiers}{' '}
+              seeds.
+            </Alert>
+          ) : null}
+          {playoffs.isError ? (
+            <Alert severity="error">
+              {playoffs.error instanceof ApiError
+                ? playoffs.error.message
+                : 'Playoffs could not be seeded.'}
+            </Alert>
+          ) : null}
+        </Stack>
+      </Paper>
+      <Stack direction="row" spacing={1} flexWrap="wrap">
+        {(structure.data?.stages ?? []).map((stage) => (
+          <Chip key={stage.uuid} label={`${stage.name} · ${stage.type}`} />
+        ))}
+      </Stack>
+      {(structure.data?.fixtures ?? []).map((fixture) => (
+        <Paper key={fixture.uuid} variant="outlined" sx={{ p: 1.5 }}>
+          <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" gap={1}>
+            <div>
+              <Typography fontWeight={850}>
+                {fixture.homeTeam} vs {fixture.awayTeam}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {fixture.roundName || fixture.bracketSlot} ·{' '}
+                {new Date(`${fixture.kickoffAt.replace(' ', 'T')}Z`).toLocaleString()}
+              </Typography>
+            </div>
+            <Chip size="small" label={fixture.status} />
+          </Stack>
+        </Paper>
+      ))}
+    </Stack>
   );
 }
 
@@ -105,6 +339,7 @@ function CompetitionEditor() {
       pointsWin: 3,
       pointsDraw: 1,
       pointsLoss: 0,
+      tiebreakers: ['points', 'wins', 'point_difference', 'points_for', 'team_name'],
     },
   });
   const mutation = useMutation({
@@ -113,9 +348,10 @@ function CompetitionEditor() {
         ...values,
         ...(logo ? { logo } : {}),
         rules: {
-          points_win: values.pointsWin,
-          points_draw: values.pointsDraw,
-          points_loss: values.pointsLoss,
+          win_points: values.pointsWin,
+          draw_points: values.pointsDraw,
+          loss_points: values.pointsLoss,
+          tiebreakers: values.tiebreakers,
           ...(editing?.rules.default_season_uuid
             ? { default_season_uuid: editing.rules.default_season_uuid }
             : {}),
@@ -145,9 +381,12 @@ function CompetitionEditor() {
       type: competition.type,
       description: competition.description,
       countryCode: competition.countryCode ?? 'NG',
-      pointsWin: Number(competition.rules.points_win ?? 3),
-      pointsDraw: Number(competition.rules.points_draw ?? 1),
-      pointsLoss: Number(competition.rules.points_loss ?? 0),
+      pointsWin: Number(competition.rules.win_points ?? competition.rules.points_win ?? 3),
+      pointsDraw: Number(competition.rules.draw_points ?? competition.rules.points_draw ?? 1),
+      pointsLoss: Number(competition.rules.loss_points ?? competition.rules.points_loss ?? 0),
+      tiebreakers: Array.isArray(competition.rules.tiebreakers)
+        ? competition.rules.tiebreakers.map(String)
+        : ['points', 'wins', 'point_difference', 'points_for', 'team_name'],
     });
     setOpen(true);
   };
@@ -304,6 +543,32 @@ function CompetitionEditor() {
                 />
               ))}
             </Stack>
+            <Controller
+              name="tiebreakers"
+              control={form.control}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  select
+                  SelectProps={{ multiple: true }}
+                  label="Standings tiebreakers (in priority order)"
+                  helperText="Selection order determines ranking priority."
+                >
+                  {[
+                    ['points', 'Points'],
+                    ['wins', 'Wins'],
+                    ['point_difference', 'Point difference'],
+                    ['points_for', 'Points scored'],
+                    ['head_to_head', 'Head-to-head'],
+                    ['team_name', 'Team name'],
+                  ].map(([value, label]) => (
+                    <MenuItem key={value} value={value}>
+                      {label}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              )}
+            />
             {mutation.isError && (
               <Alert severity="error">
                 {mutation.error instanceof ApiError
@@ -356,7 +621,7 @@ function SeasonEditor() {
     },
   });
   const statusMutation = useMutation({
-    mutationFn: ({ uuid, action }: { uuid: string; action: 'archive' | 'restore' }) =>
+    mutationFn: ({ uuid, action }: { uuid: string; action: 'archive' | 'restore' | 'complete' }) =>
       api.changeSeasonStatus(uuid, action),
     onSuccess: () =>
       void client.invalidateQueries({ queryKey: ['competition', activeCompetitionUuid] }),
@@ -443,6 +708,14 @@ function SeasonEditor() {
               >
                 Edit
               </Button>
+              {season.status === 'active' ? (
+                <Button
+                  color="success"
+                  onClick={() => statusMutation.mutate({ uuid: season.uuid, action: 'complete' })}
+                >
+                  Complete season
+                </Button>
+              ) : null}
               <Button
                 color={season.status === 'archived' ? 'success' : 'error'}
                 onClick={() =>

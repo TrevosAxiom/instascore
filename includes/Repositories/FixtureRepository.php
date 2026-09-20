@@ -31,6 +31,10 @@ final class FixtureRepository extends BaseRepository {
 			$where[] = 'c.uuid = %s';
 			$args[] = sanitize_text_field( (string) $query['competition'] );
 		}
+		if ( ! empty( $query['season'] ) ) {
+			$where[] = 's.uuid = %s';
+			$args[]  = sanitize_text_field( (string) $query['season'] );
+		}
 		if ( ! empty( $query['date'] ) ) {
 			$where[] = 'DATE(f.kickoff_at) = %s';
 			$args[] = sanitize_text_field( (string) $query['date'] );
@@ -83,6 +87,10 @@ final class FixtureRepository extends BaseRepository {
 		if ( ! empty( $query['competition'] ) ) {
 			$where[] = 'c.uuid = %s';
 			$args[]  = sanitize_text_field( (string) $query['competition'] );
+		}
+		if ( ! empty( $query['season'] ) ) {
+			$where[] = 's.uuid = %s';
+			$args[]  = sanitize_text_field( (string) $query['season'] );
 		}
 		$join = $this->joins();
 		$cond = ' WHERE ' . implode( ' AND ', $where );

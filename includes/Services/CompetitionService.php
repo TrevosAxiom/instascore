@@ -218,7 +218,7 @@ final class CompetitionService {
 			'competitions' => $this->competitions,
 			'seasons'      => $this->seasons,
 		);
-		if ( ! isset( $repositories[ $entity ] ) || ! in_array( $status, array( 'active', 'archived' ), true ) ) {
+		if ( ! isset( $repositories[ $entity ] ) || ! in_array( $status, array( 'active', 'completed', 'archived' ), true ) ) {
 			throw new ValidationException( array( 'status' => 'Unsupported status operation.' ) );
 		}
 		$repository = $repositories[ $entity ];

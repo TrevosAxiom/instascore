@@ -7,6 +7,8 @@ import type {
   FootballMatchDetails,
   BootstrapSettings,
   Competition,
+  CompetitionStructure,
+  CompetitionGenerationResult,
   CompetitionPage,
   CsvImportPreview,
   Fixture,
@@ -109,7 +111,19 @@ export interface ApiClient {
   createSeason: (competitionUuid: string, input: Record<string, unknown>) => Promise<unknown>;
   setDefaultSeason: (competitionUuid: string, seasonUuid: string) => Promise<unknown>;
   updateSeason: (uuid: string, input: Record<string, unknown>) => Promise<unknown>;
-  changeSeasonStatus: (uuid: string, action: 'archive' | 'restore') => Promise<unknown>;
+  changeSeasonStatus: (
+    uuid: string,
+    action: 'archive' | 'restore' | 'complete',
+  ) => Promise<unknown>;
+  getCompetitionStructure: (uuid: string, seasonUuid: string) => Promise<CompetitionStructure>;
+  generateCompetitionFixtures: (
+    uuid: string,
+    input: Record<string, unknown>,
+  ) => Promise<CompetitionGenerationResult>;
+  generateCompetitionPlayoffs: (
+    uuid: string,
+    input: Record<string, unknown>,
+  ) => Promise<CompetitionGenerationResult>;
   createCatalogRecord: (
     entity: 'stages' | 'groups',
     input: Record<string, unknown>,
@@ -499,6 +513,20 @@ export function createApiClient(settings: BootstrapSettings): ApiClient {
       request(`/admin/seasons/${uuid}`, { method: 'PATCH', body: JSON.stringify(input) }),
     changeSeasonStatus: (uuid, action) =>
       request(`/admin/seasons/${uuid}/${action}`, { method: 'POST' }),
+    getCompetitionStructure: (uuid, seasonUuid) =>
+      request<CompetitionStructure>(
+        `/admin/competitions/${uuid}/structure?seasonUuid=${encodeURIComponent(seasonUuid)}`,
+      ),
+    generateCompetitionFixtures: (uuid, input) =>
+      request<CompetitionGenerationResult>(`/admin/competitions/${uuid}/generate-fixtures`, {
+        method: 'POST',
+        body: JSON.stringify(input),
+      }),
+    generateCompetitionPlayoffs: (uuid, input) =>
+      request<CompetitionGenerationResult>(`/admin/competitions/${uuid}/generate-playoffs`, {
+        method: 'POST',
+        body: JSON.stringify(input),
+      }),
     createCatalogRecord: (entity, input) =>
       request(`/admin/${entity}`, { method: 'POST', body: JSON.stringify(input) }),
     updateCatalogRecord: (entity, uuid, input) =>

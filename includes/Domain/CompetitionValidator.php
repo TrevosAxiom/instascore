@@ -36,7 +36,8 @@ final class CompetitionValidator {
 			$errors['rules'] = 'Rules must be an object with no more than 30 entries.';
 		}
 		foreach ( (array) $rules as $key => $value ) {
-			if ( ! is_string( $key ) || ! preg_match( '/^[a-z][a-z0-9_]{0,49}$/', $key ) || ! is_scalar( $value ) ) {
+			$valid_value = is_scalar( $value ) || ( is_array( $value ) && count( $value ) <= 10 && array_reduce( $value, static fn( bool $valid, $item ): bool => $valid && is_scalar( $item ), true ) );
+			if ( ! is_string( $key ) || ! preg_match( '/^[a-z][a-z0-9_]{0,49}$/', $key ) || ! $valid_value ) {
 				$errors['rules'] = 'Rule keys and scalar values do not match the safe rule format.';
 				break;
 			}

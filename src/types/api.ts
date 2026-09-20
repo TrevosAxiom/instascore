@@ -402,6 +402,36 @@ export interface Competition {
   seasons?: Season[];
 }
 
+export interface CompetitionStructure {
+  competitionUuid: string;
+  seasonUuid: string;
+  stages: Array<{
+    uuid: string;
+    name: string;
+    slug: string;
+    type: string;
+    sortOrder: number;
+    status: string;
+  }>;
+  fixtures: Array<{
+    uuid: string;
+    roundName: string;
+    matchDay: number;
+    bracketSlot: string;
+    status: string;
+    kickoffAt: string;
+    homeTeam: string;
+    awayTeam: string;
+  }>;
+}
+
+export interface CompetitionGenerationResult {
+  created: number;
+  rounds?: number;
+  teams?: number;
+  qualifiers?: number;
+}
+
 export interface MediaUpload {
   attachmentId: number;
   url: string;

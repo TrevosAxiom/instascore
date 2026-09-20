@@ -10,6 +10,7 @@ use InstaScore\Platform\Auth\CompetitionPermissions;
 use InstaScore\Platform\Domain\ValidationException;
 use InstaScore\Platform\Services\CatalogService;
 use InstaScore\Platform\Services\CompetitionService;
+use InstaScore\Platform\Services\CompetitionFormatService;
 use WP_REST_Request;
 use WP_REST_Response;
 
@@ -55,6 +56,26 @@ final class AdminCompetitionController {
 		);
 		register_rest_route(
 			'instascore/v1',
+			'/admin/competitions/(?P<uuid>[0-9a-f-]{36})/structure',
+			array(
+				'methods'             => 'GET',
+				'callback'            => fn( WP_REST_Request $request ): WP_REST_Response => $this->execute( fn(): array => CompetitionFormatService::create()->structure( (string) $request['uuid'], (string) $request->get_param( 'seasonUuid' ) ) ),
+				'permission_callback' => array( $this, 'can_manage_requested_competition' ),
+			)
+		);
+		foreach ( array( 'generate-fixtures', 'generate-playoffs' ) as $operation ) {
+			register_rest_route(
+				'instascore/v1',
+				"/admin/competitions/(?P<uuid>[0-9a-f-]{36})/{$operation}",
+				array(
+					'methods'             => 'POST',
+					'callback'            => fn( WP_REST_Request $request ): WP_REST_Response => $this->execute( fn(): array => 'generate-fixtures' === $operation ? CompetitionFormatService::create()->generate_league( (string) $request['uuid'], (array) $request->get_json_params() ) : CompetitionFormatService::create()->generate_playoffs( (string) $request['uuid'], (array) $request->get_json_params() ) ),
+					'permission_callback' => array( $this, 'can_manage_requested_competition' ),
+				)
+			);
+		}
+		register_rest_route(
+			'instascore/v1',
 			'/admin/competitions/(?P<uuid>[0-9a-f-]{36})',
 			array(
 				'methods'             => 'PATCH',
@@ -91,7 +112,7 @@ final class AdminCompetitionController {
 		);
 		register_rest_route(
 			'instascore/v1',
-			'/admin/(?P<entity>competitions|seasons)/(?P<uuid>[0-9a-f-]{36})/(?P<action>archive|restore)',
+			'/admin/(?P<entity>competitions|seasons)/(?P<uuid>[0-9a-f-]{36})/(?P<action>archive|restore|complete)',
 			array(
 				'methods'             => 'POST',
 				'callback'            => array( $this, 'status' ),
@@ -148,7 +169,7 @@ final class AdminCompetitionController {
 
 	public function catalog_status( WP_REST_Request $request, string $entity ): WP_REST_Response {
 		global $wpdb;
-		$status = 'archive' === $request['action'] ? 'archived' : 'active';
+		$status = match ( (string) $request['action'] ) { 'archive' => 'archived', 'complete' => 'completed', default => 'active' };
 		return $this->execute( fn(): array => ( new CatalogService( $wpdb ) )->change_status( $entity, (string) $request['uuid'], $status ) );
 	}
 
