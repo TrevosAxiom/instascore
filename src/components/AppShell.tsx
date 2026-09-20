@@ -7,9 +7,14 @@ import {
   Button,
   Chip,
   Container,
+  Divider,
+  ListSubheader,
+  Menu,
+  MenuItem,
   Stack,
   Toolbar,
 } from '@mui/material';
+import { useState } from 'react';
 import { Link as RouterLink, Outlet, useLocation, useNavigate } from 'react-router';
 
 import { useAuth } from '../app/auth-context';
@@ -21,6 +26,7 @@ import { SiteSwipeNavigator } from './SiteSwipeNavigator';
 import { InstallHelper } from './InstallHelper';
 import { WorkspaceLayout } from './WorkspaceLayout';
 import { isWorkspaceUser } from './workspace';
+import { publicNavigation, publicNavigationGroups } from '../app/navigation';
 
 const primaryNavigation = [
   { label: 'Scores', path: '/scores', icon: 'scores' },
@@ -41,13 +47,15 @@ export function AppShell() {
   const navigate = useNavigate();
   const auth = useAuth();
   const pwa = usePwa();
+  const [exploreAnchor, setExploreAnchor] = useState<null | HTMLElement>(null);
   const isEmbedRoute = location.pathname.startsWith('/embed/');
   const isAdminRoute =
     location.pathname.startsWith('/admin') || location.pathname.startsWith('/operations');
   const isWorkspaceRoute =
     isAdminRoute || (location.pathname === '/dashboard' && isWorkspaceUser(auth.state?.user));
   const activePath =
-    primaryNavigation.find((item) => location.pathname.startsWith(item.path))?.path ?? false;
+    primaryNavigation.find((item) => location.pathname.startsWith(item.path))?.path ??
+    (publicNavigation.some((item) => location.pathname.startsWith(item.path)) ? '/more' : false);
 
   if (isEmbedRoute) {
     return (
@@ -68,7 +76,7 @@ export function AppShell() {
         display: 'flex',
         flexDirection: 'column',
         bgcolor: 'background.default',
-        pb: { xs: isAdminRoute ? 2 : 9, md: 0 },
+        pb: { xs: isAdminRoute ? 2 : 9, lg: 0 },
       }}
     >
       <Box component="a" href="#instascore-main-content" className="instascore-skip-link">
@@ -108,7 +116,7 @@ export function AppShell() {
               />
             </Box>
 
-            <Stack direction="row" spacing={0.5} sx={{ display: { xs: 'none', md: 'flex' } }}>
+            <Stack direction="row" spacing={0.5} sx={{ display: { xs: 'none', lg: 'flex' } }}>
               {desktopNavigation.map((item) => {
                 const active = location.pathname.startsWith(item.path);
                 return (
@@ -129,7 +137,25 @@ export function AppShell() {
                   </Button>
                 );
               })}
+              <Button
+                aria-haspopup="menu"
+                aria-expanded={Boolean(exploreAnchor)}
+                onClick={(event) => setExploreAnchor(event.currentTarget)}
+                sx={{ px: 1.75, color: 'text.primary', borderRadius: 0 }}
+              >
+                Explore
+              </Button>
             </Stack>
+            <Menu anchorEl={exploreAnchor} open={Boolean(exploreAnchor)} onClose={() => setExploreAnchor(null)} MenuListProps={{ 'aria-label': 'Explore InstaScore' }} slotProps={{ paper: { sx: { width: 340, maxHeight: 'min(620px, 78vh)' } } }}>
+              {publicNavigationGroups.map((group, groupIndex) => {
+                const items = publicNavigation.filter((item) => item.group === group && (!item.requiresAuth || auth.state?.authenticated));
+                return [
+                  ...(groupIndex ? [<Divider key={`${group}-divider`} />] : []),
+                  <ListSubheader key={`${group}-header`}>{group}</ListSubheader>,
+                  ...items.map((item) => <MenuItem key={item.path} component={RouterLink} to={item.path} selected={location.pathname.startsWith(item.path)} onClick={() => setExploreAnchor(null)} sx={{ display: 'block', py: 1 }}><Box fontWeight={900}>{item.label}</Box><Box component="span" sx={{ display: 'block', color: 'text.secondary', fontSize: 12 }}>{item.description}</Box></MenuItem>),
+                ];
+              })}
+            </Menu>
 
             <Box sx={{ display: { xs: 'none', lg: 'block' } }}>
               <ThemeToggle />
@@ -246,6 +272,12 @@ export function AppShell() {
             <Button component={RouterLink} to="/news" sx={{ color: '#fff5d6', px: 0 }}>
               News
             </Button>
+            <Button component={RouterLink} to="/store" sx={{ color: '#fff5d6', px: 0 }}>
+              Store
+            </Button>
+            <Button component={RouterLink} to="/fantasy" sx={{ color: '#fff5d6', px: 0 }}>
+              Fantasy
+            </Button>
             <Button component={RouterLink} to="/contact" sx={{ color: '#fff5d6', px: 0 }}>
               Contact
             </Button>
@@ -264,7 +296,7 @@ export function AppShell() {
           onChange={(_event, value: string) => void navigate(value)}
           aria-label="Primary navigation"
           sx={{
-            display: { xs: 'flex', md: 'none' },
+            display: { xs: 'flex', lg: 'none' },
             position: 'fixed',
             zIndex: 1200,
             left: 0,

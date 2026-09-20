@@ -50,6 +50,11 @@ describe('App shell', () => {
     expect(screen.getByRole('tab', { name: /^Flag$/i })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /^Soccer$/i })).toHaveAttribute('aria-selected', 'true');
 
+    fireEvent.click(screen.getByRole('button', { name: 'Explore' }));
+    expect(screen.getByRole('menu', { name: 'Explore InstaScore' })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: /Store/i })).toHaveAttribute('href', '/store');
+    fireEvent.keyDown(screen.getByRole('menu', { name: 'Explore InstaScore' }), { key: 'Escape' });
+
     fireEvent.click(screen.getByRole('tab', { name: /Basketball/i }));
     expect(await screen.findByText('Lagos Hoops')).toBeInTheDocument();
     expect(screen.getByText('104')).toBeInTheDocument();

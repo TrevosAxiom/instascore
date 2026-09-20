@@ -8,20 +8,7 @@ import { useAuth } from '../app/auth-context';
 import { PageScaffold } from '../components/PageScaffold';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { usePwa } from '../pwa/PwaProvider';
-
-const publicLinks = [
-  ['My dashboard', '/dashboard', 'Your personalised match-day overview'],
-  ['Competitions', '/competitions', 'Browse leagues, cups and tournaments'],
-  ['Teams', '/teams', 'Find clubs and team profiles'],
-  ['Players', '/players', 'Browse registered players'],
-  ['Favourites', '/favourites', 'Personalise scores and alerts'],
-  ['Notifications', '/notifications', 'Choose the updates you receive'],
-  ['Search', '/search', 'Find anything on InstaScore'],
-  ['Fantasy', '/fantasy', 'Manage your fantasy squad'],
-  ['Replays', '/replays', 'Watch completed InstaScore match broadcasts'],
-  ['Store', '/store', 'Buy match tickets, memberships and official merchandise'],
-  ['Install app', '/install', 'Add InstaScore to any phone, tablet or computer'],
-] as const;
+import { publicNavigation, publicNavigationGroups } from '../app/navigation';
 
 export function MorePage() {
   const { state } = useAuth();
@@ -43,12 +30,16 @@ export function MorePage() {
       title="More"
       description="Teams, competitions, account preferences and platform tools in one place."
     >
-      <Grid container spacing={1.5}>
-        {publicLinks.map(([title, path, description]) => (
-          <Grid key={path} size={{ xs: 12, sm: 6, lg: 4 }}>
+      {publicNavigationGroups.map((group) => {
+        const items = publicNavigation.filter((item) => item.group === group && (!item.requiresAuth || state?.authenticated));
+        return <Stack key={group} spacing={1.5}>
+          <Typography variant="h5" fontWeight={950}>{group}</Typography>
+          <Grid container spacing={1.5}>
+        {items.map(({ label: title, path, description }) => (
+          <Grid key={path} size={{ xs: 6, sm: 4, lg: 3 }}>
             <Card sx={{ height: '100%' }}>
               <CardContent>
-                <Typography variant="h5" fontWeight={950}>
+                <Typography variant="h6" fontWeight={950}>
                   {title}
                 </Typography>
                 <Typography color="text.secondary" sx={{ my: 1 }}>
@@ -61,7 +52,9 @@ export function MorePage() {
             </Card>
           </Grid>
         ))}
-      </Grid>
+          </Grid>
+        </Stack>;
+      })}
 
       <Card>
         <CardContent>
