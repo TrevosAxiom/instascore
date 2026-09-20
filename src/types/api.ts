@@ -74,6 +74,25 @@ export interface ProviderHealth {
   baseUrl: string;
   secretExposed: boolean;
   schedules: Record<string, string>;
+  scheduleHealth: {
+    status: 'healthy' | 'attention' | 'disabled' | 'not_configured';
+    pollingEnabled: boolean;
+    wpCronDisabled: boolean;
+    nextLiveAt: string | null;
+    nextUpcomingAt: string | null;
+    issues: string[];
+  };
+  dataQuality: {
+    status: 'healthy' | 'attention';
+    snapshots: Record<
+      'live' | 'upcoming' | 'previous',
+      { itemCount: number; lastKnownAt: string | null; ageSeconds: number | null; stale: boolean }
+    >;
+    incompleteMatches: number;
+    duplicateProviderIds: number;
+    unknownStatuses: string[];
+    issues: string[];
+  };
   conflicts: ProviderMapping[];
   recentSyncLogs: ProviderSyncLog[];
 }

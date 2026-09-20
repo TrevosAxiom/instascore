@@ -14,6 +14,8 @@ describe('football provider admin UI', () => {
 
     expect(await screen.findByText('approved_football_provider')).toBeInTheDocument();
     expect(screen.getByText(/Secrets exposed to browser: no/i)).toBeInTheDocument();
+    expect(screen.getByText(/Polling and data health/i)).toBeInTheDocument();
+    expect(screen.getByText(/Next live poll: not scheduled/i)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: /run sync/i }));
     await waitFor(() => expect(syncProvider).toHaveBeenCalled());

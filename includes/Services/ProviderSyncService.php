@@ -231,8 +231,111 @@ final class ProviderSyncService {
 				'upcoming'  => 'every_12_hours_for_next_30_days',
 				'completed' => 'twice_daily_until_confirmed',
 			),
+			'scheduleHealth'  => $this->schedule_health(),
+			'dataQuality'     => $this->data_quality(),
 			'conflicts'       => $this->repository->conflicts( $this->sport ),
 			'recentSyncLogs'  => $this->repository->recent_logs( $this->provider_name ),
+		);
+	}
+
+	/** Report whether polling is scheduled and whether its database snapshots are usable. */
+	private function schedule_health(): array {
+		$hook = match ( $this->sport ) {
+			'basketball' => 'instascore_basketball_provider_sync',
+			'nfl'        => 'instascore_nfl_provider_sync',
+			default      => 'instascore_football_provider_sync',
+		};
+		$enabled = (bool) get_option( "instascore_provider_{$this->sport}_polling_enabled", false );
+		$next_live = $this->next_scheduled_at( $hook, 'live' );
+		$next_upcoming = $this->next_scheduled_at( $hook, 'upcoming' );
+		$issues = array();
+		if ( $enabled && null === $next_live ) {
+			$issues[] = 'Live polling is enabled but its cron event is not scheduled.';
+		}
+		if ( $enabled && null === $next_upcoming ) {
+			$issues[] = 'Fixture polling is enabled but its twice-daily cron event is not scheduled.';
+		}
+
+		return array(
+			'status'         => ! $this->configured ? 'not_configured' : ( ! $enabled ? 'disabled' : ( array() === $issues ? 'healthy' : 'attention' ) ),
+			'pollingEnabled' => $enabled,
+			'wpCronDisabled' => defined( 'DISABLE_WP_CRON' ) && DISABLE_WP_CRON,
+			'nextLiveAt'     => $next_live,
+			'nextUpcomingAt' => $next_upcoming,
+			'issues'         => $issues,
+		);
+	}
+
+	private function next_scheduled_at( string $hook, string $cadence ): ?string {
+		if ( ! function_exists( 'wp_next_scheduled' ) ) {
+			return null;
+		}
+		$timestamp = wp_next_scheduled( $hook, array( $cadence ) );
+		return false === $timestamp ? null : gmdate( DATE_ATOM, $timestamp );
+	}
+
+	/** Summarize incomplete, duplicate and unrecognized match data in persistent snapshots. */
+	private function data_quality(): array {
+		$thresholds = array( 'live' => 15 * MINUTE_IN_SECONDS, 'upcoming' => 13 * HOUR_IN_SECONDS, 'previous' => 13 * HOUR_IN_SECONDS );
+		$monitor_staleness = $this->configured && (bool) get_option( "instascore_provider_{$this->sport}_polling_enabled", false );
+		$snapshots = array();
+		$seen = array();
+		$duplicates = 0;
+		$incomplete = 0;
+		$unknown = array();
+
+		foreach ( $thresholds as $period => $threshold ) {
+			$snapshot = $this->repository->latest_preview( $this->provider_name, $period );
+			$updated = null === $snapshot['lastKnownAt'] ? false : strtotime( (string) $snapshot['lastKnownAt'] . ' UTC' );
+			$age = false === $updated ? null : max( 0, time() - $updated );
+			$snapshots[ $period ] = array(
+				'itemCount'   => count( $snapshot['items'] ),
+				'lastKnownAt' => $snapshot['lastKnownAt'],
+				'ageSeconds'  => $age,
+				'stale'       => null === $age || $age > $threshold,
+			);
+			foreach ( $snapshot['items'] as $match ) {
+				$id = (string) ( $match['providerId'] ?? '' );
+				if ( '' !== $id && isset( $seen[ $id ] ) ) {
+					++$duplicates;
+				} elseif ( '' !== $id ) {
+					$seen[ $id ] = true;
+				}
+				if ( '' === $id || '' === (string) ( $match['competitionProviderId'] ?? '' ) || '' === (string) ( $match['homeTeamProviderId'] ?? '' ) || '' === (string) ( $match['awayTeamProviderId'] ?? '' ) || false === strtotime( (string) ( $match['kickoffAt'] ?? '' ) ) ) {
+					++$incomplete;
+				}
+				if ( false === ( $match['statusRecognized'] ?? true ) ) {
+					$unknown[] = (string) ( $match['statusShort'] ?? '' );
+				}
+			}
+		}
+
+		$issues = array();
+		if ( $monitor_staleness ) {
+			foreach ( $snapshots as $period => $snapshot ) {
+				if ( $snapshot['stale'] ) {
+					$issues[] = ucfirst( $period ) . ' match data is stale or has never been cached.';
+				}
+			}
+		}
+		if ( $incomplete > 0 ) {
+			$issues[] = "{$incomplete} cached matches have incomplete identity or kickoff data.";
+		}
+		if ( $duplicates > 0 ) {
+			$issues[] = "{$duplicates} provider match IDs occur in more than one active snapshot.";
+		}
+		$unknown = array_values( array_unique( array_filter( $unknown ) ) );
+		if ( array() !== $unknown ) {
+			$issues[] = 'Unrecognized provider statuses: ' . implode( ', ', $unknown ) . '.';
+		}
+
+		return array(
+			'status'              => array() === $issues ? 'healthy' : 'attention',
+			'snapshots'           => $snapshots,
+			'incompleteMatches'   => $incomplete,
+			'duplicateProviderIds' => $duplicates,
+			'unknownStatuses'     => $unknown,
+			'issues'              => $issues,
 		);
 	}
 

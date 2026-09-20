@@ -14,6 +14,11 @@ final class ProviderNormalizerTest extends TestCase {
 		$this->assertSame( 'completed', ProviderStatusMapper::fixture_status( 'AWD' ) );
 		$this->assertSame( 'completed', ProviderStatusMapper::fixture_status( 'WO' ) );
 		$this->assertSame( 'postponed', ProviderStatusMapper::fixture_status( 'PST' ) );
+		$this->assertSame( 'live', ProviderStatusMapper::fixture_status( '2Q' ) );
+		$this->assertSame( 'interval', ProviderStatusMapper::fixture_status( 'BT' ) );
+		$this->assertSame( 'suspended', ProviderStatusMapper::fixture_status( 'INT' ) );
+		$this->assertSame( 'draft', ProviderStatusMapper::fixture_status( 'NEW_PROVIDER_CODE' ) );
+		$this->assertFalse( ProviderStatusMapper::is_known( 'NEW_PROVIDER_CODE' ) );
 	}
 
 	public function test_fixture_normalisation_does_not_leak_raw_provider_shape(): void {

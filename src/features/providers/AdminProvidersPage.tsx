@@ -280,7 +280,66 @@ export function AdminProvidersPage() {
           </Box>
 
           <Box className="instascore-panel">
-            <Typography variant="h3">Schedules</Typography>
+            <Stack
+              direction={{ xs: 'column', sm: 'row' }}
+              justifyContent="space-between"
+              spacing={1}
+              sx={{ mb: 2 }}
+            >
+              <Box>
+                <Typography variant="h3">Polling and data health</Typography>
+                <Typography color="text.secondary">
+                  Confirms that cron is scheduled and cached match records are complete and fresh.
+                </Typography>
+              </Box>
+              <Stack direction="row" spacing={1}>
+                <Chip
+                  color={health.data.scheduleHealth.status === 'healthy' ? 'success' : 'warning'}
+                  label={`Polling: ${health.data.scheduleHealth.status.replace('_', ' ')}`}
+                />
+                <Chip
+                  color={health.data.dataQuality.status === 'healthy' ? 'success' : 'warning'}
+                  label={`Data: ${health.data.dataQuality.status}`}
+                />
+              </Stack>
+            </Stack>
+            {health.data.scheduleHealth.wpCronDisabled ? (
+              <Alert severity="info" sx={{ mb: 2 }}>
+                WordPress page-load cron is disabled. Confirm the server cron calls wp-cron.php at
+                least once per minute.
+              </Alert>
+            ) : null}
+            {[...health.data.scheduleHealth.issues, ...health.data.dataQuality.issues].map(
+              (issue) => (
+                <Alert severity="warning" key={issue} sx={{ mb: 1 }}>
+                  {issue}
+                </Alert>
+              ),
+            )}
+            <Typography color="text.secondary">
+              Next live poll:{' '}
+              {health.data.scheduleHealth.nextLiveAt
+                ? new Date(health.data.scheduleHealth.nextLiveAt).toLocaleString()
+                : 'not scheduled'}
+            </Typography>
+            <Typography color="text.secondary" sx={{ mb: 2 }}>
+              Next fixture poll:{' '}
+              {health.data.scheduleHealth.nextUpcomingAt
+                ? new Date(health.data.scheduleHealth.nextUpcomingAt).toLocaleString()
+                : 'not scheduled'}
+            </Typography>
+            {Object.entries(health.data.dataQuality.snapshots).map(([period, snapshot]) => (
+              <Typography key={period} color={snapshot.stale ? 'warning.main' : 'text.secondary'}>
+                {period}: {snapshot.itemCount} matches ·{' '}
+                {snapshot.lastKnownAt
+                  ? `updated ${new Date(`${snapshot.lastKnownAt}Z`).toLocaleString()}`
+                  : 'never cached'}
+                {snapshot.stale ? ' · stale' : ''}
+              </Typography>
+            ))}
+            <Typography variant="h6" sx={{ mt: 2 }}>
+              Intended cadence
+            </Typography>
             {Object.entries(health.data.schedules).map(([key, value]) => (
               <Typography key={key} color="text.secondary">
                 {key}: {value}

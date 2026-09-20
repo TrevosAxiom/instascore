@@ -50,4 +50,10 @@ final class BasketballNormalizerTest extends TestCase {
 
 		$this->assertFalse( $games[0]['sportState']['scoreReconciled'] );
 	}
+
+	public function test_break_status_uses_canonical_interval_state(): void {
+		$games = ( new BasketballNormalizer() )->fixtures( array( array( 'id' => 12, 'status' => 'BT' ) ) );
+		$this->assertSame( 'interval', $games[0]['status'] );
+		$this->assertTrue( $games[0]['statusRecognized'] );
+	}
 }

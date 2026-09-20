@@ -143,7 +143,9 @@ final class BasketballNormalizer {
 			'homeScore'             => $home,
 			'awayScore'             => $away,
 			'kickoffAt'             => (string) ( $row['date'] ?? $row['game']['date'] ?? '' ),
-			'status'                => $this->status( (string) ( $row['status']['short'] ?? $row['status'] ?? '' ) ),
+			'status'                => ProviderStatusMapper::fixture_status( $status_short ),
+			'statusShort'           => $status_short,
+			'statusRecognized'      => ProviderStatusMapper::is_known( $status_short ),
 			'sport'                 => 'basketball',
 			'sportState'            => array(
 				'period'          => $period,
@@ -154,18 +156,6 @@ final class BasketballNormalizer {
 				'scoreReconciled' => $this->reconciles( $periods, $home, $away ),
 			),
 		);
-	}
-
-	private function status( string $status ): string {
-		return match ( strtoupper( $status ) ) {
-			'NS', 'SCHEDULED' => 'scheduled',
-			'Q1', 'Q2', 'Q3', 'Q4', 'OT', 'LIVE', 'IN_PLAY' => 'live',
-			'HT', 'HALFTIME' => 'halftime',
-			'FT', 'AOT', 'FINAL', 'AWD', 'WO' => 'completed',
-			'CANC', 'CANCELLED' => 'cancelled',
-			'PST', 'POSTPONED' => 'postponed',
-			default => 'draft',
-		};
 	}
 
 	/**

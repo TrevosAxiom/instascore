@@ -81,6 +81,9 @@ final class ProviderScheduler {
 	}
 
 	public static function run( string $cadence = 'future' ): void {
+		if ( ! (bool) get_option( 'instascore_provider_football_polling_enabled', false ) ) {
+			return;
+		}
 		$sync_type = match ( $cadence ) {
 			'live'      => 'live',
 			'upcoming'  => 'upcoming',
@@ -93,6 +96,9 @@ final class ProviderScheduler {
 	}
 
 	public static function run_basketball( string $cadence = 'future' ): void {
+		if ( ! (bool) get_option( 'instascore_provider_basketball_polling_enabled', false ) ) {
+			return;
+		}
 		$sync_type = match ( $cadence ) {
 			'live'      => 'live',
 			'upcoming'  => 'upcoming',
@@ -105,6 +111,9 @@ final class ProviderScheduler {
 	}
 
 	public static function run_nfl( string $cadence = 'future' ): void {
+		if ( ! (bool) get_option( 'instascore_provider_nfl_polling_enabled', false ) ) {
+			return;
+		}
 		$sync_type = match ( $cadence ) { 'live' => 'live', 'upcoming' => 'upcoming', default => 'fixtures' };
 		ProviderSyncService::create_for_sport( 'nfl' )->sync( $sync_type, self::filters( $cadence ), false );
 		if ( 'upcoming' === $cadence ) ProviderSyncService::create_for_sport( 'nfl' )->sync( 'previous', array( 'last' => 50, 'source' => 'scheduled_previous_poll' ), false );

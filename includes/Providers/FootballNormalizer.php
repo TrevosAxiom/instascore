@@ -60,26 +60,30 @@ final class FootballNormalizer {
 	 */
 	public function fixtures( array $payload ): array {
 		return array_map(
-			fn( array $row ): array => array(
-				'providerId'            => (string) ( $row['id'] ?? $row['fixture']['id'] ?? '' ),
-				'competitionProviderId' => (string) ( $row['league']['id'] ?? '' ),
-				'seasonProviderId'      => (string) ( $row['league']['season'] ?? '' ),
-				'homeTeamProviderId'    => (string) ( $row['teams']['home']['id'] ?? '' ),
-				'awayTeamProviderId'    => (string) ( $row['teams']['away']['id'] ?? '' ),
-				'competitionName'       => (string) ( $row['league']['name'] ?? 'Soccer' ),
-				'homeTeamName'          => (string) ( $row['teams']['home']['name'] ?? 'Home' ),
-				'awayTeamName'          => (string) ( $row['teams']['away']['name'] ?? 'Away' ),
-				'homeTeamLogoUrl'       => (string) ( $row['teams']['home']['logo'] ?? '' ),
-				'awayTeamLogoUrl'       => (string) ( $row['teams']['away']['logo'] ?? '' ),
-				'homeScore'             => (int) ( $row['goals']['home'] ?? 0 ),
-				'awayScore'             => (int) ( $row['goals']['away'] ?? 0 ),
-				'kickoffAt'             => (string) ( $row['date'] ?? $row['fixture']['date'] ?? '' ),
-				'status'                => ProviderStatusMapper::fixture_status( (string) ( $row['status'] ?? $row['fixture']['status']['short'] ?? '' ) ),
-				'statusShort'           => (string) ( $row['status'] ?? $row['fixture']['status']['short'] ?? '' ),
-				'elapsed'               => (int) ( $row['fixture']['status']['elapsed'] ?? 0 ),
-				'round'                 => (string) ( $row['league']['round'] ?? '' ),
-				'venueName'             => (string) ( $row['fixture']['venue']['name'] ?? '' ),
-			),
+			function ( array $row ): array {
+				$status_short = (string) ( $row['status'] ?? $row['fixture']['status']['short'] ?? '' );
+				return array(
+					'providerId'            => (string) ( $row['id'] ?? $row['fixture']['id'] ?? '' ),
+					'competitionProviderId' => (string) ( $row['league']['id'] ?? '' ),
+					'seasonProviderId'      => (string) ( $row['league']['season'] ?? '' ),
+					'homeTeamProviderId'    => (string) ( $row['teams']['home']['id'] ?? '' ),
+					'awayTeamProviderId'    => (string) ( $row['teams']['away']['id'] ?? '' ),
+					'competitionName'       => (string) ( $row['league']['name'] ?? 'Soccer' ),
+					'homeTeamName'          => (string) ( $row['teams']['home']['name'] ?? 'Home' ),
+					'awayTeamName'          => (string) ( $row['teams']['away']['name'] ?? 'Away' ),
+					'homeTeamLogoUrl'       => (string) ( $row['teams']['home']['logo'] ?? '' ),
+					'awayTeamLogoUrl'       => (string) ( $row['teams']['away']['logo'] ?? '' ),
+					'homeScore'             => (int) ( $row['goals']['home'] ?? 0 ),
+					'awayScore'             => (int) ( $row['goals']['away'] ?? 0 ),
+					'kickoffAt'             => (string) ( $row['date'] ?? $row['fixture']['date'] ?? '' ),
+					'status'                => ProviderStatusMapper::fixture_status( $status_short ),
+					'statusShort'           => $status_short,
+					'statusRecognized'      => ProviderStatusMapper::is_known( $status_short ),
+					'elapsed'               => (int) ( $row['fixture']['status']['elapsed'] ?? 0 ),
+					'round'                 => (string) ( $row['league']['round'] ?? '' ),
+					'venueName'             => (string) ( $row['fixture']['venue']['name'] ?? '' ),
+				);
+			},
 			$this->rows( $payload )
 		);
 	}

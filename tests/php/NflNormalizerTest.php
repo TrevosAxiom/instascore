@@ -22,4 +22,14 @@ final class NflNormalizerTest extends TestCase {
 		self::assertSame( 8, $items[0]['wins'] );
 		self::assertSame( 80, $items[0]['pointDifference'] );
 	}
+
+	public function test_recognizes_number_first_quarter_codes(): void {
+		$items = ( new NflNormalizer() )->fixtures( array( 'response' => array( array(
+			'game' => array( 'id' => 9, 'date' => array( 'date' => '2026-09-20T18:00:00+00:00' ), 'status' => array( 'short' => '2Q' ) ),
+			'league' => array( 'id' => 1, 'season' => 2026 ),
+			'teams' => array( 'home' => array( 'id' => 2 ), 'away' => array( 'id' => 3 ) ),
+		) ) ) );
+		self::assertSame( 'live', $items[0]['status'] );
+		self::assertTrue( $items[0]['statusRecognized'] );
+	}
 }
