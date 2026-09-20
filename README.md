@@ -9,9 +9,11 @@ InstaScore is a mobile-first sports competition platform delivered as a custom W
 - Standings, statistics, discipline and result confirmation.
 - League administration, scheduling, registrations and match operations.
 - Fantasy games, favourites, search, notifications and personal feeds.
-- Football and basketball provider synchronisation.
+- Soccer, basketball and NFL provider synchronisation with database-first match history.
 - PWA installation, offline scoring queues, embeds and competition portals.
 - WordPress capability-based administration and append-oriented audit records.
+- Veo/YouTube broadcasts, replays, sponsor analytics and match-room banter.
+- Supporter memberships, fixture tickets, merchandise, inventory and revenue operations.
 
 ## Requirements
 
@@ -29,7 +31,7 @@ InstaScore is a mobile-first sports competition platform delivered as a custom W
 5. Set `INSTASCORE_ENVIRONMENT` to `production`.
 6. Activate **InstaScore Platform** in WordPress.
 
-Activation applies database migrations through schema version 12, grants the platform capabilities, and provisions the public and administration host pages. Nested application URLs are handled by the standalone SPA template, so match and competition links remain usable on refresh.
+Activation applies database migrations through schema version 22, grants the platform capabilities, and provisions the public and administration host pages. Nested application URLs are handled by the standalone SPA template, so match and competition links remain usable on refresh.
 
 ## Development
 
@@ -48,6 +50,7 @@ Run `pnpm dev`. Production reads hashed JavaScript and CSS paths from `dist/.vit
 composer check
 pnpm check
 pnpm test:e2e
+pnpm release:audit
 ```
 
 ## Releases
