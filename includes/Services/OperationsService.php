@@ -52,7 +52,7 @@ final class OperationsService {
 	}
 
 	public function action( string $action, array $input, int $user_id ): array {
-		$allowed = array( 'retry_failed_jobs', 'standings_rebuild', 'fantasy_recalculation', 'diagnostic_report', 'security_audit', 'security_capability_repair', 'database_integrity_scan', 'database_retention_cleanup', 'database_safe_repair', 'bootstrap_cffl_lagos', 'football_live_sync', 'basketball_live_sync', 'nfl_live_sync' );
+		$allowed = array( 'retry_failed_jobs', 'standings_rebuild', 'fantasy_recalculation', 'diagnostic_report', 'production_preflight', 'runtime_cache_purge', 'verify_backup', 'security_audit', 'security_capability_repair', 'database_integrity_scan', 'database_retention_cleanup', 'database_safe_repair', 'bootstrap_cffl_lagos', 'football_live_sync', 'basketball_live_sync', 'nfl_live_sync' );
 		if ( ! in_array( $action, $allowed, true ) ) {
 			return array( 'status' => 'rejected', 'message' => 'Unsupported operation.' );
 		}
@@ -60,6 +60,19 @@ final class OperationsService {
 		if ( 'diagnostic_report' === $action ) {
 			$result = $this->diagnostic_report();
 			$this->repository->record_export( 'diagnostic_report', $user_id, count( $result['sections'] ) );
+		} elseif ( 'production_preflight' === $action ) {
+			$result = ProductionReadinessService::create()->report();
+			$result['message'] = 'Production preflight completed.';
+			if ( 'ready' === $result['status'] ) {
+				$this->repository->resolve_alert( 'production_readiness' );
+			} else {
+				$this->repository->open_alert( 'production_readiness', 'warning', 'Production preflight has checks requiring attention.', $result );
+			}
+		} elseif ( 'runtime_cache_purge' === $action ) {
+			$result = ProductionReadinessService::create()->purge_cache();
+		} elseif ( 'verify_backup' === $action ) {
+			update_option( 'instascore_last_verified_backup_at', gmdate( DATE_ATOM ), false );
+			$result = array( 'status' => 'completed', 'message' => 'The latest host-level backup was marked as verified.', 'verifiedAt' => gmdate( DATE_ATOM ) );
 		} elseif ( 'bootstrap_cffl_lagos' === $action ) {
 			$result = LeagueBootstrapService::create()->seed_cffl_lagos( $user_id );
 		} elseif ( 'football_live_sync' === $action ) {
@@ -103,6 +116,11 @@ final class OperationsService {
 	}
 
 	public function export( string $type, int $user_id ): array {
+		if ( 'recovery_manifest' === $type ) {
+			$manifest = ProductionReadinessService::create()->recovery_manifest();
+			$this->repository->record_export( $type, $user_id, count( $manifest['tables'] ) );
+			return array( 'filename' => 'instascore-recovery-manifest-' . gmdate( 'Ymd-His' ) . '.json', 'content' => wp_json_encode( $manifest, JSON_PRETTY_PRINT ), 'mimeType' => 'application/json', 'redacted' => true );
+		}
 		if ( 'database_integrity' === $type ) {
 			$rows = DatabaseMaintenanceService::create()->integrity_csv_rows();
 			$this->repository->record_export( $type, $user_id, count( $rows ) - 1 );
@@ -143,6 +161,7 @@ final class OperationsService {
 			'providerWatchdog' => get_option( 'instascore_provider_watchdog_last_run', array( 'checkedAt' => null, 'report' => array() ) ),
 			'databaseMaintenance' => array( 'integrity' => get_option( 'instascore_database_integrity_report', array( 'status' => 'not_run' ) ), 'lastCleanup' => get_option( 'instascore_database_maintenance_last_cleanup', null ) ),
 			'security' => get_option( 'instascore_security_capability_audit', array( 'status' => 'not_run', 'missingCount' => 0 ) ),
+			'productionReadiness' => get_option( 'instascore_production_readiness_report', array( 'status' => 'not_run', 'readyCount' => 0, 'checkCount' => 6 ) ),
 			'secrets'       => 'redacted',
 		);
 	}

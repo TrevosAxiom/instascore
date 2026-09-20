@@ -290,6 +290,9 @@ export function WorkspaceLayout() {
 
   return (
     <Box sx={{ minHeight: '100dvh', bgcolor: 'background.default' }}>
+      <Box component="a" href="#instascore-workspace-main" className="instascore-skip-link">
+        Skip to workspace content
+      </Box>
       <AppBar
         position="fixed"
         elevation={0}
@@ -370,6 +373,8 @@ export function WorkspaceLayout() {
 
       <Box
         component="main"
+        id="instascore-workspace-main"
+        tabIndex={-1}
         sx={{
           ml: { md: `${drawerWidth}px` },
           pt: { xs: '60px', md: '68px' },

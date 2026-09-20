@@ -198,6 +198,7 @@ export interface OperationsExport {
   filename: string;
   content: string;
   redacted: boolean;
+  mimeType?: string;
 }
 
 export interface BasketballLiveGame {

@@ -71,6 +71,9 @@ export function AppShell() {
         pb: { xs: isAdminRoute ? 2 : 9, md: 0 },
       }}
     >
+      <Box component="a" href="#instascore-main-content" className="instascore-skip-link">
+        Skip to main content
+      </Box>
       <AppBar
         className="instascore-app-bar"
         position="sticky"
@@ -165,6 +168,8 @@ export function AppShell() {
       <Container
         maxWidth={false}
         component="main"
+        id="instascore-main-content"
+        tabIndex={-1}
         sx={{ width: '100%', flex: 1, px: { xs: 1.25, sm: 2, md: 6 }, py: { xs: 1.25, md: 4 } }}
       >
         <Stack spacing={1} sx={{ mb: 2 }}>

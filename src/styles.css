@@ -90,6 +90,22 @@ body.instascore-standalone .instascore-app-bar .MuiIconButton-root {
   outline-offset: 3px;
 }
 
+#instascore-root .instascore-skip-link {
+  position: fixed;
+  z-index: 2000;
+  top: 8px;
+  left: 8px;
+  padding: 10px 14px;
+  color: #07192d;
+  background: #ffca3a;
+  font-weight: 900;
+  transform: translateY(-150%);
+}
+
+#instascore-root .instascore-skip-link:focus {
+  transform: translateY(0);
+}
+
 #instascore-root button,
 #instascore-root [role='button'],
 #instascore-root a,

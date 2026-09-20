@@ -13,6 +13,17 @@ final class SecurityHardening {
 		add_action( 'wp_login_failed', array( self::class, 'login_failed' ) );
 		add_action( 'wp_login', array( self::class, 'login_succeeded' ), 10, 2 );
 		add_filter( 'rest_pre_dispatch', array( self::class, 'rest_guard' ), 5, 3 );
+		add_action( 'send_headers', array( self::class, 'send_headers' ) );
+	}
+
+	public static function send_headers(): void {
+		if ( headers_sent() ) return;
+		header( 'X-Content-Type-Options: nosniff' );
+		header( 'Referrer-Policy: strict-origin-when-cross-origin' );
+		header( 'Permissions-Policy: camera=(), microphone=(), geolocation=()' );
+		$request_path = wp_parse_url( (string) ( $_SERVER['REQUEST_URI'] ?? '' ), PHP_URL_PATH );
+		if ( ! is_string( $request_path ) || ! str_contains( $request_path, '/embed/' ) ) header( 'X-Frame-Options: SAMEORIGIN' );
+		if ( is_ssl() ) header( 'Strict-Transport-Security: max-age=31536000; includeSubDomains' );
 	}
 
 	public static function authenticate( mixed $user, string $username = '', string $password = '' ): mixed {

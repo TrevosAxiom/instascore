@@ -43,6 +43,10 @@ describe('App shell', () => {
     expect(await screen.findByRole('heading', { name: 'Scores' })).toBeInTheDocument();
     expect(screen.getByRole('navigation', { name: 'Primary navigation' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'InstaScore home' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Skip to main content' })).toHaveAttribute(
+      'href',
+      '#instascore-main-content',
+    );
     expect(screen.getByRole('tab', { name: /^Flag$/i })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /^Soccer$/i })).toHaveAttribute('aria-selected', 'true');
 

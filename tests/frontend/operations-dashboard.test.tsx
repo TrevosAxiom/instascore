@@ -35,8 +35,18 @@ describe('operations dashboard', () => {
       }),
     );
 
+    fireEvent.click(screen.getByRole('button', { name: /Run production preflight/i }));
+    await waitFor(() =>
+      expect(runOperationsAction).toHaveBeenCalledWith('production_preflight', {
+        source: 'operations_dashboard',
+      }),
+    );
+
     fireEvent.click(screen.getByRole('button', { name: /Download diagnostic report/i }));
     await waitFor(() => expect(exportOperations).toHaveBeenCalledWith('diagnostic_report'));
+
+    fireEvent.click(screen.getByRole('button', { name: /Download recovery manifest/i }));
+    await waitFor(() => expect(exportOperations).toHaveBeenCalledWith('recovery_manifest'));
   });
 
   it('keeps operations route behind the operations capability guard', async () => {

@@ -55,7 +55,9 @@ export function OperationsDashboardPage() {
     mutationFn: (type: string) => api.exportOperations(type),
     onSuccess: (result) => {
       if (typeof URL.createObjectURL !== 'function') return;
-      const url = URL.createObjectURL(new Blob([result.content], { type: 'text/csv' }));
+      const url = URL.createObjectURL(
+        new Blob([result.content], { type: result.mimeType ?? 'text/csv' }),
+      );
       const link = document.createElement('a');
       link.href = url;
       link.download = result.filename;
@@ -184,6 +186,27 @@ export function OperationsDashboardPage() {
               <Typography variant="h6">Manual operations</Typography>
               <Stack direction={{ xs: 'column', md: 'row' }} spacing={1}>
                 <Button
+                  onClick={() => actionMutation.mutate('production_preflight')}
+                  variant="contained"
+                >
+                  Run production preflight
+                </Button>
+                <Button
+                  onClick={() => actionMutation.mutate('runtime_cache_purge')}
+                  variant="outlined"
+                >
+                  Clear runtime cache
+                </Button>
+                <Button
+                  onClick={() => {
+                    if (window.confirm('Confirm that a restorable host-level backup has been checked.'))
+                      actionMutation.mutate('verify_backup');
+                  }}
+                  variant="outlined"
+                >
+                  Mark backup verified
+                </Button>
+                <Button
                   onClick={() => actionMutation.mutate('retry_failed_jobs')}
                   variant="outlined"
                 >
@@ -249,6 +272,12 @@ export function OperationsDashboardPage() {
                 >
                   Export integrity CSV
                 </Button>
+                <Button
+                  onClick={() => exportMutation.mutate('recovery_manifest')}
+                  variant="outlined"
+                >
+                  Download recovery manifest
+                </Button>
               </Stack>
               {actionMutation.data && (
                 <Alert severity="success">
@@ -277,6 +306,7 @@ export function OperationsDashboardPage() {
                         'providerWatchdog',
                         'databaseMaintenance',
                         'security',
+                        'productionReadiness',
                       ].includes(key),
                   )
                   .map(([key, value]) => (
@@ -363,6 +393,23 @@ export function OperationsDashboardPage() {
                   {(healthReport.security as { status?: string }).status ?? 'not run'}
                   {' · '}Missing required capabilities:{' '}
                   {(healthReport.security as { missingCount?: number }).missingCount ?? 0}
+                </Alert>
+              ) : null}
+              {healthReport.productionReadiness &&
+              typeof healthReport.productionReadiness === 'object' ? (
+                <Alert
+                  severity={
+                    (healthReport.productionReadiness as { status?: string }).status === 'ready'
+                      ? 'success'
+                      : 'warning'
+                  }
+                >
+                  Production readiness:{' '}
+                  {(healthReport.productionReadiness as { status?: string }).status ?? 'not run'}
+                  {' · '}
+                  {(healthReport.productionReadiness as { readyCount?: number }).readyCount ?? 0}/
+                  {(healthReport.productionReadiness as { checkCount?: number }).checkCount ?? 6}{' '}
+                  checks ready
                 </Alert>
               ) : null}
             </Stack>
