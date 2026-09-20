@@ -48,6 +48,7 @@ import type {
   RssSource,
   RssSyncResult,
   RssCsvImportResult,
+  RosterWorkspace,
   OperationsActionResult,
   OperationsDashboard,
   OperationsExport,
@@ -166,6 +167,13 @@ export interface ApiClient {
   previewRegistrationImport: (rows: Record<string, unknown>[]) => Promise<CsvImportPreview>;
   commitRegistrationImport: (rows: Record<string, unknown>[]) => Promise<unknown>;
   getRegistrationImportTemplate: () => Promise<{ filename: string; headers: string[] }>;
+  getRosterWorkspace: () => Promise<RosterWorkspace>;
+  submitRosterRequest: (input: Record<string, unknown>) => Promise<unknown>;
+  reviewRosterRequest: (
+    uuid: string,
+    decision: 'approve' | 'reject',
+    notes?: string,
+  ) => Promise<unknown>;
   getFixtures: (query?: URLSearchParams) => Promise<Paginated<Fixture>>;
   getAdminFixtures: (query?: URLSearchParams) => Promise<Paginated<Fixture>>;
   getResults: (query?: URLSearchParams) => Promise<Paginated<Fixture>>;
@@ -587,6 +595,14 @@ export function createApiClient(settings: BootstrapSettings): ApiClient {
       }),
     getRegistrationImportTemplate: () =>
       request<{ filename: string; headers: string[] }>('/admin/registrations/import/template'),
+    getRosterWorkspace: () => request<RosterWorkspace>('/admin/roster-workspace'),
+    submitRosterRequest: (input) =>
+      request('/admin/roster-workspace', { method: 'POST', body: JSON.stringify(input) }),
+    reviewRosterRequest: (uuid, decision, notes = '') =>
+      request(`/admin/roster-requests/${uuid}/${decision}`, {
+        method: 'POST',
+        body: JSON.stringify({ notes }),
+      }),
     async getFixtures(query = new URLSearchParams()) {
       const payload = await envelope<Fixture[]>(`/fixtures${query.size ? `?${query}` : ''}`);
       return pageFromEnvelope(payload);

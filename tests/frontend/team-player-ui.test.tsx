@@ -101,6 +101,7 @@ describe('Team and player milestone screens', () => {
 
     renderApp(<AdminTeamsPage />, { auth: adminAuth, api });
 
+    fireEvent.click(await screen.findByRole('tab', { name: 'Teams' }));
     fireEvent.click(await screen.findByRole('button', { name: 'Create team' }));
     await screen.findByRole('heading', { name: 'Create team' });
     const teamName = document.querySelector('input[name="name"]');
@@ -118,6 +119,55 @@ describe('Team and player milestone screens', () => {
 
     await waitFor(() =>
       expect(createTeam).toHaveBeenCalledWith(expect.objectContaining({ name: 'Lagos Lightning' })),
+    );
+  });
+
+  it('gives league administrators a roster approval queue', async () => {
+    const reviewRosterRequest = vi.fn().mockResolvedValue({ status: 'approved' });
+    const api: ApiClient = {
+      ...testApi,
+      reviewRosterRequest,
+      getRosterWorkspace: () =>
+        Promise.resolve({
+          teams: [
+            {
+              uuid: '00000000-0000-4000-8000-000000000101',
+              name: 'Lagos Lightning',
+              logoUrl: null,
+              sportName: 'Flag Football',
+              rosterCount: 18,
+            },
+          ],
+          pendingCount: 1,
+          requests: [
+            {
+              uuid: '00000000-0000-4000-8000-000000000301',
+              requestType: 'transfer',
+              status: 'pending',
+              teamUuid: '00000000-0000-4000-8000-000000000101',
+              teamName: 'Lagos Lightning',
+              targetTeamUuid: '00000000-0000-4000-8000-000000000102',
+              targetTeamName: 'Island Titans',
+              playerUuid: '00000000-0000-4000-8000-000000000201',
+              playerName: 'Ada Okafor',
+              seasonUuid: '00000000-0000-4000-8000-000000000401',
+              seasonName: '2026',
+              requestedAt: '2026-09-20 10:00:00',
+              proposed: {},
+            },
+          ],
+        }),
+    };
+
+    renderApp(<AdminTeamsPage />, { auth: adminAuth, api });
+    expect(await screen.findByText(/18 active players/i)).toBeInTheDocument();
+    expect(screen.getByText(/Lagos Lightning → Island Titans/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Approve' }));
+    await waitFor(() =>
+      expect(reviewRosterRequest).toHaveBeenCalledWith(
+        '00000000-0000-4000-8000-000000000301',
+        'approve',
+      ),
     );
   });
 });

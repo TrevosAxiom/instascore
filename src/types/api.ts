@@ -505,6 +505,51 @@ export interface Team {
   logoUrl: string | null;
   sport: Sport;
   status: string;
+  venue?: { name: string; city: string } | null;
+  roster?: TeamRosterPlayer[];
+}
+
+export interface TeamRosterPlayer {
+  uuid: string;
+  displayName: string;
+  photoUrl: string | null;
+  nationality: string;
+  primaryPosition: string;
+  registrationUuid: string;
+  jerseyNumber: number | null;
+  positionCode: string;
+  eligibilityStatus: string;
+  season: { uuid: string; name: string };
+}
+
+export interface RosterRequest {
+  uuid: string;
+  requestType: 'register' | 'transfer' | 'release' | 'eligibility';
+  status: 'pending' | 'approved' | 'rejected';
+  teamUuid: string;
+  teamName: string;
+  targetTeamUuid?: string | null;
+  targetTeamName?: string | null;
+  playerUuid: string;
+  playerName: string;
+  seasonUuid: string;
+  seasonName: string;
+  requestedAt: string;
+  reviewedAt?: string | null;
+  reviewNotes?: string | null;
+  proposed: Record<string, unknown>;
+}
+
+export interface RosterWorkspace {
+  teams: Array<{
+    uuid: string;
+    name: string;
+    logoUrl: string | null;
+    sportName: string;
+    rosterCount: number;
+  }>;
+  requests: RosterRequest[];
+  pendingCount: number;
 }
 
 export interface PlayerRegistration {
@@ -542,6 +587,7 @@ export interface Player {
   status: string;
   registrations?: PlayerRegistration[];
   currentRegistration?: CurrentPlayerRegistration;
+  profile?: { bio: string; gender: string; heightCm: number; weightKg: number; hometown: string };
 }
 
 export interface Paginated<T> {

@@ -1,4 +1,4 @@
-import { Chip, Stack, Typography } from '@mui/material';
+import { Chip, Paper, Stack, Typography } from '@mui/material';
 import { useQuery } from '@tanstack/react-query';
 import { useParams } from 'react-router';
 
@@ -23,7 +23,9 @@ export function PlayerProfilePage() {
     <PageScaffold
       eyebrow={publicSportName(query.data.sport) || 'Player'}
       title={query.data.displayName}
-      description="Public player profile with historical team-season registrations."
+      description={
+        query.data.profile?.bio || 'Official player profile and verified team-season history.'
+      }
       status={query.data.eligibilityStatus}
     >
       <Stack spacing={2}>
@@ -37,10 +39,32 @@ export function PlayerProfilePage() {
           <Stack>
             <Typography variant="h6">{query.data.primaryPosition || 'Position pending'}</Typography>
             <Typography color="text.secondary">
-              Team comes from registrations, not the player record.
+              {query.data.nationality || 'Nationality pending'}
+              {query.data.profile?.hometown ? ` · ${query.data.profile.hometown}` : ''}
             </Typography>
           </Stack>
         </Stack>
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
+          {query.data.profile?.heightCm ? (
+            <Paper variant="outlined" sx={{ p: 1.5 }}>
+              <Typography variant="caption">HEIGHT</Typography>
+              <Typography fontWeight={850}>{query.data.profile.heightCm} cm</Typography>
+            </Paper>
+          ) : null}
+          {query.data.profile?.weightKg ? (
+            <Paper variant="outlined" sx={{ p: 1.5 }}>
+              <Typography variant="caption">WEIGHT</Typography>
+              <Typography fontWeight={850}>{query.data.profile.weightKg} kg</Typography>
+            </Paper>
+          ) : null}
+          {query.data.profile?.gender ? (
+            <Paper variant="outlined" sx={{ p: 1.5 }}>
+              <Typography variant="caption">CATEGORY</Typography>
+              <Typography fontWeight={850}>{query.data.profile.gender}</Typography>
+            </Paper>
+          ) : null}
+        </Stack>
+        <Typography variant="h3">Registration history</Typography>
         <Stack spacing={1}>
           {(query.data.registrations ?? []).map((registration) => (
             <Chip

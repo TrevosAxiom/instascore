@@ -10,6 +10,7 @@ namespace InstaScore\Platform\REST;
 use InstaScore\Platform\Auth\TeamPermissions;
 use InstaScore\Platform\Domain\ValidationException;
 use InstaScore\Platform\Services\TeamPlayerService;
+use InstaScore\Platform\Services\RosterWorkflowService;
 use InstaScore\Platform\Repositories\OfficialRepository;
 use InstaScore\Platform\Repositories\VenueRepository;
 use WP_REST_Request;
@@ -17,6 +18,23 @@ use WP_REST_Response;
 
 final class AdminTeamPlayerController {
 	public function register(): void {
+		register_rest_route(
+			'instascore/v1',
+			'/admin/roster-workspace',
+			array(
+				array( 'methods' => 'GET', 'callback' => fn(): WP_REST_Response => $this->execute( fn(): array => RosterWorkflowService::create()->workspace() ), 'permission_callback' => array( TeamPermissions::class, 'manage_players' ) ),
+				array( 'methods' => 'POST', 'callback' => fn( WP_REST_Request $request ): WP_REST_Response => $this->execute( fn(): array => RosterWorkflowService::create()->submit( (array) $request->get_json_params() ), 201 ), 'permission_callback' => array( TeamPermissions::class, 'manage_players' ) ),
+			)
+		);
+		register_rest_route(
+			'instascore/v1',
+			'/admin/roster-requests/(?P<uuid>[0-9a-f-]{36})/(?P<decision>approve|reject)',
+			array(
+				'methods' => 'POST',
+				'callback' => fn( WP_REST_Request $request ): WP_REST_Response => $this->execute( fn(): array => RosterWorkflowService::create()->review( (string) $request['uuid'], (string) $request['decision'], (string) ( $request->get_json_params()['notes'] ?? '' ) ) ),
+				'permission_callback' => static fn(): bool => current_user_can( 'instascore_manage_leagues' ),
+			)
+		);
 		$routes = array(
 			'/admin/teams'         => array( 'create_team', array( TeamPermissions::class, 'manage_teams' ) ),
 			'/admin/players'       => array( 'create_player', array( TeamPermissions::class, 'manage_players' ) ),
@@ -51,6 +69,9 @@ final class AdminTeamPlayerController {
 			'officials' => array( TeamPermissions::class, 'manage_officials' ),
 		);
 		foreach ( $entity_permissions as $entity => $permission ) {
+			$scoped_permission = 'teams' === $entity
+				? static fn( WP_REST_Request $request ): bool => TeamPermissions::manage_team( (string) $request['uuid'] )
+				: ( 'players' === $entity ? static fn( WP_REST_Request $request ): bool => TeamPermissions::manage_player( (string) $request['uuid'] ) : $permission );
 			register_rest_route(
 				'instascore/v1',
 				"/admin/{$entity}/(?P<uuid>[0-9a-f-]{36})",
@@ -58,12 +79,12 @@ final class AdminTeamPlayerController {
 					array(
 						'methods'             => 'PATCH',
 						'callback'            => fn( WP_REST_Request $request ): WP_REST_Response => $this->update( $entity, $request ),
-						'permission_callback' => $permission,
+						'permission_callback' => $scoped_permission,
 					),
 					array(
 						'methods'             => 'DELETE',
 						'callback'            => fn( WP_REST_Request $request ): WP_REST_Response => $this->status( $entity, $request, 'archived' ),
-						'permission_callback' => $permission,
+						'permission_callback' => $scoped_permission,
 					),
 				)
 			);
@@ -73,7 +94,7 @@ final class AdminTeamPlayerController {
 				array(
 					'methods'             => 'POST',
 					'callback'            => fn( WP_REST_Request $request ): WP_REST_Response => $this->status( $entity, $request, 'restore' === $request['action'] ? 'active' : 'archived' ),
-					'permission_callback' => $permission,
+					'permission_callback' => $scoped_permission,
 				)
 			);
 		}

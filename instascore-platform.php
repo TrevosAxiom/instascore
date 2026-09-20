@@ -15,7 +15,7 @@
 defined( 'ABSPATH' ) || exit;
 
 define( 'INSTASCORE_PLATFORM_VERSION', '0.22.3' );
-define( 'INSTASCORE_DB_VERSION', 20 );
+define( 'INSTASCORE_DB_VERSION', 21 );
 define( 'INSTASCORE_PLATFORM_FILE', __FILE__ );
 define( 'INSTASCORE_PLATFORM_PATH', plugin_dir_path( __FILE__ ) );
 define( 'INSTASCORE_PLATFORM_URL', plugin_dir_url( __FILE__ ) );

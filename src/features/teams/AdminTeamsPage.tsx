@@ -24,6 +24,7 @@ import { MediaUploadField } from '../../components/MediaUploadField';
 import { PageScaffold } from '../../components/PageScaffold';
 import { EntityAvatar } from '../../components/EntityAvatar';
 import type { MediaUpload, Official, Player, Sport, Team, Venue } from '../../types/api';
+import { RosterWorkflowPanel } from './RosterWorkflowPanel';
 
 type TeamForm = { name: string; sportUuid: string; shortName: string };
 type PlayerForm = {
@@ -38,6 +39,11 @@ type PlayerForm = {
   teamUuid: string;
   seasonUuid: string;
   jerseyNumber: string;
+  bio: string;
+  gender: string;
+  heightCm: string;
+  weightKg: string;
+  hometown: string;
 };
 
 const countries = [
@@ -109,28 +115,37 @@ export function AdminTeamsPage() {
       status="Audited changes"
     >
       <Tabs value={tab} onChange={(_, value: number) => setTab(value)} variant="scrollable">
-        {['Teams', 'Players', 'Registrations', 'Venues', 'Officials', 'CSV import'].map((label) => (
+        {[
+          'Team workspace',
+          'Teams',
+          'Players',
+          'Registrations',
+          'Venues',
+          'Officials',
+          'CSV import',
+        ].map((label) => (
           <Tab key={label} label={label} />
         ))}
       </Tabs>
-      {tab === 0 && <TeamFormPanel />}
-      {tab === 1 && <PlayerFormPanel />}
-      {tab === 2 && <RegistrationPanel />}
-      {tab === 3 && (
+      {tab === 0 && <RosterWorkflowPanel />}
+      {tab === 1 && <TeamFormPanel />}
+      {tab === 2 && <PlayerFormPanel />}
+      {tab === 3 && <RegistrationPanel />}
+      {tab === 4 && (
         <SimplePanel
           title="Create venue"
           fields={['name', 'city', 'countryCode']}
           endpoint="venue"
         />
       )}
-      {tab === 4 && (
+      {tab === 5 && (
         <SimplePanel
           title="Create official"
           fields={['fullName', 'email', 'officialType']}
           endpoint="official"
         />
       )}
-      {tab === 5 && <CsvImportPanel />}
+      {tab === 6 && <CsvImportPanel />}
     </PageScaffold>
   );
 }
@@ -329,6 +344,11 @@ function PlayerFormPanel() {
       teamUuid: '',
       seasonUuid: '',
       jerseyNumber: '',
+      bio: '',
+      gender: '',
+      heightCm: '',
+      weightKg: '',
+      hometown: '',
     },
   });
   const mutation = useMutation({
@@ -341,6 +361,11 @@ function PlayerFormPanel() {
         eligibilityStatus: values.eligibilityStatus,
         dateOfBirth: values.dateOfBirth,
         nationality: values.nationality,
+        bio: values.bio,
+        gender: values.gender,
+        heightCm: values.heightCm === '' ? 0 : Number(values.heightCm),
+        weightKg: values.weightKg === '' ? 0 : Number(values.weightKg),
+        hometown: values.hometown,
         ...(photo ? { photo } : editing ? {} : { photo: null }),
       };
       const player = editing
@@ -490,6 +515,11 @@ function PlayerFormPanel() {
             teamUuid: '',
             seasonUuid: defaultSeasonUuid,
             jerseyNumber: '',
+            bio: '',
+            gender: '',
+            heightCm: '',
+            weightKg: '',
+            hometown: '',
           });
           setPhoto(null);
           setOpen(true);
@@ -687,6 +717,11 @@ function PlayerFormPanel() {
                       player.currentRegistration?.jerseyNumber == null
                         ? ''
                         : String(player.currentRegistration.jerseyNumber),
+                    bio: player.profile?.bio ?? '',
+                    gender: player.profile?.gender ?? '',
+                    heightCm: player.profile?.heightCm ? String(player.profile.heightCm) : '',
+                    weightKg: player.profile?.weightKg ? String(player.profile.weightKg) : '',
+                    hometown: player.profile?.hometown ?? '',
                   });
                   setPhoto(null);
                   setOpen(true);
@@ -739,6 +774,18 @@ function PlayerFormPanel() {
             InputLabelProps={{ shrink: true }}
             {...form.register('dateOfBirth')}
           />
+          <TextField label="Hometown" {...form.register('hometown')} />
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
+            <TextField select fullWidth label="Gender" defaultValue="" {...form.register('gender')}>
+              <MenuItem value="">Not specified</MenuItem>
+              <MenuItem value="female">Female</MenuItem>
+              <MenuItem value="male">Male</MenuItem>
+              <MenuItem value="nonbinary">Non-binary</MenuItem>
+            </TextField>
+            <TextField fullWidth type="number" label="Height (cm)" {...form.register('heightCm')} />
+            <TextField fullWidth type="number" label="Weight (kg)" {...form.register('weightKg')} />
+          </Stack>
+          <TextField multiline minRows={3} label="Player bio" {...form.register('bio')} />
           <Controller
             name="nationality"
             control={form.control}

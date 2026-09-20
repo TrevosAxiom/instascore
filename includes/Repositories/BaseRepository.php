@@ -48,6 +48,12 @@ class BaseRepository {
 		return is_array( $row ) ? $row : null;
 	}
 
+	public function find_by_id( int $id ): ?array {
+		$sql = $this->database->prepare( "SELECT * FROM {$this->table} WHERE id = %d LIMIT 1", $id );
+		$row = $this->database->get_row( $sql, ARRAY_A );
+		return is_array( $row ) ? $row : null;
+	}
+
 	public function id_for_uuid( string $uuid ): ?int {
 		$row = $this->find_by_uuid( $uuid );
 		return null === $row ? null : (int) $row['id'];

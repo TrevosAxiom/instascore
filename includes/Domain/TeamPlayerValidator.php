@@ -61,6 +61,13 @@ final class TeamPlayerValidator {
 			'primary_position'   => sanitize_key( (string) ( $input['primaryPosition'] ?? '' ) ),
 			'eligibility_status' => $eligibility,
 			'photo'              => $this->media( (array) ( $input['photo'] ?? array() ), 'photo' ),
+			'profile'            => array(
+				'bio'          => mb_substr( sanitize_textarea_field( (string) ( $input['bio'] ?? '' ) ), 0, 1200 ),
+				'gender'       => sanitize_key( (string) ( $input['gender'] ?? '' ) ),
+				'heightCm'     => min( 260, max( 0, (int) ( $input['heightCm'] ?? 0 ) ) ),
+				'weightKg'     => min( 250, max( 0, (int) ( $input['weightKg'] ?? 0 ) ) ),
+				'hometown'     => mb_substr( sanitize_text_field( (string) ( $input['hometown'] ?? '' ) ), 0, 120 ),
+			),
 		);
 	}
 

@@ -123,7 +123,7 @@ function wp_is_uuid( string $value ): bool { return 1 === preg_match( '/^[0-9a-f
 function current_user_can( string $capability ): bool { return in_array( $capability, $GLOBALS['instascore_test_capabilities'], true ); }
 function get_current_user_id(): int { return 7; }
 function get_user_meta( int $user_id, string $key, bool $single = false ): mixed { return $GLOBALS['instascore_test_user_meta'][ $user_id ][ $key ] ?? array(); }
-function wp_generate_uuid4(): string { static $id = 1; return sprintf( '00000000-0000-4000-8000-%012d', $id++ ); }
+function wp_generate_uuid4(): string { static $id = 1; return sprintf( '10000000-0000-4000-8000-%012d', $id++ ); }
 function wp_json_encode( mixed $value ): string { return json_encode( $value, JSON_THROW_ON_ERROR ); }
 function wp_salt( string $scheme ): string { return 'test-salt'; }
 function do_action( string $hook, mixed ...$args ): void {}

@@ -8,6 +8,11 @@
 namespace InstaScore\Platform\Repositories;
 
 final class PlayerRepository extends BaseRepository {
+	public function public_detail( string $uuid ): ?array {
+		$sql = $this->database->prepare( "SELECT p.*,s.uuid sport_uuid,s.name sport_name,s.slug sport_slug FROM {$this->table} p JOIN {$this->database->prefix}instascore_sports s ON s.id=p.sport_id WHERE p.uuid=%s AND p.status='active' LIMIT 1", $uuid );
+		$row = $this->database->get_row( $sql, ARRAY_A );
+		return is_array( $row ) ? $row : null;
+	}
 	/**
 	 * @param array<string,mixed> $query Query.
 	 * @return array{items:array<int,array<string,mixed>>,total:int}

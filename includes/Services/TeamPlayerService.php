@@ -91,7 +91,7 @@ final class TeamPlayerService {
 				'photo_url'           => $data['photo']['url'],
 				'photo_mime_type'     => $data['photo']['mime_type'],
 				'photo_size_bytes'    => $data['photo']['size_bytes'],
-				'metadata_json'       => '{}',
+				'metadata_json'       => wp_json_encode( $data['profile'] ),
 			)
 		);
 		return $this->create_audited( new PlayerRepository( $this->database, 'players' ), 'player', $row );
@@ -174,6 +174,9 @@ final class TeamPlayerService {
 			throw new ValidationException( array( 'sportUuid' => 'The selected sport does not exist.' ) );
 		}
 		$changes = array( 'sport_id' => $sport_id, 'first_name' => $data['first_name'], 'last_name' => $data['last_name'], 'display_name' => $data['display_name'], 'slug' => $data['slug'], 'date_of_birth' => $data['date_of_birth'], 'nationality' => $data['nationality'], 'primary_position' => $data['primary_position'], 'eligibility_status' => $data['eligibility_status'] );
+		if ( array_intersect( array( 'bio', 'gender', 'heightCm', 'weightKg', 'hometown' ), array_keys( $input ) ) ) {
+			$changes['metadata_json'] = wp_json_encode( $data['profile'] );
+		}
 		if ( array_key_exists( 'photo', $input ) ) {
 			$changes = array_merge( $changes, array( 'photo_attachment_id' => $data['photo']['attachment_id'], 'photo_url' => $data['photo']['url'], 'photo_mime_type' => $data['photo']['mime_type'], 'photo_size_bytes' => $data['photo']['size_bytes'] ) );
 		}
@@ -218,6 +221,19 @@ final class TeamPlayerService {
 			),
 			'updated'
 		);
+	}
+
+	/** End an active registration while retaining its season history. */
+	public function release_registration_by_id( int $registration_id ): array {
+		$registrations = new RegistrationRepository( $this->database, 'team_registrations' );
+		$before = $registrations->find_by_id( $registration_id );
+		if ( null === $before || 'active' !== $before['status'] ) {
+			throw new ValidationException( array( 'registration' => 'The active registration does not exist.' ) );
+		}
+		if ( ! TeamPermissions::manage_registration_for_team_id( (int) $before['team_id'] ) ) {
+			throw new ValidationException( array( 'teamUuid' => 'You cannot release this registration.' ) );
+		}
+		return $this->update_audited( $registrations, 'team_registration', (string) $before['uuid'], array( 'status' => 'released', 'unregistered_at' => gmdate( 'Y-m-d H:i:s' ) ), 'released' );
 	}
 
 	/** @param array<string,mixed> $input */

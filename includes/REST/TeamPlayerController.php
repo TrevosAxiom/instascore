@@ -69,11 +69,18 @@ final class TeamPlayerController {
 	public function show( WP_REST_Request $request, string $resource ): WP_REST_Response {
 		global $wpdb;
 		$repository = 'teams' === $resource ? new TeamRepository( $wpdb, 'teams' ) : new PlayerRepository( $wpdb, 'players' );
-		$row        = $repository->find_by_uuid( (string) $request['uuid'] );
+		$row        = $repository->public_detail( (string) $request['uuid'] );
 		if ( null === $row || 'active' !== $row['status'] ) {
 			return Envelope::error( 'instascore_not_found', 'Record not found.', array(), 404 );
 		}
 		$data = 'teams' === $resource ? $this->present_team( $row ) : $this->present_player( $row );
+		if ( 'teams' === $resource ) {
+			$data['roster'] = array_map(
+				static fn( array $item ): array => array( 'uuid' => $item['uuid'], 'displayName' => $item['display_name'], 'photoUrl' => $item['photo_url'] ?: null, 'nationality' => $item['nationality'] ?: '', 'primaryPosition' => $item['primary_position'] ?: '', 'registrationUuid' => $item['registration_uuid'], 'jerseyNumber' => null === $item['jersey_number'] ? null : (int) $item['jersey_number'], 'positionCode' => $item['position_code'] ?: '', 'eligibilityStatus' => $item['eligibility_status'], 'season' => array( 'uuid' => $item['season_uuid'], 'name' => $item['season_name'] ) ),
+				$repository->active_roster( (int) $row['id'] )
+			);
+			$data['venue'] = empty( $row['venue_name'] ) ? null : array( 'name' => $row['venue_name'], 'city' => $row['venue_city'] ?? '' );
+		}
 		if ( 'players' === $resource ) {
 			$data['registrations'] = array_map( array( $this, 'present_registration' ), ( new RegistrationRepository( $wpdb, 'team_registrations' ) )->history_for_player( (int) $row['id'] ) );
 		}
@@ -97,6 +104,8 @@ final class TeamPlayerController {
 	}
 
 	private function present_player( array $row ): array {
+		$profile = json_decode( (string) ( $row['metadata_json'] ?? '{}' ), true );
+		$profile = is_array( $profile ) ? $profile : array();
 		$player = array(
 			'uuid'              => $row['uuid'],
 			'firstName'         => $row['first_name'],
@@ -114,6 +123,13 @@ final class TeamPlayerController {
 				'slug' => $row['sport_slug'] ?? '',
 			),
 			'status'            => $row['status'],
+			'profile'           => array(
+				'bio'      => (string) ( $profile['bio'] ?? '' ),
+				'gender'   => (string) ( $profile['gender'] ?? '' ),
+				'heightCm' => (int) ( $profile['heightCm'] ?? 0 ),
+				'weightKg' => (int) ( $profile['weightKg'] ?? 0 ),
+				'hometown' => (string) ( $profile['hometown'] ?? '' ),
+			),
 		);
 		if ( ! empty( $row['team_uuid'] ) ) {
 			$player['currentRegistration'] = array(

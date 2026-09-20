@@ -65,6 +65,9 @@ export const testApi: ApiClient = {
       filename: 'instascore-registration-import-template.csv',
       headers: [],
     }),
+  getRosterWorkspace: () => Promise.resolve({ teams: [], requests: [], pendingCount: 0 }),
+  submitRosterRequest: () => Promise.reject(new Error('Not configured')),
+  reviewRosterRequest: () => Promise.reject(new Error('Not configured')),
   getFixtures: () => Promise.resolve({ items: [], page: 1, perPage: 12, total: 0, totalPages: 0 }),
   getAdminFixtures: () =>
     Promise.resolve({ items: [], page: 1, perPage: 50, total: 0, totalPages: 0 }),
