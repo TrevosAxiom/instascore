@@ -91,6 +91,13 @@ export interface ProviderHealth {
     incompleteMatches: number;
     duplicateProviderIds: number;
     unknownStatuses: string[];
+    canonicalMatches: {
+      total: number;
+      lastSeenAt: string | null;
+      completed: number;
+      live: number;
+      scheduled: number;
+    };
     issues: string[];
   };
   conflicts: ProviderMapping[];
@@ -123,6 +130,7 @@ export interface ProviderSyncResult {
   status: string;
   dryRun: boolean;
   count: number;
+  persistedMatches?: number;
   preview: Record<string, unknown>[];
   error?: string;
 }

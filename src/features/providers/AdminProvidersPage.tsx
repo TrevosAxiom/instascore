@@ -41,6 +41,34 @@ export function AdminProvidersPage() {
       }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['providers', sport, 'health'] }),
   });
+  const reconcile = useMutation({
+    mutationFn: async () => {
+      const results = [];
+      const from = new Date();
+      const to = new Date(from);
+      to.setDate(to.getDate() + 30);
+      for (const syncType of ['live', 'upcoming', 'previous'] as const) {
+        const result = await api.syncProvider(sport, {
+          syncType,
+          dryRun: false,
+          filters: {
+            timezone: 'Africa/Lagos',
+            source: 'manual_reconciliation',
+            ...(syncType === 'upcoming'
+              ? { from: from.toISOString().slice(0, 10), to: to.toISOString().slice(0, 10) }
+              : {}),
+            ...(syncType === 'previous' ? { last: '50' } : {}),
+          },
+        });
+        if (result.status !== 'succeeded') {
+          throw new Error(result.error ?? `${syncType} reconciliation failed`);
+        }
+        results.push(result);
+      }
+      return results;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['providers', sport, 'health'] }),
+  });
 
   const needsLeague = [
     'teams',
@@ -137,6 +165,18 @@ export function AdminProvidersPage() {
               >
                 {sync.data.status}: {sync.data.count} normalized records. Cached data remains
                 visible during outages.
+              </Alert>
+            ) : null}
+            {reconcile.data ? (
+              <Alert severity="success" sx={{ my: 2 }}>
+                Reconciliation complete. Live, upcoming and completed matches were normalized and
+                written to permanent match storage.
+              </Alert>
+            ) : null}
+            {reconcile.isError ? (
+              <Alert severity="error" sx={{ my: 2 }}>
+                Reconciliation stopped after a provider call failed. Existing database records were
+                preserved; review the sync log before retrying.
               </Alert>
             ) : null}
             <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} sx={{ mt: 2 }}>
@@ -276,6 +316,13 @@ export function AdminProvidersPage() {
                     ? 'Run sync preview'
                     : 'Run sync and import'}
               </Button>
+              <Button
+                variant="outlined"
+                onClick={() => reconcile.mutate()}
+                disabled={reconcile.isPending || !health.data.configured}
+              >
+                {reconcile.isPending ? 'Reconciling…' : 'Reconcile match database'}
+              </Button>
             </Stack>
           </Box>
 
@@ -327,6 +374,14 @@ export function AdminProvidersPage() {
               {health.data.scheduleHealth.nextUpcomingAt
                 ? new Date(health.data.scheduleHealth.nextUpcomingAt).toLocaleString()
                 : 'not scheduled'}
+            </Typography>
+            <Typography variant="h6">
+              Permanent match records: {health.data.dataQuality.canonicalMatches.total}
+            </Typography>
+            <Typography color="text.secondary" sx={{ mb: 2 }}>
+              {health.data.dataQuality.canonicalMatches.scheduled} scheduled ·{' '}
+              {health.data.dataQuality.canonicalMatches.live} live ·{' '}
+              {health.data.dataQuality.canonicalMatches.completed} completed
             </Typography>
             {Object.entries(health.data.dataQuality.snapshots).map(([period, snapshot]) => (
               <Typography key={period} color={snapshot.stale ? 'warning.main' : 'text.secondary'}>

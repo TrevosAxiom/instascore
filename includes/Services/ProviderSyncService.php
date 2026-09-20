@@ -105,8 +105,12 @@ final class ProviderSyncService {
 			foreach ( $payload as $entity ) {
 				$mappings[] = $this->repository->upsert_mapping( $this->provider_name, $this->sport, $sync_type, $entity, null, $dry_run );
 			}
+			$persisted_matches = 0;
 			if ( ! $dry_run ) {
 				$this->repository->store_snapshot( $this->provider_name, $this->sport, $sync_type, $payload );
+				if ( in_array( $sync_type, array( 'fixtures', 'upcoming', 'previous', 'live' ), true ) ) {
+					$persisted_matches = $this->repository->upsert_matches( $this->provider_name, $this->sport, $payload );
+				}
 				delete_option( "instascore_provider_{$this->sport}_cooldown_until" );
 			}
 
@@ -122,7 +126,7 @@ final class ProviderSyncService {
 				)
 			);
 
-			return array( 'status' => 'succeeded', 'dryRun' => $dry_run, 'count' => count( $payload ), 'preview' => array_slice( $payload, 0, 20 ), 'mappings' => $mappings, 'log' => $log );
+			return array( 'status' => 'succeeded', 'dryRun' => $dry_run, 'count' => count( $payload ), 'persistedMatches' => $persisted_matches, 'preview' => array_slice( $payload, 0, 20 ), 'mappings' => $mappings, 'log' => $log );
 		} catch ( Throwable $error ) {
 			$is_rate_limited = $this->is_rate_limit_error( $error->getMessage() );
 			$retry_after = $is_rate_limited ? $this->quota_retry_seconds( $error->getMessage() ) : 60;
@@ -283,6 +287,7 @@ final class ProviderSyncService {
 		$duplicates = 0;
 		$incomplete = 0;
 		$unknown = array();
+		$canonical = $this->repository->canonical_match_stats( $this->provider_name, $this->sport );
 
 		foreach ( $thresholds as $period => $threshold ) {
 			$snapshot = $this->repository->latest_preview( $this->provider_name, $period );
@@ -335,6 +340,7 @@ final class ProviderSyncService {
 			'incompleteMatches'   => $incomplete,
 			'duplicateProviderIds' => $duplicates,
 			'unknownStatuses'     => $unknown,
+			'canonicalMatches'    => $canonical,
 			'issues'              => $issues,
 		);
 	}
@@ -397,7 +403,10 @@ final class ProviderSyncService {
 	 */
 	public function cached_matches( string $period ): array {
 		$period = in_array( $period, array( 'live', 'upcoming', 'previous' ), true ) ? $period : 'live';
-		$cached = $this->repository->latest_preview( $this->provider_name, $period );
+		$cached = $this->repository->canonical_matches( $this->provider_name, $this->sport, $period );
+		if ( empty( $cached['items'] ) ) {
+			$cached = $this->repository->latest_preview( $this->provider_name, $period );
+		}
 		$now = time();
 		$cached['items'] = array_values( array_filter( $cached['items'], static function ( array $item ) use ( $period, $now ): bool {
 			$kickoff = strtotime( (string) ( $item['kickoffAt'] ?? '' ) );
@@ -457,6 +466,12 @@ final class ProviderSyncService {
 			return array( 'items' => array(), 'lastKnownAt' => null );
 		}
 
+		$canonical = $this->repository->canonical_matches_for_date( $this->provider_name, $this->sport, $date );
+		$canonical_items = $this->filter_period( $canonical['items'], $period );
+		if ( ! empty( $canonical_items ) ) {
+			return array( 'items' => $canonical_items, 'lastKnownAt' => $canonical['lastKnownAt'] );
+		}
+
 		$cache_key = 'matches_' . str_replace( '-', '_', $date );
 		$cached = $this->repository->latest_preview( $this->provider_name, $cache_key );
 		$updated = null === $cached['lastKnownAt'] ? 0 : strtotime( (string) $cached['lastKnownAt'] . ' UTC' );
@@ -505,6 +520,7 @@ final class ProviderSyncService {
 			$items = $this->normalizer->fixtures( $this->provider->getFixtures( $filters ) );
 			$items = array_values( array_filter( $items, static fn( array $item ): bool => $date === substr( (string) ( $item['kickoffAt'] ?? '' ), 0, 10 ) ) );
 			$this->repository->store_snapshot( $this->provider_name, $this->sport, $cache_key, $items );
+			$this->repository->upsert_matches( $this->provider_name, $this->sport, $items );
 			return array( 'items' => $this->filter_period( $items, $period ), 'lastKnownAt' => gmdate( 'Y-m-d H:i:s' ) );
 		} catch ( Throwable $error ) {
 			$this->repository->record_sync_log( array(
@@ -593,6 +609,10 @@ final class ProviderSyncService {
 		if ( '' === $provider_id ) {
 			return null;
 		}
+		$canonical_match = $this->repository->canonical_match( $this->provider_name, $this->sport, $provider_id );
+		if ( null !== $canonical_match ) {
+			return $canonical_match;
+		}
 
 		// A previously-built detail payload is the strongest local source for an old
 		// match and must remain usable after the rolling "previous" list advances.
@@ -644,6 +664,7 @@ final class ProviderSyncService {
 					&& in_array( (string) ( $match['competitionProviderId'] ?? '' ), $allowed_leagues, true )
 				) {
 					$this->repository->store_snapshot( $this->provider_name, $this->sport, 'match_lookup_' . $provider_id, array( $match ) );
+					$this->repository->upsert_matches( $this->provider_name, $this->sport, array( $match ) );
 					return $match;
 				}
 			}
