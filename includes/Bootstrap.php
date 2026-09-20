@@ -18,6 +18,7 @@ use InstaScore\Platform\REST\AdminScoringController;
 use InstaScore\Platform\REST\AdminRssController;
 use InstaScore\Platform\REST\AdminTeamPlayerController;
 use InstaScore\Platform\REST\CompetitionController;
+use InstaScore\Platform\REST\CommerceController;
 use InstaScore\Platform\REST\ContactController;
 use InstaScore\Platform\REST\FixtureController;
 use InstaScore\Platform\REST\FixtureStreamController;
@@ -107,6 +108,7 @@ final class Bootstrap {
 		( new AuthController() )->register();
 		( new ThemeController() )->register();
 		( new CompetitionController() )->register();
+		( new CommerceController() )->register();
 		( new ContactController() )->register();
 		( new AdminCompetitionController() )->register();
 		( new TeamPlayerController() )->register();

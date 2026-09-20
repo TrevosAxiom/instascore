@@ -201,6 +201,51 @@ export interface OperationsExport {
   mimeType?: string;
 }
 
+export interface CommerceProduct {
+  uuid: string;
+  productType: 'subscription' | 'ticket' | 'merchandise';
+  name: string;
+  slug: string;
+  description: string;
+  imageUrl: string;
+  priceMinor: number;
+  currency: string;
+  stockQuantity: number | null;
+  fixtureId: number | null;
+  billingPeriod: string | null;
+  status: 'draft' | 'active' | 'archived';
+}
+
+export interface CommerceOrder {
+  uuid: string;
+  orderNumber: string;
+  status: string;
+  totalMinor: number;
+  currency: string;
+  paymentMethod: string;
+  paymentReference: string | null;
+  createdAt: string;
+  paidAt: string | null;
+  items: { name: string; type: string; quantity: number; unitPriceMinor: number; totalMinor: number }[];
+}
+
+export interface CommerceEntitlement {
+  uuid: string;
+  type: string;
+  productName: string;
+  accessCode: string | null;
+  status: string;
+  startsAt: string;
+  endsAt: string | null;
+  redeemedAt: string | null;
+}
+
+export interface CommerceAdminDashboard {
+  products: CommerceProduct[];
+  orders: CommerceOrder[];
+  report: { grossRevenueMinor: number; paidOrders: number; pendingOrders: number; activeProducts: number };
+}
+
 export interface BasketballLiveGame {
   providerId: string;
   competitionName?: string;

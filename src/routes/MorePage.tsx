@@ -19,6 +19,7 @@ const publicLinks = [
   ['Search', '/search', 'Find anything on InstaScore'],
   ['Fantasy', '/fantasy', 'Manage your fantasy squad'],
   ['Replays', '/replays', 'Watch completed InstaScore match broadcasts'],
+  ['Store', '/store', 'Buy match tickets, memberships and official merchandise'],
   ['Install app', '/install', 'Add InstaScore to any phone, tablet or computer'],
 ] as const;
 

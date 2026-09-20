@@ -125,6 +125,13 @@ const navigation: WorkspaceItem[] = [
     group: 'Manage',
   },
   {
+    label: 'Commerce & revenue',
+    path: '/admin/commerce',
+    icon: 'settings',
+    capability: 'accessAdmin',
+    group: 'Manage',
+  },
+  {
     label: 'Discipline',
     path: '/admin/discipline',
     icon: 'discipline',
