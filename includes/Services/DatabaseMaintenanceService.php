@@ -46,6 +46,7 @@ final class DatabaseMaintenanceService {
 			'audit_logs' => "created_at < %s",
 			'operations_alerts' => "status = 'resolved' AND updated_at < %s",
 			'offline_event_queue' => "sync_state = 'synced' AND created_at < %s",
+			'security_events' => "created_at < %s",
 		);
 		$deleted = array();
 		foreach ( $targets as $entity => $where ) {

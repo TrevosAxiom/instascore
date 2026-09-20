@@ -49,6 +49,7 @@ use InstaScore\Platform\Support\ProviderScheduler;
 use InstaScore\Platform\Support\ProviderWatchdog;
 use InstaScore\Platform\Support\RssProvisioner;
 use InstaScore\Platform\Support\RssScheduler;
+use InstaScore\Platform\Support\SecurityHardening;
 use InstaScore\Platform\Support\Shortcode;
 use InstaScore\Platform\Support\StandingsCommand;
 use InstaScore\Platform\Support\SportsProvisioner;
@@ -67,6 +68,7 @@ final class Bootstrap {
 
 	public function register(): void {
 		PluginUpdater::register();
+		SecurityHardening::register();
 		add_action( 'plugins_loaded', array( $this, 'maybe_migrate' ) );
 		add_action( 'rest_api_init', array( $this, 'register_rest_routes' ) );
 		add_action( 'init', array( Shortcode::class, 'register' ) );

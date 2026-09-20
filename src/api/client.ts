@@ -347,6 +347,8 @@ export interface ApiClient {
       | 'database_integrity_scan'
       | 'database_retention_cleanup'
       | 'database_safe_repair'
+      | 'security_audit'
+      | 'security_capability_repair'
       | 'standings_rebuild'
       | 'fantasy_recalculation'
       | 'diagnostic_report'

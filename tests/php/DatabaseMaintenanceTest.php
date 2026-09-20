@@ -25,8 +25,8 @@ final class DatabaseMaintenanceTest extends TestCase {
 		};
 		$service = new DatabaseMaintenanceService( $database, new OperationsRepository( $database ) );
 		$result = $service->cleanup_retention();
-		$this->assertSame( 7, $result['deletedTotal'] );
-		$this->assertCount( 7, $database->queries );
+		$this->assertSame( 8, $result['deletedTotal'] );
+		$this->assertCount( 8, $database->queries );
 		$this->assertStringNotContainsString( 'instascore_fixtures', implode( ' ', $database->queries ) );
 		$this->assertStringNotContainsString( 'instascore_players', implode( ' ', $database->queries ) );
 	}

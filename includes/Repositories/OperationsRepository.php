@@ -37,6 +37,7 @@ final class OperationsRepository {
 			'instascore_audit_logs'             => array( 'created_at' ),
 			'instascore_operations_actions'     => array( 'created_at' ),
 			'instascore_operations_alerts'      => array( 'created_at', 'updated_at' ),
+			'instascore_security_events'        => array( 'created_at' ),
 		);
 		if ( ! isset( $allowed[ $table ] ) || ! in_array( $order_column, $allowed[ $table ], true ) ) {
 			return array();

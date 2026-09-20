@@ -195,6 +195,15 @@ export function OperationsDashboardPage() {
                 >
                   Scan database integrity
                 </Button>
+                <Button onClick={() => actionMutation.mutate('security_audit')} variant="outlined">
+                  Audit role security
+                </Button>
+                <Button
+                  onClick={() => actionMutation.mutate('security_capability_repair')}
+                  variant="outlined"
+                >
+                  Restore required capabilities
+                </Button>
                 <Button
                   onClick={() => actionMutation.mutate('database_retention_cleanup')}
                   variant="outlined"
@@ -263,7 +272,12 @@ export function OperationsDashboardPage() {
                 {Object.entries(healthReport)
                   .filter(
                     ([key]) =>
-                      !['providerPolling', 'providerWatchdog', 'databaseMaintenance'].includes(key),
+                      ![
+                        'providerPolling',
+                        'providerWatchdog',
+                        'databaseMaintenance',
+                        'security',
+                      ].includes(key),
                   )
                   .map(([key, value]) => (
                     <Chip key={key} label={`${key}: ${String(value)}`} />
@@ -335,6 +349,20 @@ export function OperationsDashboardPage() {
                       integrity?: { issueCount?: number };
                     }
                   ).integrity?.issueCount ?? 0}
+                </Alert>
+              ) : null}
+              {healthReport.security && typeof healthReport.security === 'object' ? (
+                <Alert
+                  severity={
+                    (healthReport.security as { status?: string }).status === 'attention'
+                      ? 'warning'
+                      : 'success'
+                  }
+                >
+                  Role security:{' '}
+                  {(healthReport.security as { status?: string }).status ?? 'not run'}
+                  {' · '}Missing required capabilities:{' '}
+                  {(healthReport.security as { missingCount?: number }).missingCount ?? 0}
                 </Alert>
               ) : null}
             </Stack>

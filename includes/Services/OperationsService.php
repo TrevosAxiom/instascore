@@ -39,6 +39,7 @@ final class OperationsService {
 				'audit'                 => $this->redact_rows( $this->repository->recent_rows( 'instascore_audit_logs' ) ),
 				'operationsActions'     => $this->redact_rows( $this->repository->recent_rows( 'instascore_operations_actions' ) ),
 				'operationsAlerts'      => $this->redact_rows( $this->repository->recent_rows( 'instascore_operations_alerts', 'updated_at' ) ),
+				'securityEvents'        => $this->redact_rows( $this->repository->recent_rows( 'instascore_security_events' ) ),
 			),
 			'healthReport' => $this->health_report(),
 		);
@@ -51,7 +52,7 @@ final class OperationsService {
 	}
 
 	public function action( string $action, array $input, int $user_id ): array {
-		$allowed = array( 'retry_failed_jobs', 'standings_rebuild', 'fantasy_recalculation', 'diagnostic_report', 'database_integrity_scan', 'database_retention_cleanup', 'database_safe_repair', 'bootstrap_cffl_lagos', 'football_live_sync', 'basketball_live_sync', 'nfl_live_sync' );
+		$allowed = array( 'retry_failed_jobs', 'standings_rebuild', 'fantasy_recalculation', 'diagnostic_report', 'security_audit', 'security_capability_repair', 'database_integrity_scan', 'database_retention_cleanup', 'database_safe_repair', 'bootstrap_cffl_lagos', 'football_live_sync', 'basketball_live_sync', 'nfl_live_sync' );
 		if ( ! in_array( $action, $allowed, true ) ) {
 			return array( 'status' => 'rejected', 'message' => 'Unsupported operation.' );
 		}
@@ -84,6 +85,10 @@ final class OperationsService {
 			$result = DatabaseMaintenanceService::create()->cleanup_retention();
 		} elseif ( 'database_safe_repair' === $action ) {
 			$result = DatabaseMaintenanceService::create()->safe_repair();
+		} elseif ( 'security_audit' === $action ) {
+			$result = SecurityService::create()->capability_audit();
+		} elseif ( 'security_capability_repair' === $action ) {
+			$result = SecurityService::create()->repair_capabilities();
 		} else {
 			$result = array(
 				'status'    => 'queued',
@@ -137,6 +142,7 @@ final class OperationsService {
 			'providerPolling' => $provider_polling,
 			'providerWatchdog' => get_option( 'instascore_provider_watchdog_last_run', array( 'checkedAt' => null, 'report' => array() ) ),
 			'databaseMaintenance' => array( 'integrity' => get_option( 'instascore_database_integrity_report', array( 'status' => 'not_run' ) ), 'lastCleanup' => get_option( 'instascore_database_maintenance_last_cleanup', null ) ),
+			'security' => get_option( 'instascore_security_capability_audit', array( 'status' => 'not_run', 'missingCount' => 0 ) ),
 			'secrets'       => 'redacted',
 		);
 	}

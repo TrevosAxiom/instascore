@@ -4,6 +4,7 @@
 namespace InstaScore\Platform\Support;
 
 use InstaScore\Platform\Services\DatabaseMaintenanceService;
+use InstaScore\Platform\Services\SecurityService;
 
 final class DatabaseMaintenanceScheduler {
 	public const HOOK = 'instascore_database_maintenance';
@@ -15,5 +16,6 @@ final class DatabaseMaintenanceScheduler {
 		$service = DatabaseMaintenanceService::create();
 		$service->cleanup_retention();
 		$service->integrity_report();
+		SecurityService::create()->capability_audit();
 	}
 }
