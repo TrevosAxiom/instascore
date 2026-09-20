@@ -7,7 +7,6 @@ import {
   Box,
   Button,
   Chip,
-  Divider,
   LinearProgress,
   MenuItem,
   Stack,
@@ -34,8 +33,7 @@ export function FantasyDashboardPage() {
   const [sort, setSort] = useState('points');
   const [draft, setDraft] = useState<FantasySquadEntry[] | null>(null);
   const [focusedPlayerUuid, setFocusedPlayerUuid] = useState('');
-  const [leagueName, setLeagueName] = useState('');
-  const [inviteCode, setInviteCode] = useState('');
+  const [visiblePlayers, setVisiblePlayers] = useState(24);
   const games = useQuery({ queryKey: ['fantasy', 'games'], queryFn: api.getFantasyGames });
   const activeGameUuid = selectedGameUuid || games.data?.[0]?.uuid || '';
   const activeGame = games.data?.find((game) => game.uuid === activeGameUuid);
@@ -56,11 +54,6 @@ export function FantasyDashboardPage() {
     queryFn: () => api.getFantasySquad(activeGameUuid),
     enabled: Boolean(activeGameUuid && state?.authenticated),
   });
-  const leagues = useQuery({
-    queryKey: ['fantasy', activeGameUuid, 'leagues'],
-    queryFn: () => api.getFantasyLeagues(activeGameUuid),
-    enabled: Boolean(activeGameUuid && state?.authenticated),
-  });
   const squadEntries = draft ?? squad.data?.squad?.players ?? [];
   const selectedIds = new Set(squadEntries.map((entry) => entry.fantasyPlayerUuid));
   const game = squad.data?.game ?? activeGame;
@@ -71,6 +64,7 @@ export function FantasyDashboardPage() {
   const bench = squadEntries.filter((entry) => entry.slotType === 'bench');
   const positions = uniqueBy(players.data ?? [], (player) => player.position.code);
   const teams = uniqueBy(players.data ?? [], (player) => player.team.uuid);
+  const marketPlayers = (players.data ?? []).slice(0, visiblePlayers);
   const isComplete =
     squadEntries.length === game?.squadSize && starting.length === game.startingSize;
   const save = useMutation({
@@ -87,21 +81,6 @@ export function FantasyDashboardPage() {
     onSuccess: (data) => {
       setDraft(null);
       queryClient.setQueryData(['fantasy', activeGameUuid, 'squad'], data);
-    },
-  });
-  const createLeague = useMutation({
-    mutationFn: () =>
-      api.createFantasyLeague(activeGameUuid, { name: leagueName, visibility: 'private' }),
-    onSuccess: () => {
-      setLeagueName('');
-      void queryClient.invalidateQueries({ queryKey: ['fantasy', activeGameUuid, 'leagues'] });
-    },
-  });
-  const joinLeague = useMutation({
-    mutationFn: () => api.joinFantasyLeague(inviteCode),
-    onSuccess: () => {
-      setInviteCode('');
-      void queryClient.invalidateQueries({ queryKey: ['fantasy', activeGameUuid, 'leagues'] });
     },
   });
 
@@ -125,56 +104,26 @@ export function FantasyDashboardPage() {
           {!state?.authenticated ? (
             <Alert severity="info">Sign in to save or submit your fantasy team.</Alert>
           ) : null}
-          {state?.authenticated ? (
-            <Box className="instascore-panel">
-              <Typography variant="h3">Mini leagues</Typography>
-              <Typography color="text.secondary" sx={{ mb: 2 }}>
-                Create a private competition for friends or join one with its invite code.
-              </Typography>
-              <Stack direction={{ xs: 'column', md: 'row' }} gap={2}>
-                <TextField
-                  label="New league name"
-                  value={leagueName}
-                  onChange={(event) => setLeagueName(event.target.value)}
-                  fullWidth
-                />
-                <Button
-                  variant="outlined"
-                  disabled={!leagueName.trim() || createLeague.isPending}
-                  onClick={() => createLeague.mutate()}
-                >
-                  Create league
-                </Button>
-                <TextField
-                  label="Invite code"
-                  value={inviteCode}
-                  onChange={(event) => setInviteCode(event.target.value.toUpperCase())}
-                  fullWidth
-                />
-                <Button
-                  variant="outlined"
-                  disabled={!inviteCode.trim() || joinLeague.isPending}
-                  onClick={() => joinLeague.mutate()}
-                >
-                  Join league
-                </Button>
+          <Box className="instascore-panel fantasy-official-league">
+            <Stack direction={{ xs: 'column', md: 'row' }} gap={2} alignItems={{ md: 'center' }}>
+              <Box sx={{ flex: 1 }}>
+                <Typography variant="overline" color="primary.main" fontWeight={900}>
+                  Official competition
+                </Typography>
+                <Typography variant="h3">Everyone plays in one league</Typography>
+                <Typography color="text.secondary">
+                  Build one squad for {game.name}. Your live points automatically place you on the
+                  overall leaderboard—there are no private leagues or invite codes.
+                </Typography>
+              </Box>
+              <Stack direction="row" gap={1} flexWrap="wrap">
+                <Chip label="1. Pick squad" />
+                <Chip label="2. Set captain" />
+                <Chip label="3. Submit" />
+                <Chip label="4. Earn live points" color="primary" />
               </Stack>
-              <Stack direction="row" flexWrap="wrap" gap={1} sx={{ mt: 2 }}>
-                {leagues.data?.map((league) => (
-                  <Chip
-                    key={league.uuid}
-                    label={`${league.name}${league.isMember ? ' · Joined' : ''}`}
-                    color={league.isMember ? 'primary' : 'default'}
-                  />
-                ))}
-              </Stack>
-              {createLeague.isError || joinLeague.isError ? (
-                <Alert severity="error">
-                  The league request failed. Check the name or invite code and try again.
-                </Alert>
-              ) : null}
-            </Box>
-          ) : null}
+            </Stack>
+          </Box>
           <Box className="instascore-panel">
             <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" gap={2}>
               <TextField
@@ -388,8 +337,14 @@ export function FantasyDashboardPage() {
               </TextField>
             </Stack>
             {players.isLoading ? <LoadingState label="Loading player market" /> : null}
-            <Stack divider={<Divider />}>
-              {players.data?.map((player) => (
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', lg: 'repeat(3, 1fr)' },
+                gap: 1.5,
+              }}
+            >
+              {marketPlayers.map((player) => (
                 <PlayerRow
                   key={player.uuid}
                   player={player}
@@ -398,7 +353,14 @@ export function FantasyDashboardPage() {
                   onToggle={() => togglePlayer(player)}
                 />
               ))}
-            </Stack>
+            </Box>
+            {(players.data?.length ?? 0) > visiblePlayers ? (
+              <Box sx={{ textAlign: 'center', mt: 3 }}>
+                <Button variant="outlined" onClick={() => setVisiblePlayers((count) => count + 24)}>
+                  Show more players
+                </Button>
+              </Box>
+            ) : null}
             {!players.isLoading && players.data?.length === 0 ? (
               <EmptyState
                 title="No players match these filters"
@@ -714,31 +676,44 @@ function PlayerRow({
 }) {
   return (
     <Stack
-      direction={{ xs: 'column', sm: 'row' }}
-      spacing={1}
-      alignItems={{ xs: 'stretch', sm: 'center' }}
-      sx={{ py: 1.5 }}
+      spacing={1.5}
+      sx={{
+        p: 2,
+        minWidth: 0,
+        border: '1px solid',
+        borderColor: selected ? 'primary.main' : 'divider',
+        borderRadius: 2.5,
+        backgroundColor: selected ? 'action.selected' : 'background.paper',
+      }}
     >
-      <Stack direction="row" spacing={1.5} alignItems="center" sx={{ flex: 1 }}>
-        <Avatar src={player.player.photoUrl ?? undefined}>{player.player.name.slice(0, 1)}</Avatar>
-        <Box>
-          <Typography fontWeight={900}>{player.player.name}</Typography>
-          <Typography color="text.secondary">
-            {player.team.name} · {player.position.name}
+      <Stack direction="row" spacing={1.5} alignItems="center">
+        <Avatar src={player.player.photoUrl ?? undefined} sx={{ width: 52, height: 52 }}>
+          {player.player.name.slice(0, 1)}
+        </Avatar>
+        <Box sx={{ minWidth: 0, flex: 1 }}>
+          <Typography fontWeight={900} noWrap>
+            {player.player.name}
+          </Typography>
+          <Typography color="text.secondary" variant="body2" noWrap>
+            {player.team.name}
           </Typography>
         </Box>
+        <Chip label={player.position.code} size="small" color="primary" variant="outlined" />
       </Stack>
-      <Stack direction="row" spacing={1} alignItems="center">
-        <Chip label={`${player.totalPoints} pts`} />
-        <Chip label={`${player.ownershipPercent}% owned`} variant="outlined" />
-        <Typography fontWeight={900}>{money(player.priceCents)}</Typography>
+      <Stack direction="row" gap={1} alignItems="center" justifyContent="space-between">
+        <Box>
+          <Typography fontWeight={900}>{money(player.priceCents)}</Typography>
+          <Typography variant="caption" color="text.secondary">
+            {player.totalPoints} pts · {player.ownershipPercent}% selected
+          </Typography>
+        </Box>
         <Button
           aria-label={`${selected ? 'Remove' : 'Select'} ${player.player.name}`}
           variant={selected ? 'outlined' : 'contained'}
           disabled={disabled || player.status !== 'available'}
           onClick={onToggle}
         >
-          {selected ? 'Remove' : 'Select'}
+          {selected ? 'Remove' : 'Add'}
         </Button>
       </Stack>
     </Stack>

@@ -63,7 +63,7 @@ export const publicNavigation: PublicNavigationItem[] = [
   {
     label: 'Fantasy',
     path: '/fantasy',
-    description: 'Squads, points and mini leagues',
+    description: 'Build your squad and compete overall',
     group: 'My InstaScore',
   },
   {
