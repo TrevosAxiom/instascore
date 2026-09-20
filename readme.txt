@@ -2,7 +2,7 @@
 Contributors: instascore
 Requires at least: 6.6
 Requires PHP: 8.2
-Stable tag: 0.23.0-rc.3
+Stable tag: 0.23.0-rc.4
 License: GPL-2.0-or-later
 
 WordPress backend and React application shell for InstaScore.
@@ -13,7 +13,7 @@ See README.md for the shortcode, development server and production build steps.
 
 == Changelog ==
 
-= 0.23.0-rc.3 =
+= 0.23.0-rc.4 =
 * Completed database-first reliability, polling recovery, diagnostics and permanent match history.
 * Added sport-specific match centres, officials controls, competition formats, fixture generation and playoffs.
 * Added team-manager self-service, roster approvals, player profiles and role-specific workspaces.

@@ -7,9 +7,13 @@ import {
   Box,
   Button,
   Chip,
+  FormControlLabel,
   LinearProgress,
   MenuItem,
   Stack,
+  Switch,
+  Tab,
+  Tabs,
   TextField,
   Typography,
 } from '@mui/material';
@@ -34,6 +38,9 @@ export function FantasyDashboardPage() {
   const [draft, setDraft] = useState<FantasySquadEntry[] | null>(null);
   const [focusedPlayerUuid, setFocusedPlayerUuid] = useState('');
   const [visiblePlayers, setVisiblePlayers] = useState(24);
+  const [affordableOnly, setAffordableOnly] = useState(false);
+  const [workspaceTab, setWorkspaceTab] = useState<'squad' | 'players' | 'bench'>('squad');
+  const [selectionMessage, setSelectionMessage] = useState('');
   const games = useQuery({ queryKey: ['fantasy', 'games'], queryFn: api.getFantasyGames });
   const activeGameUuid = selectedGameUuid || games.data?.[0]?.uuid || '';
   const activeGame = games.data?.find((game) => game.uuid === activeGameUuid);
@@ -64,7 +71,11 @@ export function FantasyDashboardPage() {
   const bench = squadEntries.filter((entry) => entry.slotType === 'bench');
   const positions = uniqueBy(players.data ?? [], (player) => player.position.code);
   const teams = uniqueBy(players.data ?? [], (player) => player.team.uuid);
-  const marketPlayers = (players.data ?? []).slice(0, visiblePlayers);
+  const marketPlayers = (players.data ?? [])
+    .filter(
+      (player) => !affordableOnly || selectedIds.has(player.uuid) || player.priceCents <= remaining,
+    )
+    .slice(0, visiblePlayers);
   const isComplete =
     squadEntries.length === game?.squadSize && starting.length === game.startingSize;
   const save = useMutation({
@@ -117,10 +128,10 @@ export function FantasyDashboardPage() {
                 </Typography>
               </Box>
               <Stack direction="row" gap={1} flexWrap="wrap">
-                <Chip label="1. Pick squad" />
-                <Chip label="2. Set captain" />
-                <Chip label="3. Submit" />
-                <Chip label="4. Earn live points" color="primary" />
+                <Chip label="1. Pick squad" color={!isComplete ? 'primary' : 'default'} />
+                <Chip label="2. Set captain" color={isComplete ? 'primary' : 'default'} />
+                <Chip label="3. Review" />
+                <Chip label="4. Submit" />
               </Stack>
             </Stack>
           </Box>
@@ -163,210 +174,280 @@ export function FantasyDashboardPage() {
             />
           </Box>
 
-          <Box
-            className="instascore-panel fantasy-squad-shell"
-            sx={{
-              background: 'linear-gradient(145deg, rgb(7, 25, 45), rgb(12, 39, 67))',
-              color: 'white',
-            }}
+          <Tabs
+            className="fantasy-mobile-tabs"
+            value={workspaceTab}
+            onChange={(_, value: 'squad' | 'players' | 'bench') => setWorkspaceTab(value)}
+            variant="fullWidth"
+            aria-label="Fantasy team workspace"
           >
-            <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" gap={2}>
-              <Box>
-                <Typography
-                  variant="overline"
-                  sx={{ color: 'rgba(255,255,255,.6)', fontWeight: 900, letterSpacing: '.18em' }}
-                >
-                  Fantasy · {squad.data?.gameweek.name ?? 'Current gameweek'}
-                </Typography>
-                <Typography variant="h3" color="inherit">
-                  My starting lineup
-                </Typography>
-                <Typography sx={{ opacity: 0.72 }}>
-                  Captain scores double. Vice-captain is ready if the captain does not play.
-                </Typography>
-              </Box>
-              <Stack direction="row" spacing={1}>
-                <Chip
-                  label={`${starting.length}/${game.startingSize} starters`}
-                  sx={{ color: 'white', borderColor: 'rgba(255,255,255,.35)' }}
-                  variant="outlined"
-                />
-                <Chip
-                  label={`${bench.length}/${game.benchSize} bench`}
-                  sx={{ color: 'white', borderColor: 'rgba(255,255,255,.35)' }}
-                  variant="outlined"
-                />
-              </Stack>
-            </Stack>
-            <FantasyPitch
-              entries={starting}
-              onCaptain={setCaptain}
-              selectedUuid={focusedPlayerUuid}
-              onSelect={setFocusedPlayerUuid}
-            />
-            <SelectedPlayerBar
-              entry={
-                starting.find((entry) => entry.fantasyPlayerUuid === focusedPlayerUuid) ??
-                starting[0]
-              }
-              onCaptain={setCaptain}
-              onBench={changeRole}
-              onRemove={removePlayer}
-            />
-            <Accordion className="fantasy-squad-accordion" disableGutters>
-              <AccordionSummary expandIcon={<span aria-hidden="true">⌄</span>}>
-                <Typography fontWeight={900}>
-                  All {squadEntries.length} players, bench &amp; controls
-                </Typography>
-              </AccordionSummary>
-              <AccordionDetails>
-                <Typography fontWeight={900} sx={{ mb: 1, color: 'primary.main' }}>
-                  STARTING TEAM
-                </Typography>
-                <FormationGrid
-                  entries={starting}
-                  onRole={changeRole}
-                  onCaptain={setCaptain}
-                  onRemove={removePlayer}
-                />
-                <Typography fontWeight={900} sx={{ mt: 3, mb: 1, color: 'primary.main' }}>
-                  BENCH
-                </Typography>
-                <FormationGrid
-                  entries={bench}
-                  onRole={changeRole}
-                  onCaptain={setCaptain}
-                  onRemove={removePlayer}
-                />
-              </AccordionDetails>
-            </Accordion>
-            {!squadEntries.length ? (
-              <EmptyState
-                title="Your pitch is empty"
-                description="Select players from the market below."
-              />
-            ) : null}
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mt: 3 }}>
-              <Button
-                variant="contained"
-                disabled={
-                  !state?.authenticated ||
-                  save.isPending ||
-                  remaining < 0 ||
-                  squad.data?.gameweek.locked
-                }
-                onClick={() => save.mutate(false)}
-              >
-                Save draft
-              </Button>
-              <Button
-                variant="outlined"
-                sx={{ color: 'white', borderColor: 'white' }}
-                disabled={
-                  !state?.authenticated ||
-                  save.isPending ||
-                  !isComplete ||
-                  remaining < 0 ||
-                  squad.data?.gameweek.locked
-                }
-                onClick={() => save.mutate(true)}
-              >
-                Submit team
-              </Button>
-            </Stack>
-            {save.isSuccess ? (
-              <Alert severity="success" sx={{ mt: 2 }}>
-                Your fantasy team has been saved.
-              </Alert>
-            ) : null}
-            {save.isError ? (
-              <Alert severity="error" sx={{ mt: 2 }}>
-                Team rejected. Check budget, formation, captaincy, team limits and deadline.
-              </Alert>
-            ) : null}
-          </Box>
+            <Tab value="squad" label={`Squad ${starting.length}/${game.startingSize}`} />
+            <Tab value="players" label="Players" />
+            <Tab value="bench" label={`Bench ${bench.length}/${game.benchSize}`} />
+          </Tabs>
 
-          <Box className="instascore-panel">
-            <Typography variant="h3">Player market</Typography>
-            <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5} sx={{ my: 2 }}>
-              <TextField
-                label="Search players or teams"
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                fullWidth
-              />
-              <TextField
-                select
-                label="Position"
-                value={position}
-                onChange={(event) => setPosition(event.target.value)}
-                sx={{ minWidth: 150 }}
-              >
-                <MenuItem value="">All</MenuItem>
-                {positions.map((item) => (
-                  <MenuItem key={item.position.code} value={item.position.code}>
-                    {item.position.name}
-                  </MenuItem>
-                ))}
-              </TextField>
-              <TextField
-                select
-                label="Team"
-                value={team}
-                onChange={(event) => setTeam(event.target.value)}
-                sx={{ minWidth: 180 }}
-              >
-                <MenuItem value="">All</MenuItem>
-                {teams.map((item) => (
-                  <MenuItem key={item.team.uuid} value={item.team.uuid}>
-                    {item.team.name}
-                  </MenuItem>
-                ))}
-              </TextField>
-              <TextField
-                select
-                label="Sort"
-                value={sort}
-                onChange={(event) => setSort(event.target.value)}
-                sx={{ minWidth: 150 }}
-              >
-                <MenuItem value="points">Points</MenuItem>
-                <MenuItem value="ownership">Ownership</MenuItem>
-                <MenuItem value="price">Price</MenuItem>
-                <MenuItem value="name">Name</MenuItem>
-              </TextField>
-            </Stack>
-            {players.isLoading ? <LoadingState label="Loading player market" /> : null}
+          {selectionMessage ? <Alert severity="success">{selectionMessage}</Alert> : null}
+
+          <Box className="fantasy-builder-grid">
             <Box
+              className="instascore-panel fantasy-squad-shell"
               sx={{
-                display: 'grid',
-                gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', lg: 'repeat(3, 1fr)' },
-                gap: 1.5,
+                display: { xs: workspaceTab === 'squad' ? 'block' : 'none', md: 'block' },
+                background: 'linear-gradient(145deg, rgb(7, 25, 45), rgb(12, 39, 67))',
+                color: 'white',
               }}
             >
-              {marketPlayers.map((player) => (
-                <PlayerRow
-                  key={player.uuid}
-                  player={player}
-                  selected={selectedIds.has(player.uuid)}
-                  disabled={!selectedIds.has(player.uuid) && squadEntries.length >= game.squadSize}
-                  onToggle={() => togglePlayer(player)}
-                />
-              ))}
-            </Box>
-            {(players.data?.length ?? 0) > visiblePlayers ? (
-              <Box sx={{ textAlign: 'center', mt: 3 }}>
-                <Button variant="outlined" onClick={() => setVisiblePlayers((count) => count + 24)}>
-                  Show more players
-                </Button>
-              </Box>
-            ) : null}
-            {!players.isLoading && players.data?.length === 0 ? (
-              <EmptyState
-                title="No players match these filters"
-                description="Clear a filter or search another name."
+              <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" gap={2}>
+                <Box>
+                  <Typography
+                    variant="overline"
+                    sx={{ color: 'rgba(255,255,255,.6)', fontWeight: 900, letterSpacing: '.18em' }}
+                  >
+                    Fantasy · {squad.data?.gameweek.name ?? 'Current gameweek'}
+                  </Typography>
+                  <Typography variant="h3" color="inherit">
+                    My starting lineup
+                  </Typography>
+                  <Typography sx={{ opacity: 0.72 }}>
+                    Captain scores double. Vice-captain is ready if the captain does not play.
+                  </Typography>
+                </Box>
+                <Stack direction="row" spacing={1}>
+                  <Chip
+                    label={`${starting.length}/${game.startingSize} starters`}
+                    sx={{ color: 'white', borderColor: 'rgba(255,255,255,.35)' }}
+                    variant="outlined"
+                  />
+                  <Chip
+                    label={`${bench.length}/${game.benchSize} bench`}
+                    sx={{ color: 'white', borderColor: 'rgba(255,255,255,.35)' }}
+                    variant="outlined"
+                  />
+                </Stack>
+              </Stack>
+              <FantasyPitch
+                entries={starting}
+                expectedSize={game.startingSize}
+                onCaptain={setCaptain}
+                selectedUuid={focusedPlayerUuid}
+                onSelect={setFocusedPlayerUuid}
               />
-            ) : null}
+              <SelectedPlayerBar
+                entry={
+                  starting.find((entry) => entry.fantasyPlayerUuid === focusedPlayerUuid) ??
+                  starting[0]
+                }
+                onCaptain={setCaptain}
+                onBench={changeRole}
+                onRemove={removePlayer}
+              />
+              <Accordion className="fantasy-squad-accordion" disableGutters>
+                <AccordionSummary expandIcon={<span aria-hidden="true">⌄</span>}>
+                  <Typography fontWeight={900}>
+                    All {squadEntries.length} players, bench &amp; controls
+                  </Typography>
+                </AccordionSummary>
+                <AccordionDetails>
+                  <Typography fontWeight={900} sx={{ mb: 1, color: 'primary.main' }}>
+                    STARTING TEAM
+                  </Typography>
+                  <FormationGrid
+                    entries={starting}
+                    onRole={changeRole}
+                    onCaptain={setCaptain}
+                    onRemove={removePlayer}
+                  />
+                  <Typography fontWeight={900} sx={{ mt: 3, mb: 1, color: 'primary.main' }}>
+                    BENCH
+                  </Typography>
+                  <FormationGrid
+                    entries={bench}
+                    onRole={changeRole}
+                    onCaptain={setCaptain}
+                    onRemove={removePlayer}
+                  />
+                </AccordionDetails>
+              </Accordion>
+              {!squadEntries.length ? (
+                <EmptyState
+                  title="Your pitch is empty"
+                  description="Select players from the market below."
+                />
+              ) : null}
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mt: 3 }}>
+                <Button
+                  variant="contained"
+                  disabled={
+                    !state?.authenticated ||
+                    save.isPending ||
+                    remaining < 0 ||
+                    squad.data?.gameweek.locked
+                  }
+                  onClick={() => save.mutate(false)}
+                >
+                  Save draft
+                </Button>
+                <Button
+                  variant="outlined"
+                  sx={{ color: 'white', borderColor: 'white' }}
+                  disabled={
+                    !state?.authenticated ||
+                    save.isPending ||
+                    !isComplete ||
+                    remaining < 0 ||
+                    squad.data?.gameweek.locked
+                  }
+                  onClick={() => save.mutate(true)}
+                >
+                  Submit team
+                </Button>
+              </Stack>
+              {save.isSuccess ? (
+                <Alert severity="success" sx={{ mt: 2 }}>
+                  Your fantasy team has been saved.
+                </Alert>
+              ) : null}
+              {save.isError ? (
+                <Alert severity="error" sx={{ mt: 2 }}>
+                  Team rejected. Check budget, formation, captaincy, team limits and deadline.
+                </Alert>
+              ) : null}
+            </Box>
+
+            <Box
+              className="instascore-panel fantasy-market-panel"
+              sx={{ display: { xs: workspaceTab === 'players' ? 'block' : 'none', md: 'block' } }}
+            >
+              <Typography variant="h3">Player market</Typography>
+              <Stack className="fantasy-market-filters" spacing={1.5} sx={{ my: 2 }}>
+                <TextField
+                  label="Search players or teams"
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  fullWidth
+                />
+                <TextField
+                  select
+                  label="Position"
+                  value={position}
+                  onChange={(event) => setPosition(event.target.value)}
+                  sx={{ minWidth: 150 }}
+                >
+                  <MenuItem value="">All</MenuItem>
+                  {positions.map((item) => (
+                    <MenuItem key={item.position.code} value={item.position.code}>
+                      {item.position.name}
+                    </MenuItem>
+                  ))}
+                </TextField>
+                <TextField
+                  select
+                  label="Team"
+                  value={team}
+                  onChange={(event) => setTeam(event.target.value)}
+                  sx={{ minWidth: 180 }}
+                >
+                  <MenuItem value="">All</MenuItem>
+                  {teams.map((item) => (
+                    <MenuItem key={item.team.uuid} value={item.team.uuid}>
+                      {item.team.name}
+                    </MenuItem>
+                  ))}
+                </TextField>
+                <TextField
+                  select
+                  label="Sort"
+                  value={sort}
+                  onChange={(event) => setSort(event.target.value)}
+                  sx={{ minWidth: 150 }}
+                >
+                  <MenuItem value="points">Points</MenuItem>
+                  <MenuItem value="ownership">Ownership</MenuItem>
+                  <MenuItem value="price">Price</MenuItem>
+                  <MenuItem value="name">Name</MenuItem>
+                </TextField>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={affordableOnly}
+                      onChange={(event) => setAffordableOnly(event.target.checked)}
+                    />
+                  }
+                  label="Affordable only"
+                />
+              </Stack>
+              {players.isLoading ? <LoadingState label="Loading player market" /> : null}
+              <Box
+                sx={{
+                  display: 'grid',
+                  gridTemplateColumns: '1fr',
+                  gap: 1.5,
+                }}
+              >
+                {marketPlayers.map((player) => (
+                  <PlayerRow
+                    key={player.uuid}
+                    player={player}
+                    selected={selectedIds.has(player.uuid)}
+                    disabled={
+                      !selectedIds.has(player.uuid) && squadEntries.length >= game.squadSize
+                    }
+                    disabledReason={selectionBlockReason(player)}
+                    onToggle={() => togglePlayer(player)}
+                  />
+                ))}
+              </Box>
+              {(players.data?.length ?? 0) > visiblePlayers ? (
+                <Box sx={{ textAlign: 'center', mt: 3 }}>
+                  <Button
+                    variant="outlined"
+                    onClick={() => setVisiblePlayers((count) => count + 24)}
+                  >
+                    Show more players
+                  </Button>
+                </Box>
+              ) : null}
+              {!players.isLoading && players.data?.length === 0 ? (
+                <EmptyState
+                  title="No players match these filters"
+                  description="Clear a filter or search another name."
+                />
+              ) : null}
+            </Box>
+            <Box
+              className="instascore-panel fantasy-mobile-bench"
+              sx={{ display: { xs: workspaceTab === 'bench' ? 'block' : 'none', md: 'none' } }}
+            >
+              <Typography variant="h3">Your bench</Typography>
+              <Typography color="text.secondary" sx={{ mb: 2 }}>
+                {Math.max(0, game.benchSize - bench.length)} bench places still available.
+              </Typography>
+              <FormationGrid
+                entries={bench}
+                onRole={changeRole}
+                onCaptain={setCaptain}
+                onRemove={removePlayer}
+              />
+              {!bench.length ? (
+                <EmptyState
+                  title="No substitutes yet"
+                  description="Add players after filling the starting lineup."
+                />
+              ) : null}
+            </Box>
+          </Box>
+
+          <Box className="fantasy-mobile-actionbar">
+            <Button variant="text" onClick={() => setWorkspaceTab('squad')}>
+              View squad · {squadEntries.length}/{game.squadSize}
+            </Button>
+            <Button
+              variant="contained"
+              disabled={!state?.authenticated || save.isPending || !isComplete || remaining < 0}
+              onClick={() => save.mutate(true)}
+            >
+              Submit team
+            </Button>
           </Box>
         </Stack>
       ) : null}
@@ -374,8 +455,13 @@ export function FantasyDashboardPage() {
   );
 
   function togglePlayer(player: FantasyPlayer) {
-    if (selectedIds.has(player.uuid)) return removePlayer(player.uuid);
+    if (selectedIds.has(player.uuid)) {
+      removePlayer(player.uuid);
+      setSelectionMessage(`${player.player.name} removed from your squad.`);
+      return;
+    }
     if (squadEntries.length >= game!.squadSize) return;
+    if (player.priceCents > remaining) return;
     const starter = starting.length < game!.startingSize;
     setDraft([
       ...squadEntries,
@@ -391,6 +477,9 @@ export function FantasyDashboardPage() {
         team: player.team,
       },
     ]);
+    setSelectionMessage(
+      `${player.player.name} added to your ${starter ? 'starting lineup' : 'bench'}.`,
+    );
   }
   function removePlayer(uuid: string) {
     setDraft(squadEntries.filter((entry) => entry.fantasyPlayerUuid !== uuid));
@@ -435,21 +524,32 @@ export function FantasyDashboardPage() {
         ),
     );
   }
+  function selectionBlockReason(player: FantasyPlayer) {
+    if (selectedIds.has(player.uuid)) return '';
+    if (player.status !== 'available') return 'Player unavailable';
+    if (squadEntries.length >= game!.squadSize) return 'Squad is full';
+    if (player.priceCents > remaining) return 'Insufficient budget';
+    return '';
+  }
 }
 
 function FantasyPitch({
   entries,
+  expectedSize,
   selectedUuid,
   onSelect,
   onCaptain,
 }: {
   entries: FantasySquadEntry[];
+  expectedSize: number;
   selectedUuid: string;
   onSelect: (uuid: string) => void;
   onCaptain: (uuid: string, role: 'captain' | 'vice') => void;
 }) {
   const offense = entries.filter((entry) => isOffense(entry.position?.code));
   const defense = entries.filter((entry) => !isOffense(entry.position?.code));
+  const offenseTarget = Math.ceil(expectedSize / 2);
+  const defenseTarget = Math.floor(expectedSize / 2);
 
   return (
     <Box className="fantasy-pitch" sx={{ mt: 3 }}>
@@ -461,10 +561,17 @@ function FantasyPitch({
             key={entry.fantasyPlayerUuid}
             entry={entry}
             index={index}
-            count={defense.length}
+            count={defenseTarget}
             selected={selectedUuid === entry.fantasyPlayerUuid}
             onSelect={onSelect}
             onCaptain={onCaptain}
+          />
+        ))}
+        {Array.from({ length: Math.max(0, defenseTarget - defense.length) }, (_, index) => (
+          <PitchSlot
+            key={`defense-${index}`}
+            index={defense.length + index}
+            count={defenseTarget}
           />
         ))}
       </Box>
@@ -478,10 +585,17 @@ function FantasyPitch({
             key={entry.fantasyPlayerUuid}
             entry={entry}
             index={index}
-            count={offense.length}
+            count={offenseTarget}
             selected={selectedUuid === entry.fantasyPlayerUuid}
             onSelect={onSelect}
             onCaptain={onCaptain}
+          />
+        ))}
+        {Array.from({ length: Math.max(0, offenseTarget - offense.length) }, (_, index) => (
+          <PitchSlot
+            key={`offense-${index}`}
+            index={offense.length + index}
+            count={offenseTarget}
           />
         ))}
       </Box>
@@ -491,6 +605,25 @@ function FantasyPitch({
           Select players below to build your lineup
         </Typography>
       ) : null}
+    </Box>
+  );
+}
+
+function PitchSlot({ index, count }: { index: number; count: number }) {
+  const columns = Math.min(Math.max(count, 1), 4);
+  const row = Math.floor(index / columns);
+  const column = index % columns;
+  const itemsInRow = Math.min(columns, count - row * columns);
+  const left = ((column + 1) / (itemsInRow + 1)) * 100;
+  const top = count <= 4 ? 50 : row === 0 ? 30 : 70;
+  return (
+    <Box
+      className="fantasy-pitch-slot"
+      sx={{ left: `${left}%`, top: `${top}%` }}
+      aria-hidden="true"
+    >
+      <span>+</span>
+      <small>Empty</small>
     </Box>
   );
 }
@@ -667,11 +800,13 @@ function PlayerRow({
   player,
   selected,
   disabled,
+  disabledReason,
   onToggle,
 }: {
   player: FantasyPlayer;
   selected: boolean;
   disabled: boolean;
+  disabledReason: string;
   onToggle: () => void;
 }) {
   return (
@@ -710,12 +845,17 @@ function PlayerRow({
         <Button
           aria-label={`${selected ? 'Remove' : 'Select'} ${player.player.name}`}
           variant={selected ? 'outlined' : 'contained'}
-          disabled={disabled || player.status !== 'available'}
+          disabled={disabled || Boolean(disabledReason)}
           onClick={onToggle}
         >
-          {selected ? 'Remove' : 'Add'}
+          {selected ? 'Added · Remove' : 'Add'}
         </Button>
       </Stack>
+      {disabledReason ? (
+        <Typography variant="caption" color="error.main">
+          {disabledReason}
+        </Typography>
+      ) : null}
     </Stack>
   );
 }

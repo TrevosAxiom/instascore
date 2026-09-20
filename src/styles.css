@@ -460,9 +460,40 @@ body.instascore-standalone .instascore-app-bar .MuiIconButton-root {
   overflow: hidden;
 }
 
+.fantasy-builder-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.65fr) minmax(340px, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.fantasy-builder-grid > .fantasy-squad-shell {
+  position: sticky;
+  top: 96px;
+}
+
+.fantasy-market-panel {
+  max-height: calc(100vh - 112px);
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+.fantasy-market-filters {
+  position: sticky;
+  z-index: 5;
+  top: -24px;
+  padding-block: 24px 12px;
+  background: var(--instascore-surface, #fff);
+}
+
+.fantasy-mobile-tabs,
+.fantasy-mobile-actionbar {
+  display: none !important;
+}
+
 .fantasy-pitch {
   position: relative;
-  min-height: 680px;
+  min-height: 500px;
   overflow: hidden;
   border: 2px solid rgba(206, 231, 197, 0.55);
   border-radius: 18px;
@@ -580,6 +611,29 @@ body.instascore-standalone .instascore-app-bar .MuiIconButton-root {
   font: inherit;
   cursor: pointer;
 }
+.fantasy-pitch-slot {
+  position: absolute;
+  z-index: 2;
+  display: grid;
+  width: 72px;
+  transform: translate(-50%, -50%);
+  place-items: center;
+  color: rgba(255, 255, 255, 0.62);
+  font-weight: 800;
+}
+.fantasy-pitch-slot span {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border: 2px dashed rgba(255, 255, 255, 0.42);
+  border-radius: 50%;
+  font-size: 1.25rem;
+}
+.fantasy-pitch-slot small {
+  margin-top: 4px;
+  font-size: 0.62rem;
+}
 .fantasy-pitch-avatar-wrap {
   position: relative;
 }
@@ -659,9 +713,52 @@ body.instascore-standalone .instascore-app-bar .MuiIconButton-root {
   color: rgb(7, 25, 45) !important;
 }
 
-@media (max-width: 700px) {
+@media (max-width: 1023px) {
+  .fantasy-builder-grid {
+    grid-template-columns: 1fr;
+  }
+  .fantasy-builder-grid > .fantasy-squad-shell {
+    position: static;
+  }
+  .fantasy-market-panel {
+    max-height: none;
+    overflow: visible;
+  }
+}
+
+@media (max-width: 767px) {
+  .fantasy-mobile-tabs {
+    position: sticky;
+    z-index: 12;
+    top: 64px;
+    display: flex !important;
+    border: 1px solid rgba(7, 25, 45, 0.12);
+    border-radius: 12px;
+    background: var(--instascore-surface, #fff);
+    box-shadow: 0 8px 24px rgba(7, 25, 45, 0.08);
+  }
+  .fantasy-mobile-actionbar {
+    position: fixed;
+    z-index: 50;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    display: flex !important;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+    border-top: 1px solid rgba(7, 25, 45, 0.12);
+    background: var(--instascore-surface, #fff);
+    box-shadow: 0 -8px 24px rgba(7, 25, 45, 0.12);
+  }
+  .fantasy-market-filters {
+    top: 112px;
+  }
+  .fantasy-squad-accordion {
+    display: none;
+  }
   .fantasy-pitch {
-    min-height: 520px;
+    min-height: 460px;
     border-radius: 12px;
   }
   .fantasy-pitch-player {
@@ -690,5 +787,11 @@ body.instascore-standalone .instascore-app-bar .MuiIconButton-root {
   .fantasy-squad-accordion {
     margin-inline: -16px !important;
     margin-bottom: -16px !important;
+  }
+  .fantasy-official-league {
+    padding: 16px !important;
+  }
+  #instascore-root {
+    padding-bottom: calc(76px + env(safe-area-inset-bottom));
   }
 }
