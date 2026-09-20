@@ -36,6 +36,7 @@ final class OperationsRepository {
 			'instascore_match_events'           => array( 'created_at', 'revision' ),
 			'instascore_audit_logs'             => array( 'created_at' ),
 			'instascore_operations_actions'     => array( 'created_at' ),
+			'instascore_operations_alerts'      => array( 'created_at', 'updated_at' ),
 		);
 		if ( ! isset( $allowed[ $table ] ) || ! in_array( $order_column, $allowed[ $table ], true ) ) {
 			return array();
@@ -49,6 +50,25 @@ final class OperationsRepository {
 		$limit = max( 1, min( 50, $limit ) );
 		$rows  = $this->database->get_results( "SELECT * FROM {$table_name} ORDER BY {$order_column} DESC LIMIT {$limit}", ARRAY_A );
 		return is_array( $rows ) ? $rows : array();
+	}
+
+	/** @param array<string,mixed> $payload */
+	public function open_alert( string $source, string $severity, string $message, array $payload = array() ): array {
+		$table = $this->database->prefix . 'instascore_operations_alerts';
+		$existing = $this->database->get_row( $this->database->prepare( "SELECT * FROM {$table} WHERE source = %s AND status = 'open' ORDER BY created_at DESC LIMIT 1", sanitize_key( $source ) ), ARRAY_A );
+		$now = gmdate( 'Y-m-d H:i:s' );
+		if ( is_array( $existing ) ) {
+			$this->database->update( $table, array( 'severity' => sanitize_key( $severity ), 'message' => sanitize_text_field( $message ), 'payload_json' => wp_json_encode( $payload ) ?: '{}', 'updated_at' => $now ), array( 'uuid' => $existing['uuid'] ) );
+			return array_merge( $existing, array( 'severity' => $severity, 'message' => $message, 'payload_json' => wp_json_encode( $payload ) ?: '{}', 'updated_at' => $now ) );
+		}
+		$row = array( 'uuid' => wp_generate_uuid4(), 'severity' => sanitize_key( $severity ), 'source' => sanitize_key( $source ), 'message' => sanitize_text_field( $message ), 'payload_json' => wp_json_encode( $payload ) ?: '{}', 'status' => 'open', 'created_by' => null, 'created_at' => $now, 'updated_at' => $now );
+		$this->database->insert( $table, $row );
+		return $row;
+	}
+
+	public function resolve_alert( string $source ): int {
+		$table = $this->database->prefix . 'instascore_operations_alerts';
+		return (int) $this->database->query( $this->database->prepare( "UPDATE {$table} SET status = 'resolved', updated_at = %s WHERE source = %s AND status = 'open'", gmdate( 'Y-m-d H:i:s' ), sanitize_key( $source ) ) );
 	}
 
 	public function feature_flags(): array {

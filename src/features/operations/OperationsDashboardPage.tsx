@@ -216,7 +216,7 @@ export function OperationsDashboardPage() {
               <Typography variant="h6">System health report</Typography>
               <Stack direction="row" spacing={1} flexWrap="wrap">
                 {Object.entries(healthReport)
-                  .filter(([key]) => key !== 'providerPolling')
+                  .filter(([key]) => !['providerPolling', 'providerWatchdog'].includes(key))
                   .map(([key, value]) => (
                     <Chip key={key} label={`${key}: ${String(value)}`} />
                   ))}
@@ -251,6 +251,16 @@ export function OperationsDashboardPage() {
                     </Grid>
                   ))}
                 </Grid>
+              ) : null}
+              {healthReport.providerWatchdog &&
+              typeof healthReport.providerWatchdog === 'object' ? (
+                <Alert severity="info">
+                  Provider watchdog last checked:{' '}
+                  {typeof (healthReport.providerWatchdog as Record<string, unknown>).checkedAt ===
+                  'string'
+                    ? String((healthReport.providerWatchdog as Record<string, unknown>).checkedAt)
+                    : 'waiting for its first run'}
+                </Alert>
               ) : null}
             </Stack>
           </CardContent>

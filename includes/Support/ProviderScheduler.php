@@ -34,6 +34,21 @@ final class ProviderScheduler {
 		self::ensure_live_event( 'nfl', self::NFL_HOOK, 'instascore_nfl_provider_live' );
 	}
 
+	/** Repair both recurring fixture and live events without running provider calls. */
+	public static function reconcile_events(): void {
+		foreach ( array( self::HOOK, self::BASKETBALL_HOOK, self::NFL_HOOK ) as $hook ) self::ensure_upcoming_event( $hook );
+		self::reconcile_live_events();
+	}
+
+	/** Queue a near-immediate recovery poll without replacing recurring events. */
+	public static function queue_recovery( string $sport, string $cadence ): bool {
+		$hook = match ( $sport ) { 'basketball' => self::BASKETBALL_HOOK, 'nfl' => self::NFL_HOOK, default => self::HOOK };
+		$cadence = 'live' === $cadence ? 'live' : 'upcoming';
+		$args = array( $cadence, 1 );
+		if ( false !== wp_next_scheduled( $hook, $args ) ) return false;
+		return (bool) wp_schedule_single_event( time() + 10, $hook, $args );
+	}
+
 	private static function ensure_upcoming_event( string $hook ): void {
 		wp_clear_scheduled_hook( $hook, array( 'future' ) );
 		$event = wp_get_scheduled_event( $hook, array( 'upcoming' ) );

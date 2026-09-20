@@ -45,6 +45,7 @@ use InstaScore\Platform\Support\NewsProvisioner;
 use InstaScore\Platform\Support\NotificationScheduler;
 use InstaScore\Platform\Support\Pwa;
 use InstaScore\Platform\Support\ProviderScheduler;
+use InstaScore\Platform\Support\ProviderWatchdog;
 use InstaScore\Platform\Support\RssProvisioner;
 use InstaScore\Platform\Support\RssScheduler;
 use InstaScore\Platform\Support\Shortcode;
@@ -84,6 +85,7 @@ final class Bootstrap {
 		add_action( 'init', array( RssScheduler::class, 'register' ) );
 		add_action( 'init', array( RssProvisioner::class, 'maybe_seed' ), 22 );
 		add_action( 'init', array( NotificationScheduler::class, 'register' ) );
+		add_action( 'init', array( ProviderWatchdog::class, 'register' ) );
 		add_action( 'init', array( YouTubeStreamScheduler::class, 'register' ) );
 		add_action( 'admin_menu', array( AdminSettings::class, 'register_menu' ) );
 		add_action( 'admin_post_instascore_save_settings', array( AdminSettings::class, 'save_settings' ) );

@@ -38,6 +38,7 @@ final class OperationsService {
 				'eventConflicts'        => $this->redact_rows( $this->repository->recent_rows( 'instascore_match_events' ) ),
 				'audit'                 => $this->redact_rows( $this->repository->recent_rows( 'instascore_audit_logs' ) ),
 				'operationsActions'     => $this->redact_rows( $this->repository->recent_rows( 'instascore_operations_actions' ) ),
+				'operationsAlerts'      => $this->redact_rows( $this->repository->recent_rows( 'instascore_operations_alerts', 'updated_at' ) ),
 			),
 			'healthReport' => $this->health_report(),
 		);
@@ -123,6 +124,7 @@ final class OperationsService {
 			'timezone'      => wp_timezone_string(),
 			'generatedAt'   => gmdate( 'c' ),
 			'providerPolling' => $provider_polling,
+			'providerWatchdog' => get_option( 'instascore_provider_watchdog_last_run', array( 'checkedAt' => null, 'report' => array() ) ),
 			'secrets'       => 'redacted',
 		);
 	}
