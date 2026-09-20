@@ -26,12 +26,21 @@ final class StreamAnalyticsRepository {
 	public function sponsor( string $uuid ): ?array { $row = $this->database->get_row( $this->database->prepare( "SELECT * FROM {$this->prefix}stream_sponsors WHERE uuid=%s LIMIT 1", $uuid ), ARRAY_A ); return is_array( $row ) ? $row : null; }
 	public function increment_sponsor( string $uuid, string $metric ): void { if ( ! in_array( $metric, array( 'impressions', 'clicks' ), true ) ) { return; } $this->database->query( $this->database->prepare( "UPDATE {$this->prefix}stream_sponsors SET {$metric}={$metric}+1,updated_at=%s WHERE uuid=%s", gmdate( 'Y-m-d H:i:s' ), $uuid ) ); }
 	public function create_sponsor( array $values ): array { $values = array_merge( $values, array( 'uuid' => wp_generate_uuid4(), 'impressions' => 0, 'clicks' => 0, 'created_at' => gmdate( 'Y-m-d H:i:s' ), 'updated_at' => gmdate( 'Y-m-d H:i:s' ) ) ); $this->database->insert( $this->prefix . 'stream_sponsors', $values ); return $values; }
+	public function update_sponsor( string $uuid, array $values ): ?array {
+		$row = $this->sponsor( $uuid );
+		if ( null === $row ) { return null; }
+		$values['updated_at'] = gmdate( 'Y-m-d H:i:s' );
+		$this->database->update( $this->prefix . 'stream_sponsors', $values, array( 'id' => (int) $row['id'] ) );
+		return array_merge( $row, $values );
+	}
 	/** @return array<string,mixed> */
 	public function report(): array {
 		$summary = $this->database->get_row( "SELECT COUNT(*) sessions,COUNT(DISTINCT fixture_id) fixtures,COALESCE(SUM(watch_seconds),0) watch_seconds,COALESCE(AVG(watch_seconds),0) average_watch_seconds FROM {$this->prefix}stream_view_sessions", ARRAY_A ) ?: array();
 		$devices = $this->database->get_results( "SELECT device_category,COUNT(*) sessions,SUM(watch_seconds) watch_seconds FROM {$this->prefix}stream_view_sessions GROUP BY device_category ORDER BY sessions DESC", ARRAY_A );
 		$sponsors = $this->database->get_results( "SELECT * FROM {$this->prefix}stream_sponsors ORDER BY created_at DESC", ARRAY_A );
-		return array( 'summary' => $summary, 'devices' => is_array( $devices ) ? $devices : array(), 'sponsors' => is_array( $sponsors ) ? $sponsors : array() );
+		$fixtures = $this->database->get_results( "SELECT f.uuid fixture_uuid,CONCAT(ht.name,' vs ',at.name) fixture_name,COUNT(v.id) sessions,COALESCE(SUM(v.watch_seconds),0) watch_seconds,COALESCE(AVG(v.watch_seconds),0) average_watch_seconds FROM {$this->prefix}stream_view_sessions v JOIN {$this->prefix}fixtures f ON f.id=v.fixture_id JOIN {$this->prefix}teams ht ON ht.id=f.home_team_id JOIN {$this->prefix}teams at ON at.id=f.away_team_id GROUP BY f.id,f.uuid,ht.name,at.name ORDER BY sessions DESC LIMIT 100", ARRAY_A );
+		$campaigns = $this->database->get_results( "SELECT CASE WHEN campaign_name='' THEN sponsor_name ELSE campaign_name END campaign_name,SUM(impressions) impressions,SUM(clicks) clicks FROM {$this->prefix}stream_sponsors GROUP BY CASE WHEN campaign_name='' THEN sponsor_name ELSE campaign_name END ORDER BY impressions DESC", ARRAY_A );
+		return array( 'summary' => $summary, 'devices' => is_array( $devices ) ? $devices : array(), 'sponsors' => is_array( $sponsors ) ? $sponsors : array(), 'fixtures' => is_array( $fixtures ) ? $fixtures : array(), 'campaigns' => is_array( $campaigns ) ? $campaigns : array() );
 	}
 	public function entity_id( string $table, string $uuid ): ?int { $value = $this->database->get_var( $this->database->prepare( "SELECT id FROM {$this->prefix}{$table} WHERE uuid=%s LIMIT 1", $uuid ) ); return null === $value ? null : (int) $value; }
 }

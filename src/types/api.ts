@@ -667,6 +667,17 @@ export interface FixtureStream {
   thumbnailUrl?: string;
 }
 
+export interface FixtureReplay extends FixtureStream {
+  fixture: {
+    uuid: string;
+    kickoffAt: string;
+    competitionName: string;
+    sport: { name: string; slug: string };
+    homeTeam: { name: string; logoUrl: string | null };
+    awayTeam: { name: string; logoUrl: string | null };
+  };
+}
+
 export interface FixtureStreamInput {
   youtubeUrl: string;
   title: string;
@@ -732,6 +743,10 @@ export interface YouTubeFixtureSuggestion {
 export interface YouTubeControlRoom {
   health: YouTubeStreamHealth;
   broadcasts: YouTubeBroadcast[];
+  readiness: {
+    ready: boolean;
+    checks: Array<{ key: string; label: string; ready: boolean; guidance: string }>;
+  };
   reviewQueue: Array<{
     broadcast: YouTubeBroadcast;
     suggestions: YouTubeFixtureSuggestion[];
@@ -763,6 +778,19 @@ export interface StreamAnalyticsReport {
   };
   devices: Array<{ device: string; sessions: number; watchSeconds: number }>;
   sponsors: StreamSponsor[];
+  fixtures: Array<{
+    fixtureUuid: string;
+    fixtureName: string;
+    sessions: number;
+    watchSeconds: number;
+    averageWatchSeconds: number;
+  }>;
+  campaigns: Array<{
+    campaignName: string;
+    impressions: number;
+    clicks: number;
+    clickThroughRate: number;
+  }>;
 }
 
 export interface ChatReaction {

@@ -12,6 +12,7 @@ import type {
   CompetitionPage,
   CsvImportPreview,
   Fixture,
+  FixtureReplay,
   FixtureCsvImportResult,
   FixtureMutationResult,
   FixtureStream,
@@ -187,6 +188,7 @@ export interface ApiClient {
     input: { status: string; reason?: string },
   ) => Promise<FixtureMutationResult>;
   getFixtureStream: (uuid: string) => Promise<FixtureStream>;
+  getReplays: (limit?: number) => Promise<FixtureReplay[]>;
   getAdminFixtureStream: (uuid: string) => Promise<FixtureStream | null>;
   saveFixtureStream: (uuid: string, input: FixtureStreamInput) => Promise<FixtureStream>;
   disableFixtureStream: (uuid: string) => Promise<FixtureStream | null>;
@@ -223,6 +225,7 @@ export interface ApiClient {
   ) => Promise<{ recorded: boolean }>;
   getStreamAnalytics: () => Promise<StreamAnalyticsReport>;
   createStreamSponsor: (input: Record<string, unknown>) => Promise<StreamSponsor>;
+  updateStreamSponsor: (uuid: string, input: Record<string, unknown>) => Promise<StreamSponsor>;
   getMatchChat: (fixtureUuid: string) => Promise<MatchChatRoom>;
   postMatchChat: (
     fixtureUuid: string,
@@ -650,6 +653,7 @@ export function createApiClient(settings: BootstrapSettings): ApiClient {
         body: JSON.stringify(input),
       }),
     getFixtureStream: (uuid) => request<FixtureStream>(`/fixtures/${uuid}/broadcast`),
+    getReplays: (limit = 24) => request<FixtureReplay[]>(`/replays?limit=${limit}`),
     getAdminFixtureStream: (uuid) =>
       request<FixtureStream | null>(`/admin/fixtures/${uuid}/broadcast`),
     saveFixtureStream: (uuid, input) =>
@@ -705,6 +709,11 @@ export function createApiClient(settings: BootstrapSettings): ApiClient {
     createStreamSponsor: (input) =>
       request<StreamSponsor>('/admin/streaming/analytics', {
         method: 'POST',
+        body: JSON.stringify(input),
+      }),
+    updateStreamSponsor: (uuid, input) =>
+      request<StreamSponsor>(`/admin/streaming/sponsors/${uuid}`, {
+        method: 'PATCH',
         body: JSON.stringify(input),
       }),
     getMatchChat: (fixtureUuid) => request<MatchChatRoom>(`/fixtures/${fixtureUuid}/chat`),

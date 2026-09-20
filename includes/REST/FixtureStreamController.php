@@ -15,6 +15,9 @@ use WP_REST_Response;
 
 final class FixtureStreamController {
 	public function register(): void {
+		register_rest_route( 'instascore/v1', '/replays', array(
+			'methods' => 'GET', 'callback' => fn( WP_REST_Request $request ): WP_REST_Response => Envelope::success( FixtureStreamService::create()->replays( (int) ( $request->get_param( 'limit' ) ?: 24 ) ) ), 'permission_callback' => '__return_true',
+		) );
 		register_rest_route( 'instascore/v1', '/fixtures/(?P<uuid>[0-9a-f-]{36})/broadcast', array(
 			'methods' => 'GET', 'callback' => array( $this, 'show' ), 'permission_callback' => '__return_true',
 		) );

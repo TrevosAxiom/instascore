@@ -84,4 +84,21 @@ final class FixtureStreamTest extends TestCase {
 		$this->assertSame( 100, $suggestions[0]['score'] );
 		$this->assertContains( 'Both team names match', $suggestions[0]['reasons'] );
 	}
+
+	public function test_replay_library_only_queries_public_processed_embeds(): void {
+		$database = new class() extends wpdb {
+			public string $last_query = '';
+			public function get_results( string $sql, string $format = ARRAY_A ): array {
+				$this->last_query = $sql;
+				return array();
+			}
+		};
+		$repository = new FixtureStreamRepository( $database );
+		$repository->public_replays( 500 );
+
+		$this->assertStringContainsString( 'replay_available = 1', $database->last_query );
+		$this->assertStringContainsString( 'embed_enabled = 1', $database->last_query );
+		$this->assertStringContainsString( "visibility <> 'private'", $database->last_query );
+		$this->assertStringContainsString( 'LIMIT 100', $database->last_query );
+	}
 }

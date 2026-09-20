@@ -114,6 +114,11 @@ const FixtureListPage = lazy(() =>
     default: module.FixtureListPage,
   })),
 );
+const ReplayLibraryPage = lazy(() =>
+  import('../features/fixtures/ReplayLibraryPage').then((module) => ({
+    default: module.ReplayLibraryPage,
+  })),
+);
 const ResultsPage = lazy(() =>
   import('../features/fixtures/ResultsPage').then((module) => ({ default: module.ResultsPage })),
 );
@@ -255,6 +260,14 @@ export function AppRoutes(props: { loginUrl: string }) {
           element={
             <RouteSuspense>
               <FixtureDetailPage />
+            </RouteSuspense>
+          }
+        />
+        <Route
+          path="replays"
+          element={
+            <RouteSuspense>
+              <ReplayLibraryPage />
             </RouteSuspense>
           }
         />

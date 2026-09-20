@@ -51,6 +51,11 @@ export function StreamAnalyticsAdminPage() {
       void client.invalidateQueries({ queryKey: ['stream-analytics'] });
     },
   });
+  const updateSponsor = useMutation({
+    mutationFn: ({ uuid, status }: { uuid: string; status: 'active' | 'paused' | 'archived' }) =>
+      api.updateStreamSponsor(uuid, { status }),
+    onSuccess: () => void client.invalidateQueries({ queryKey: ['stream-analytics'] }),
+  });
   const summary = report.data?.summary;
 
   return (
@@ -85,6 +90,68 @@ export function StreamAnalyticsAdminPage() {
               </Grid>
             ))}
           </Grid>
+
+          <Paper variant="outlined" sx={{ p: 2 }}>
+            <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" gap={1}>
+              <Box>
+                <Typography variant="h5" fontWeight={950}>
+                  Fixture viewing performance
+                </Typography>
+                <Typography color="text.secondary">
+                  Privacy-safe sessions and watch time by broadcast.
+                </Typography>
+              </Box>
+              <Button variant="outlined" onClick={() => exportReport(report.data)}>
+                Export CSV
+              </Button>
+            </Stack>
+            <Stack spacing={1} sx={{ mt: 1.5 }}>
+              {report.data.fixtures.map((item) => (
+                <Stack
+                  key={item.fixtureUuid}
+                  direction={{ xs: 'column', sm: 'row' }}
+                  justifyContent="space-between"
+                  gap={1}
+                  sx={{ borderBottom: 1, borderColor: 'divider', py: 1 }}
+                >
+                  <Typography fontWeight={900}>{item.fixtureName}</Typography>
+                  <Typography color="text.secondary">
+                    {item.sessions} sessions · {duration(item.watchSeconds)} watched ·{' '}
+                    {duration(item.averageWatchSeconds)} avg
+                  </Typography>
+                </Stack>
+              ))}
+              {!report.data.fixtures.length ? (
+                <Typography color="text.secondary">
+                  Fixture analytics appear after the first viewer session.
+                </Typography>
+              ) : null}
+            </Stack>
+          </Paper>
+
+          <Paper variant="outlined" sx={{ p: 2 }}>
+            <Typography variant="h5" fontWeight={950}>
+              Campaign outcomes
+            </Typography>
+            <Grid container spacing={1.25} sx={{ mt: 0.5 }}>
+              {report.data.campaigns.map((item) => (
+                <Grid key={item.campaignName} size={{ xs: 12, md: 4 }}>
+                  <Box sx={{ borderLeft: 3, borderColor: 'secondary.main', pl: 1.5 }}>
+                    <Typography fontWeight={900}>{item.campaignName}</Typography>
+                    <Typography color="text.secondary">
+                      {item.impressions} impressions · {item.clicks} clicks ·{' '}
+                      {item.clickThroughRate}% CTR
+                    </Typography>
+                  </Box>
+                </Grid>
+              ))}
+              {!report.data.campaigns.length ? (
+                <Grid size={12}>
+                  <Typography color="text.secondary">No campaign measurements yet.</Typography>
+                </Grid>
+              ) : null}
+            </Grid>
+          </Paper>
 
           <Paper variant="outlined" sx={{ p: 2 }}>
             <Typography variant="h5" fontWeight={950}>
@@ -256,7 +323,7 @@ export function StreamAnalyticsAdminPage() {
                   key={item.uuid}
                   sx={{
                     display: 'grid',
-                    gridTemplateColumns: { xs: '1fr auto', md: '1.5fr 1fr auto auto' },
+                    gridTemplateColumns: { xs: '1fr auto', md: '1.5fr 1fr auto auto auto' },
                     gap: 1,
                     alignItems: 'center',
                     borderBottom: 1,
@@ -273,6 +340,28 @@ export function StreamAnalyticsAdminPage() {
                   <Typography variant="body2">{item.placement.replaceAll('_', ' ')}</Typography>
                   <Typography fontWeight={800}>{item.impressions} views</Typography>
                   <Typography fontWeight={800}>{item.clicks} clicks</Typography>
+                  <Stack direction="row" gap={0.5}>
+                    <Button
+                      size="small"
+                      disabled={updateSponsor.isPending}
+                      onClick={() =>
+                        updateSponsor.mutate({
+                          uuid: item.uuid,
+                          status: item.status === 'paused' ? 'active' : 'paused',
+                        })
+                      }
+                    >
+                      {item.status === 'paused' ? 'Resume' : 'Pause'}
+                    </Button>
+                    <Button
+                      size="small"
+                      color="error"
+                      disabled={item.status === 'archived' || updateSponsor.isPending}
+                      onClick={() => updateSponsor.mutate({ uuid: item.uuid, status: 'archived' })}
+                    >
+                      Archive
+                    </Button>
+                  </Stack>
                 </Box>
               ))}
               {!report.data.sponsors.length ? (
@@ -290,4 +379,33 @@ function duration(seconds: number) {
   const value = Math.max(0, seconds);
   if (value >= 3600) return `${Math.floor(value / 3600)}h ${Math.floor((value % 3600) / 60)}m`;
   return `${Math.floor(value / 60)}m ${value % 60}s`;
+}
+
+function exportReport(report: import('../../types/api').StreamAnalyticsReport) {
+  const rows = [
+    ['Fixture', 'Sessions', 'Watch seconds', 'Average watch seconds'],
+    ...report.fixtures.map((item) => [
+      item.fixtureName,
+      item.sessions,
+      item.watchSeconds,
+      item.averageWatchSeconds,
+    ]),
+    [],
+    ['Campaign', 'Impressions', 'Clicks', 'CTR percent'],
+    ...report.campaigns.map((item) => [
+      item.campaignName,
+      item.impressions,
+      item.clicks,
+      item.clickThroughRate,
+    ]),
+  ];
+  const csv = rows
+    .map((row) => row.map((value) => `"${String(value ?? '').replaceAll('"', '""')}"`).join(','))
+    .join('\n');
+  const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `instascore-stream-report-${new Date().toISOString().slice(0, 10)}.csv`;
+  link.click();
+  URL.revokeObjectURL(url);
 }

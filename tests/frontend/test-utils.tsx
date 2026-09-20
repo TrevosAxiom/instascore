@@ -81,6 +81,7 @@ export const testApi: ApiClient = {
   updateFixture: () => Promise.reject(new Error('Not configured')),
   updateFixtureStatus: () => Promise.reject(new Error('Not configured')),
   getFixtureStream: () => Promise.reject(new Error('No broadcast configured')),
+  getReplays: () => Promise.resolve([]),
   getAdminFixtureStream: () => Promise.resolve(null),
   saveFixtureStream: (_uuid, input) =>
     Promise.resolve({
@@ -141,6 +142,7 @@ export const testApi: ApiClient = {
   getYouTubeControlRoom: () =>
     Promise.resolve({
       health: { connected: false, total: 0, live: 0, failed: 0, stale: 0, items: [] },
+      readiness: { ready: false, checks: [] },
       broadcasts: [],
       reviewQueue: [],
       refreshedAt: '2026-08-01T12:00:00Z',
@@ -155,8 +157,11 @@ export const testApi: ApiClient = {
       summary: { sessions: 0, fixtures: 0, watchSeconds: 0, averageWatchSeconds: 0 },
       devices: [],
       sponsors: [],
+      fixtures: [],
+      campaigns: [],
     }),
   createStreamSponsor: () => Promise.reject(new Error('Not configured')),
+  updateStreamSponsor: () => Promise.reject(new Error('Not configured')),
   getMatchChat: () => Promise.resolve({ messages: [], banned: false }),
   postMatchChat: () => Promise.reject(new Error('Not configured')),
   reactToChatMessage: () => Promise.resolve({ updated: true }),

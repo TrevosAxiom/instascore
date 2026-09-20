@@ -123,7 +123,17 @@ final class YouTubeLiveService {
 			$suggestions = $this->fixture_suggestions( $broadcast, $fixtures );
 			$queue[] = array( 'broadcast' => $broadcast, 'suggestions' => $suggestions, 'recommended' => $suggestions[0] ?? null );
 		}
-		return array( 'health' => $this->health(), 'reviewQueue' => $queue, 'broadcasts' => $broadcasts, 'refreshedAt' => gmdate( 'c' ) );
+		$health = $this->health();
+		$settings = $this->settings();
+		$last_sync = empty( $settings['lastSyncAt'] ) ? null : strtotime( (string) $settings['lastSyncAt'] . ' UTC' );
+		$checks = array(
+			array( 'key' => 'channel', 'label' => 'YouTube channel connected', 'ready' => (bool) $settings['connected'], 'guidance' => 'Connect the official league YouTube channel in Settings.' ),
+			array( 'key' => 'scheduler', 'label' => 'Automatic polling scheduled', 'ready' => false !== wp_get_scheduled_event( 'instascore_youtube_stream_sync' ), 'guidance' => 'Restore the WordPress cron event or server cron runner.' ),
+			array( 'key' => 'sync', 'label' => 'Channel synchronized recently', 'ready' => null !== $last_sync && time() - $last_sync <= 5 * MINUTE_IN_SECONDS, 'guidance' => 'Run Sync channel and verify API access before kickoff.' ),
+			array( 'key' => 'health', 'label' => 'Attached streams healthy', 'ready' => 0 === (int) $health['failed'] && 0 === (int) $health['stale'], 'guidance' => 'Check Veo connectivity and YouTube Live Control Room.' ),
+			array( 'key' => 'assignment', 'label' => 'No broadcasts awaiting review', 'ready' => 0 === count( $queue ), 'guidance' => 'Approve a fixture suggestion or correct the broadcast title and schedule.' ),
+		);
+		return array( 'health' => $health, 'readiness' => array( 'ready' => ! in_array( false, array_column( $checks, 'ready' ), true ), 'checks' => $checks ), 'reviewQueue' => $queue, 'broadcasts' => $broadcasts, 'refreshedAt' => gmdate( 'c' ) );
 	}
 
 	public function attach( string $fixture_uuid, string $video_id, int $user_id ): array {

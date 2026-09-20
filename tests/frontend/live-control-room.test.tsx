@@ -59,6 +59,12 @@ describe('YouTube live control room', () => {
                 },
               ],
             },
+            readiness: {
+              ready: true,
+              checks: [
+                { key: 'channel', label: 'YouTube channel connected', ready: true, guidance: '' },
+              ],
+            },
             broadcasts: [],
             reviewQueue: [],
             refreshedAt: '2026-08-01T15:05:00Z',

@@ -122,6 +122,51 @@ export function LiveControlRoom() {
                 <Alert severity="success">All attached streams are reporting normally.</Alert>
               )}
 
+              <Paper variant="outlined" sx={{ p: 1.5 }}>
+                <Stack
+                  direction={{ xs: 'column', sm: 'row' }}
+                  justifyContent="space-between"
+                  gap={1}
+                >
+                  <Box>
+                    <Typography variant="h6" fontWeight={950}>
+                      Match-day readiness
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Connection, scheduler, synchronization, stream health and fixture assignment
+                      checks.
+                    </Typography>
+                  </Box>
+                  <Chip
+                    color={room.data.readiness.ready ? 'success' : 'warning'}
+                    label={room.data.readiness.ready ? 'Ready to stream' : 'Action required'}
+                  />
+                </Stack>
+                <Grid container spacing={1} sx={{ mt: 0.5 }}>
+                  {room.data.readiness.checks.map((check) => (
+                    <Grid key={check.key} size={{ xs: 12, md: 6 }}>
+                      <Box
+                        sx={{
+                          borderLeft: 3,
+                          borderColor: check.ready ? 'success.main' : 'warning.main',
+                          pl: 1.25,
+                          py: 0.5,
+                        }}
+                      >
+                        <Typography fontWeight={900}>
+                          {check.ready ? '✓' : '!'} {check.label}
+                        </Typography>
+                        {!check.ready ? (
+                          <Typography variant="caption" color="text.secondary">
+                            {check.guidance}
+                          </Typography>
+                        ) : null}
+                      </Box>
+                    </Grid>
+                  ))}
+                </Grid>
+              </Paper>
+
               <Box>
                 <Typography variant="h6" fontWeight={950} gutterBottom>
                   Attached streams

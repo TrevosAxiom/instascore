@@ -18,6 +18,7 @@ const publicLinks = [
   ['Notifications', '/notifications', 'Choose the updates you receive'],
   ['Search', '/search', 'Find anything on InstaScore'],
   ['Fantasy', '/fantasy', 'Manage your fantasy squad'],
+  ['Replays', '/replays', 'Watch completed InstaScore match broadcasts'],
   ['Install app', '/install', 'Add InstaScore to any phone, tablet or computer'],
 ] as const;
 

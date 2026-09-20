@@ -56,6 +56,24 @@ final class FixtureStreamService {
 		return null === $row ? null : $this->present( $row );
 	}
 
+	/** @return array<int,array<string,mixed>> */
+	public function replays( int $limit = 24 ): array {
+		return array_map(
+			function ( array $row ): array {
+				$stream = $this->present( $row );
+				$stream['fixture'] = array(
+					'uuid' => $row['fixture_uuid'], 'kickoffAt' => $row['kickoff_at'],
+					'competitionName' => $row['competition_name'],
+					'sport' => array( 'name' => $row['sport_name'], 'slug' => $row['sport_slug'] ),
+					'homeTeam' => array( 'name' => $row['home_team_name'], 'logoUrl' => $row['home_team_logo'] ),
+					'awayTeam' => array( 'name' => $row['away_team_name'], 'logoUrl' => $row['away_team_logo'] ),
+				);
+				return $stream;
+			},
+			$this->repository->public_replays( $limit )
+		);
+	}
+
 	public function youtube_video_id( string $value ): ?string {
 		$value = trim( $value );
 		if ( preg_match( '/^[A-Za-z0-9_-]{11}$/', $value ) ) { return $value; }

@@ -30,6 +30,18 @@ describe('livestream analytics administration', () => {
                 endsAt: null,
               },
             ],
+            fixtures: [
+              {
+                fixtureUuid: '00000000-0000-4000-8000-000000000010',
+                fixtureName: 'Wolverines vs Titans',
+                sessions: 42,
+                watchSeconds: 7200,
+                averageWatchSeconds: 171,
+              },
+            ],
+            campaigns: [
+              { campaignName: 'Season 3', impressions: 100, clicks: 12, clickThroughRate: 12 },
+            ],
           }),
       },
     });
@@ -39,7 +51,7 @@ describe('livestream analytics administration', () => {
     ).toBeInTheDocument();
     expect(await screen.findByText(/100 views/i)).toBeInTheDocument();
     expect(screen.getByText('42')).toBeInTheDocument();
-    expect(screen.getByText(/12 clicks/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/12 clicks/i).length).toBeGreaterThanOrEqual(1);
     expect(screen.queryByText(/IP address/i)).not.toBeInTheDocument();
   });
 });

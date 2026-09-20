@@ -120,4 +120,26 @@ final class FixtureStreamRepository {
 		$values = $this->database->get_col( "SELECT external_broadcast_id FROM {$this->table} WHERE provider = 'youtube' AND status <> 'cancelled'" );
 		return array_values( array_filter( array_map( 'strval', is_array( $values ) ? $values : array() ) ) );
 	}
+
+	/** @return array<int,array<string,mixed>> */
+	public function public_replays( int $limit = 24 ): array {
+		$limit = max( 1, min( 100, $limit ) );
+		$rows  = $this->database->get_results(
+			$this->database->prepare(
+				"SELECT fs.*,f.uuid fixture_uuid,f.kickoff_at,c.name competition_name,s.name sport_name,s.slug sport_slug,
+				ht.name home_team_name,ht.logo_url home_team_logo,at.name away_team_name,at.logo_url away_team_logo
+				FROM {$this->table} fs
+				JOIN {$this->database->prefix}instascore_fixtures f ON f.id = fs.fixture_id
+				JOIN {$this->database->prefix}instascore_competitions c ON c.id = f.competition_id
+				JOIN {$this->database->prefix}instascore_sports s ON s.id = c.sport_id
+				JOIN {$this->database->prefix}instascore_teams ht ON ht.id = f.home_team_id
+				JOIN {$this->database->prefix}instascore_teams at ON at.id = f.away_team_id
+				WHERE fs.provider = 'youtube' AND fs.replay_available = 1 AND fs.embed_enabled = 1 AND fs.visibility <> 'private'
+				ORDER BY COALESCE(fs.actual_end,f.kickoff_at) DESC LIMIT %d",
+				$limit
+			),
+			ARRAY_A
+		);
+		return is_array( $rows ) ? $rows : array();
+	}
 }

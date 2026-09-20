@@ -44,12 +44,29 @@ final class StreamAnalyticsService {
 		) );
 		return $this->present_sponsor( $row );
 	}
+	public function update_sponsor( string $uuid, array $input ): array {
+		$row = $this->repository->sponsor( $uuid );
+		if ( null === $row ) { throw new ValidationException( array( 'sponsor' => 'not_found' ) ); }
+		$values = array();
+		if ( isset( $input['sponsorName'] ) ) { $values['sponsor_name'] = sanitize_text_field( (string) $input['sponsorName'] ); }
+		if ( isset( $input['campaignName'] ) ) { $values['campaign_name'] = sanitize_text_field( (string) $input['campaignName'] ); }
+		if ( isset( $input['logoUrl'] ) ) { $values['logo_url'] = esc_url_raw( (string) $input['logoUrl'] ); }
+		if ( isset( $input['destinationUrl'] ) ) { $values['destination_url'] = esc_url_raw( (string) $input['destinationUrl'] ); }
+		if ( isset( $input['placement'] ) && in_array( $input['placement'], array( 'pre_match', 'in_player', 'post_match' ), true ) ) { $values['placement'] = $input['placement']; }
+		if ( isset( $input['status'] ) && in_array( $input['status'], array( 'active', 'paused', 'archived' ), true ) ) { $values['status'] = $input['status']; }
+		if ( array_key_exists( 'startsAt', $input ) ) { $values['starts_at'] = $this->date( $input['startsAt'] ); }
+		if ( array_key_exists( 'endsAt', $input ) ) { $values['ends_at'] = $this->date( $input['endsAt'] ); }
+		$updated = $this->repository->update_sponsor( $uuid, $values );
+		return $this->present_sponsor( $updated ?? $row );
+	}
 	public function report(): array {
 		$data = $this->repository->report(); $summary = $data['summary'];
 		return array(
 			'summary' => array( 'sessions' => (int) ( $summary['sessions'] ?? 0 ), 'fixtures' => (int) ( $summary['fixtures'] ?? 0 ), 'watchSeconds' => (int) ( $summary['watch_seconds'] ?? 0 ), 'averageWatchSeconds' => (int) round( (float) ( $summary['average_watch_seconds'] ?? 0 ) ) ),
 			'devices' => array_map( static fn( array $row ): array => array( 'device' => $row['device_category'], 'sessions' => (int) $row['sessions'], 'watchSeconds' => (int) $row['watch_seconds'] ), $data['devices'] ),
 			'sponsors' => array_map( array( $this, 'present_sponsor' ), $data['sponsors'] ),
+			'fixtures' => array_map( static fn( array $row ): array => array( 'fixtureUuid' => $row['fixture_uuid'], 'fixtureName' => $row['fixture_name'], 'sessions' => (int) $row['sessions'], 'watchSeconds' => (int) $row['watch_seconds'], 'averageWatchSeconds' => (int) round( (float) $row['average_watch_seconds'] ) ), $data['fixtures'] ),
+			'campaigns' => array_map( static function ( array $row ): array { $impressions = (int) $row['impressions']; $clicks = (int) $row['clicks']; return array( 'campaignName' => $row['campaign_name'], 'impressions' => $impressions, 'clicks' => $clicks, 'clickThroughRate' => $impressions > 0 ? round( 100 * $clicks / $impressions, 2 ) : 0.0 ); }, $data['campaigns'] ),
 		);
 	}
 	private function present_sponsor( array $row ): array { return array( 'uuid' => $row['uuid'], 'sponsorName' => $row['sponsor_name'], 'campaignName' => $row['campaign_name'] ?? '', 'logoUrl' => $row['logo_url'] ?? '', 'destinationUrl' => $row['destination_url'] ?? '', 'placement' => $row['placement'], 'status' => $row['status'], 'impressions' => (int) ( $row['impressions'] ?? 0 ), 'clicks' => (int) ( $row['clicks'] ?? 0 ), 'startsAt' => $row['starts_at'] ?? null, 'endsAt' => $row['ends_at'] ?? null ); }
