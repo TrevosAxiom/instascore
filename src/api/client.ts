@@ -55,6 +55,7 @@ import type {
   ProviderCompetition,
   ProviderStandingRow,
   ProviderUpcomingMatch,
+  ProviderMatchDetails,
   ProviderSyncResult,
   Paginated,
   PersonalFeed,
@@ -279,7 +280,7 @@ export interface ApiClient {
   getProviderMatch: (
     sport: 'basketball' | 'nfl',
     providerId: string,
-  ) => Promise<FootballMatchDetails>;
+  ) => Promise<ProviderMatchDetails>;
   getNews: (category?: string) => Promise<NewsItem[]>;
   getNewsArchive: (category?: string, page?: number) => Promise<NewsPage>;
   getNewsItem: (postId: string) => Promise<NewsItem>;
@@ -769,7 +770,7 @@ export function createApiClient(settings: BootstrapSettings): ApiClient {
     getFootballMatch: (providerId) =>
       request<FootballMatchDetails>(`/football/matches/${encodeURIComponent(providerId)}`),
     getProviderMatch: (sport, providerId) =>
-      request<FootballMatchDetails>(
+      request<ProviderMatchDetails>(
         `/providers/${sport}/matches/${encodeURIComponent(providerId)}`,
       ),
     getNews: (category) =>

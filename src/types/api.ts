@@ -242,8 +242,8 @@ export interface FootballProviderLiveGame {
 
 export type ProviderUpcomingMatch = FootballProviderLiveGame | BasketballLiveGame;
 
-export interface FootballMatchDetails {
-  match: FootballProviderLiveGame;
+export interface ProviderMatchDetails {
+  match: ProviderUpcomingMatch;
   events: Array<{
     elapsed: number;
     extra: number;
@@ -286,6 +286,8 @@ export interface FootballMatchDetails {
   }>;
   updatedAt: string;
 }
+
+export type FootballMatchDetails = ProviderMatchDetails & { match: FootballProviderLiveGame };
 
 export interface NewsItem {
   id: number;
@@ -710,9 +712,18 @@ export interface MatchChatRoom {
 
 export type ScoreEventType =
   | 'touchdown'
+  | 'field_goal'
+  | 'extra_point'
   | 'one_point_conversion'
   | 'two_point_conversion'
   | 'safety'
+  | 'goal'
+  | 'free_throw'
+  | 'two_point_field_goal'
+  | 'three_point_field_goal'
+  | 'foul'
+  | 'yellow_card'
+  | 'red_card'
   | 'interception'
   | 'penalty'
   | 'timeout'
@@ -748,6 +759,7 @@ export interface LiveMatchState {
   fixture: {
     uuid: string;
     status: string;
+    sport?: { uuid: string; name: string; slug: string };
     homeTeam: { uuid: string; name: string };
     awayTeam: { uuid: string; name: string };
   };

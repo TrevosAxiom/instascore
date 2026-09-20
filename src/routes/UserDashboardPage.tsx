@@ -482,8 +482,8 @@ function primaryAction(persona: DashboardPersona) {
   if (persona === 'administrator') return { label: 'Open admin centre', path: '/admin' };
   if (persona === 'competition') return { label: 'Manage fixtures', path: '/admin/fixtures' };
   if (persona === 'team') return { label: 'Open team & roster', path: '/admin/teams' };
-  if (persona === 'scorekeeper') return { label: 'Open match operations', path: '/operations' };
-  if (persona === 'official') return { label: 'View today’s fixtures', path: '/fixtures' };
+  if (persona === 'scorekeeper') return { label: 'Open match operations', path: '/match-day' };
+  if (persona === 'official') return { label: 'View today’s fixtures', path: '/match-day' };
   return { label: 'Open live scores', path: '/scores' };
 }
 

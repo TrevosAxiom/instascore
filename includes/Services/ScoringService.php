@@ -167,7 +167,7 @@ final class ScoringService {
 		$repo  = new MatchClockRepository( $this->database, 'match_clock_states' );
 		$clock = $repo->ensure( (int) $fixture['id'] );
 		$this->validator->clock_action( sanitize_key( $action ), (string) $clock['status'] );
-		$next = $this->next_clock( $clock, $action, $input );
+		$next = $this->next_clock( $clock, $action, $input, (string) ( $fixture['sport_slug'] ?? 'flag-football' ) );
 		$repo->update( (string) $clock['uuid'], $next );
 		return $this->public_state( $fixture_uuid );
 	}
@@ -241,19 +241,24 @@ final class ScoringService {
 		return '' === $uuid ? null : ( new PlayerRepository( $this->database, 'players' ) )->id_for_uuid( $uuid );
 	}
 
-	private function next_clock( array $clock, string $action, array $input ): array {
+	private function next_clock( array $clock, string $action, array $input, string $sport ): array {
 		$period = max( 1, (int) ( $input['period'] ?? $clock['period'] ) );
 		$base   = array(
 			'updated_by' => get_current_user_id(),
 			'updated_at' => gmdate( 'Y-m-d H:i:s' ),
 			'revision'   => (int) $clock['revision'] + 1,
 		);
+		$label = match ( $sport ) {
+			'soccer', 'football' => 1 === $period ? '1H' : '2H',
+			'basketball', 'nfl', 'american-football' => 'Q' . $period,
+			default => $period . 'Q',
+		};
 		return match ( $action ) {
-			'start' => array_merge( $base, array( 'status' => 'running', 'period' => 1, 'period_label' => '1st', 'running' => 1, 'started_at' => gmdate( 'Y-m-d H:i:s' ) ) ),
+			'start' => array_merge( $base, array( 'status' => 'running', 'period' => 1, 'period_label' => match ( $sport ) { 'soccer', 'football' => '1H', 'basketball', 'nfl', 'american-football' => 'Q1', default => '1Q' }, 'running' => 1, 'started_at' => gmdate( 'Y-m-d H:i:s' ) ) ),
 			'pause' => array_merge( $base, array( 'status' => 'paused', 'running' => 0, 'paused_at' => gmdate( 'Y-m-d H:i:s' ), 'clock_seconds' => max( 0, (int) ( $input['clockSeconds'] ?? $clock['clock_seconds'] ) ) ) ),
 			'resume' => array_merge( $base, array( 'status' => 'running', 'running' => 1, 'paused_at' => null ) ),
 			'period_end' => array_merge( $base, array( 'status' => 'period_end', 'running' => 0, 'clock_seconds' => max( 0, (int) ( $input['clockSeconds'] ?? $clock['clock_seconds'] ) ) ) ),
-			'period_start' => array_merge( $base, array( 'status' => 'running', 'period' => $period, 'period_label' => $period . 'Q', 'running' => 1, 'clock_seconds' => 0 ) ),
+			'period_start' => array_merge( $base, array( 'status' => 'running', 'period' => $period, 'period_label' => $label, 'running' => 1, 'clock_seconds' => 0 ) ),
 			'complete' => array_merge( $base, array( 'status' => 'completed', 'running' => 0 ) ),
 			default => $base,
 		};
@@ -263,6 +268,7 @@ final class ScoringService {
 		return array(
 			'uuid'     => $fixture['uuid'],
 			'status'   => $fixture['status'],
+			'sport'    => array( 'uuid' => $fixture['sport_uuid'] ?? '', 'name' => $fixture['sport_name'] ?? 'Flag Football', 'slug' => $fixture['sport_slug'] ?? 'flag-football' ),
 			'homeTeam' => array( 'uuid' => $fixture['home_team_uuid'] ?? '', 'name' => $fixture['home_team_name'] ?? 'Home' ),
 			'awayTeam' => array( 'uuid' => $fixture['away_team_uuid'] ?? '', 'name' => $fixture['away_team_name'] ?? 'Away' ),
 		);

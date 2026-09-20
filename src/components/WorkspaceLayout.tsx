@@ -55,15 +55,15 @@ interface WorkspaceItem {
 const navigation: WorkspaceItem[] = [
   { label: 'Dashboard', path: '/dashboard', icon: 'dashboard', group: 'Workspace' },
   {
-    label: 'Match operations',
-    path: '/operations',
+    label: 'Match-day board',
+    path: '/match-day',
     icon: 'live',
     capability: 'accessOperations',
     group: 'Workspace',
   },
   {
     label: 'Today’s fixtures',
-    path: '/fixtures',
+    path: '/match-day',
     icon: 'fixture',
     role: 'instascore_match_official',
     group: 'Workspace',
@@ -74,6 +74,13 @@ const navigation: WorkspaceItem[] = [
     icon: 'dashboard',
     capability: 'accessAdmin',
     group: 'Manage',
+  },
+  {
+    label: 'System operations',
+    path: '/operations',
+    icon: 'settings',
+    capability: 'accessAdmin',
+    group: 'System',
   },
   {
     label: 'Competitions',

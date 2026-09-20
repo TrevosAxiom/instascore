@@ -28,4 +28,20 @@ final class ScoreEventValidationTest extends TestCase {
 		$this->expectException( ValidationException::class );
 		( new ScoreEventValidator() )->clock_action( 'resume', 'not_started' );
 	}
+
+	public function test_maps_match_day_points_for_every_supported_sport(): void {
+		$validator = new ScoreEventValidator();
+		$events = array(
+			'goal'                   => 1,
+			'free_throw'             => 1,
+			'two_point_field_goal'   => 2,
+			'three_point_field_goal' => 3,
+			'field_goal'             => 3,
+			'extra_point'            => 1,
+		);
+		foreach ( $events as $type => $points ) {
+			$event = $validator->event( array( 'clientEventId' => 'client-' . $type, 'eventType' => $type, 'teamSide' => 'home' ) );
+			$this->assertSame( $points, $event['points'], $type );
+		}
+	}
 }

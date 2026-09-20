@@ -8,16 +8,22 @@
 namespace InstaScore\Platform\Domain;
 
 final class ScoreEventValidator {
-	public const EVENT_TYPES = array( 'touchdown', 'passing_touchdown', 'rushing_touchdown', 'receiving_touchdown', 'one_point_conversion', 'two_point_conversion', 'safety', 'interception', 'flag_pull', 'penalty', 'timeout', 'possession_change', 'player_of_the_match', 'period_start', 'period_end' );
+	public const EVENT_TYPES = array( 'touchdown', 'passing_touchdown', 'rushing_touchdown', 'receiving_touchdown', 'field_goal', 'extra_point', 'one_point_conversion', 'two_point_conversion', 'safety', 'goal', 'free_throw', 'two_point_field_goal', 'three_point_field_goal', 'foul', 'yellow_card', 'red_card', 'interception', 'flag_pull', 'penalty', 'timeout', 'possession_change', 'player_of_the_match', 'period_start', 'period_end' );
 
 	private const POINTS = array(
 		'touchdown'            => 6,
 		'passing_touchdown'    => 6,
 		'rushing_touchdown'    => 6,
 		'receiving_touchdown'  => 6,
+		'field_goal'           => 3,
+		'extra_point'          => 1,
 		'one_point_conversion' => 1,
 		'two_point_conversion' => 2,
 		'safety'               => 2,
+		'goal'                 => 1,
+		'free_throw'           => 1,
+		'two_point_field_goal' => 2,
+		'three_point_field_goal' => 3,
 	);
 
 	/**
@@ -35,7 +41,7 @@ final class ScoreEventValidator {
 			$errors['clientEventId'] = 'A client event ID is required for idempotency.';
 		}
 		$team_side = sanitize_key( (string) ( $input['teamSide'] ?? '' ) );
-		if ( in_array( $type, array( 'touchdown', 'passing_touchdown', 'rushing_touchdown', 'receiving_touchdown', 'one_point_conversion', 'two_point_conversion', 'safety', 'interception', 'flag_pull', 'penalty', 'timeout', 'possession_change', 'player_of_the_match' ), true ) && ! in_array( $team_side, array( 'home', 'away' ), true ) ) {
+		if ( ! in_array( $type, array( 'period_start', 'period_end' ), true ) && ! in_array( $team_side, array( 'home', 'away' ), true ) ) {
 			$errors['teamSide'] = 'Choose home or away for this event.';
 		}
 		if ( array() !== $errors ) {

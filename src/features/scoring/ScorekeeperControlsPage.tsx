@@ -18,16 +18,47 @@ import type { MatchEvent, ScoreEventType } from '../../types/api';
 import { LiveScoreboard } from './LiveScoreboard';
 import { MatchTimeline } from './MatchTimeline';
 
-const scoreButtons: { label: string; eventType: ScoreEventType; teamSide: 'home' | 'away' }[] = [
-  { label: 'Home TD', eventType: 'touchdown', teamSide: 'home' },
-  { label: 'Away TD', eventType: 'touchdown', teamSide: 'away' },
-  { label: 'Home +1', eventType: 'one_point_conversion', teamSide: 'home' },
-  { label: 'Away +1', eventType: 'one_point_conversion', teamSide: 'away' },
-  { label: 'Home +2', eventType: 'two_point_conversion', teamSide: 'home' },
-  { label: 'Away +2', eventType: 'two_point_conversion', teamSide: 'away' },
-  { label: 'Home safety', eventType: 'safety', teamSide: 'home' },
-  { label: 'Away safety', eventType: 'safety', teamSide: 'away' },
-];
+type ScoreAction = { label: string; eventType: ScoreEventType };
+
+const sportActions: Record<string, ScoreAction[]> = {
+  soccer: [
+    { label: 'Goal', eventType: 'goal' },
+    { label: 'Yellow card', eventType: 'yellow_card' },
+    { label: 'Red card', eventType: 'red_card' },
+  ],
+  football: [
+    { label: 'Goal', eventType: 'goal' },
+    { label: 'Yellow card', eventType: 'yellow_card' },
+    { label: 'Red card', eventType: 'red_card' },
+  ],
+  basketball: [
+    { label: '+1 free throw', eventType: 'free_throw' },
+    { label: '+2 field goal', eventType: 'two_point_field_goal' },
+    { label: '+3 field goal', eventType: 'three_point_field_goal' },
+    { label: 'Foul', eventType: 'foul' },
+  ],
+  nfl: [
+    { label: 'Touchdown', eventType: 'touchdown' },
+    { label: 'Field goal', eventType: 'field_goal' },
+    { label: 'Extra point', eventType: 'extra_point' },
+    { label: '2-point conversion', eventType: 'two_point_conversion' },
+    { label: 'Safety', eventType: 'safety' },
+  ],
+  'american-football': [
+    { label: 'Touchdown', eventType: 'touchdown' },
+    { label: 'Field goal', eventType: 'field_goal' },
+    { label: 'Extra point', eventType: 'extra_point' },
+    { label: 'Safety', eventType: 'safety' },
+  ],
+  'flag-football': [
+    { label: 'Touchdown', eventType: 'touchdown' },
+    { label: '+1 conversion', eventType: 'one_point_conversion' },
+    { label: '+2 conversion', eventType: 'two_point_conversion' },
+    { label: 'Safety', eventType: 'safety' },
+    { label: 'Interception', eventType: 'interception' },
+    { label: 'Penalty', eventType: 'penalty' },
+  ],
+};
 
 export function ScorekeeperControlsPage() {
   const { uuid = '' } = useParams();
@@ -67,6 +98,11 @@ export function ScorekeeperControlsPage() {
   });
   const completeMutation = useMutation({
     mutationFn: () => api.completeFixture(uuid),
+    onSuccess: invalidate,
+  });
+  const releaseMutation = useMutation({ mutationFn: () => api.releaseFixture(uuid) });
+  const confirmMutation = useMutation({
+    mutationFn: () => api.confirmResult(uuid),
     onSuccess: invalidate,
   });
   const clientSeed = useMemo(() => crypto.randomUUID(), []);
@@ -135,11 +171,15 @@ export function ScorekeeperControlsPage() {
     });
   }
 
+  const sportSlug = query.data?.fixture.sport?.slug ?? 'flag-football';
+  const actions = sportActions[sportSlug] ?? sportActions['flag-football'];
+  const sportName = query.data?.fixture.sport?.name ?? 'Flag Football';
+
   return (
     <PageScaffold
       eyebrow="Scorekeeper"
-      title="Live Flag-Football Controls"
-      description="Mobile-first scoring controls with idempotent event entry and revision conflict detection."
+      title={`Live ${sportName} Controls`}
+      description="Sport-aware match controls with offline event entry, audit history and revision conflict detection."
       status="Match operations"
     >
       {query.isLoading && <LoadingState label="Loading match controls" />}
@@ -184,6 +224,9 @@ export function ScorekeeperControlsPage() {
             <Button variant="outlined" onClick={() => claimMutation.mutate()}>
               Claim
             </Button>
+            <Button variant="outlined" color="warning" onClick={() => releaseMutation.mutate()}>
+              Release
+            </Button>
             {['start', 'pause', 'resume', 'period_end', 'period_start'].map((action) => (
               <Button key={action} variant="outlined" onClick={() => clockMutation.mutate(action)}>
                 {action.replace('_', ' ')}
@@ -192,6 +235,12 @@ export function ScorekeeperControlsPage() {
             <Button color="success" variant="contained" onClick={() => completeMutation.mutate()}>
               Complete match
             </Button>
+            {auth.state?.user?.capabilities.confirmResults &&
+            query.data.fixture.status === 'completed' ? (
+              <Button color="success" variant="outlined" onClick={() => confirmMutation.mutate()}>
+                Confirm result
+              </Button>
+            ) : null}
           </Stack>
           <Card variant="outlined">
             <CardContent>
@@ -199,17 +248,27 @@ export function ScorekeeperControlsPage() {
                 Event entry
               </Typography>
               <Grid container spacing={1}>
-                {scoreButtons.map((button) => (
-                  <Grid key={`${button.eventType}-${button.teamSide}`} size={{ xs: 6, sm: 3 }}>
-                    <Button
-                      fullWidth
-                      variant="contained"
-                      onClick={() => void addEvent(button.eventType, button.teamSide)}
-                    >
-                      {button.label}
-                    </Button>
-                  </Grid>
-                ))}
+                {(['home', 'away'] as const).flatMap((teamSide) =>
+                  actions.map((action) => (
+                    <Grid key={`${action.eventType}-${teamSide}`} size={{ xs: 6, sm: 3 }}>
+                      <Button
+                        fullWidth
+                        variant="contained"
+                        aria-label={
+                          action.eventType === 'touchdown'
+                            ? `${teamSide === 'home' ? 'Home' : 'Away'} TD`
+                            : undefined
+                        }
+                        onClick={() => void addEvent(action.eventType, teamSide)}
+                      >
+                        {teamSide === 'home'
+                          ? query.data.fixture.homeTeam.name
+                          : query.data.fixture.awayTeam.name}{' '}
+                        · {action.label}
+                      </Button>
+                    </Grid>
+                  )),
+                )}
               </Grid>
             </CardContent>
           </Card>

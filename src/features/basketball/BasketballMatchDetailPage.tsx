@@ -22,6 +22,7 @@ import { useApi } from '../../api/context';
 import { EmptyState, ErrorState, LoadingState } from '../../components/AsyncStates';
 import { EntityAvatar } from '../../components/EntityAvatar';
 import { PageScaffold } from '../../components/PageScaffold';
+import type { BasketballLiveGame } from '../../types/api';
 
 const sections = ['Overview', 'Box score', 'Play-by-play', 'Team stats'];
 
@@ -31,10 +32,12 @@ export function BasketballMatchDetailPage() {
   const [tab, setTab] = useState(0);
   const query = useQuery({
     queryKey: ['basketball-match', providerId],
-    queryFn: api.getBasketballLive,
-    refetchInterval: 30_000,
+    queryFn: () => api.getProviderMatch('basketball', providerId),
+    enabled: Boolean(providerId),
+    refetchInterval: (state) => (state.state.data?.match.status === 'live' ? 30_000 : false),
   });
-  const match = query.data?.find((game) => game.providerId === providerId);
+  const details = query.data;
+  const match = details?.match as BasketballLiveGame | undefined;
 
   return (
     <PageScaffold
@@ -47,8 +50,8 @@ export function BasketballMatchDetailPage() {
       {query.isError ? <ErrorState title="Basketball match could not be loaded." /> : null}
       {!query.isLoading && !query.isError && !match ? (
         <EmptyState
-          title="Match no longer live"
-          description="This provider game has left the live feed. Final box-score data will appear here when available."
+          title="Match data is unavailable"
+          description="This match has not been synchronized to the InstaScore database yet."
         />
       ) : null}
       {match ? (
@@ -187,10 +190,30 @@ export function BasketballMatchDetailPage() {
             </Paper>
           ) : null}
           {tab === 2 ? (
-            <EmptyState
-              title="Play-by-play coming from the provider"
-              description="Possessions and scoring plays will populate here as soon as the live feed supplies them."
-            />
+            details?.events.length ? (
+              <Stack spacing={1}>
+                {details.events.map((event, index) => (
+                  <Card variant="outlined" key={`${event.elapsed}-${event.type}-${index}`}>
+                    <CardContent>
+                      <Typography fontWeight={900}>
+                        {event.elapsed ? `${event.elapsed}' · ` : ''}
+                        {event.teamName || 'Game event'}
+                      </Typography>
+                      <Typography color="text.secondary">
+                        {[event.playerName, event.detail || event.type, event.comments]
+                          .filter(Boolean)
+                          .join(' · ')}
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                ))}
+              </Stack>
+            ) : (
+              <EmptyState
+                title="No play-by-play supplied"
+                description="The saved score and period breakdown remain available even when the provider does not publish possession data."
+              />
+            )
           ) : null}
           {tab === 3 ? (
             <Paper variant="outlined" sx={{ overflowX: 'auto' }}>
@@ -203,39 +226,56 @@ export function BasketballMatchDetailPage() {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {[
-                    ['Total points', match.homeScore, match.awayScore],
-                    [
-                      'Regulation points',
-                      match.sportState.periodScores
-                        .filter((period) => period.label.startsWith('Q'))
-                        .reduce((sum, period) => sum + period.home, 0),
-                      match.sportState.periodScores
-                        .filter((period) => period.label.startsWith('Q'))
-                        .reduce((sum, period) => sum + period.away, 0),
-                    ],
-                    [
-                      'Overtime points',
-                      match.sportState.periodScores
-                        .filter((period) => period.label.startsWith('OT'))
-                        .reduce((sum, period) => sum + period.home, 0),
-                      match.sportState.periodScores
-                        .filter((period) => period.label.startsWith('OT'))
-                        .reduce((sum, period) => sum + period.away, 0),
-                    ],
-                    [
-                      'Best period',
-                      Math.max(...match.sportState.periodScores.map((period) => period.home)),
-                      Math.max(...match.sportState.periodScores.map((period) => period.away)),
-                    ],
-                    [
-                      'Periods won',
-                      match.sportState.periodScores.filter((period) => period.home > period.away)
-                        .length,
-                      match.sportState.periodScores.filter((period) => period.away > period.home)
-                        .length,
-                    ],
-                  ].map(([label, home, away]) => (
+                  {(details?.statistics.length
+                    ? Array.from(
+                        new Set(
+                          details.statistics.flatMap((team) =>
+                            team.items.map((item) => item.label),
+                          ),
+                        ),
+                      ).map((label) => [
+                        label,
+                        details.statistics[0]?.items.find((item) => item.label === label)?.value ??
+                          '—',
+                        details.statistics[1]?.items.find((item) => item.label === label)?.value ??
+                          '—',
+                      ])
+                    : [
+                        ['Total points', match.homeScore, match.awayScore],
+                        [
+                          'Regulation points',
+                          match.sportState.periodScores
+                            .filter((period) => period.label.startsWith('Q'))
+                            .reduce((sum, period) => sum + period.home, 0),
+                          match.sportState.periodScores
+                            .filter((period) => period.label.startsWith('Q'))
+                            .reduce((sum, period) => sum + period.away, 0),
+                        ],
+                        [
+                          'Overtime points',
+                          match.sportState.periodScores
+                            .filter((period) => period.label.startsWith('OT'))
+                            .reduce((sum, period) => sum + period.home, 0),
+                          match.sportState.periodScores
+                            .filter((period) => period.label.startsWith('OT'))
+                            .reduce((sum, period) => sum + period.away, 0),
+                        ],
+                        [
+                          'Best period',
+                          Math.max(...match.sportState.periodScores.map((period) => period.home)),
+                          Math.max(...match.sportState.periodScores.map((period) => period.away)),
+                        ],
+                        [
+                          'Periods won',
+                          match.sportState.periodScores.filter(
+                            (period) => period.home > period.away,
+                          ).length,
+                          match.sportState.periodScores.filter(
+                            (period) => period.away > period.home,
+                          ).length,
+                        ],
+                      ]
+                  ).map(([label, home, away]) => (
                     <TableRow key={label}>
                       <TableCell sx={{ fontWeight: 850 }}>{label}</TableCell>
                       <TableCell align="center">{home}</TableCell>

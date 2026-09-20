@@ -190,6 +190,11 @@ const OperationsDashboardPage = lazy(() =>
     default: module.OperationsDashboardPage,
   })),
 );
+const MatchDayDashboardPage = lazy(() =>
+  import('../features/operations/MatchDayDashboardPage').then((module) => ({
+    default: module.MatchDayDashboardPage,
+  })),
+);
 const LeagueTablePage = lazy(() =>
   import('../features/standings/LeagueTablePage').then((module) => ({
     default: module.LeagueTablePage,
@@ -468,6 +473,14 @@ export function AppRoutes(props: { loginUrl: string }) {
         <Route path="install" element={<InstallAppPage />} />
         <Route element={<RequireAuth />}>
           <Route path="dashboard" element={<UserDashboardPage />} />
+          <Route
+            path="match-day"
+            element={
+              <RouteSuspense>
+                <MatchDayDashboardPage />
+              </RouteSuspense>
+            }
+          />
         </Route>
         <Route element={<RequireCapability capability="accessAdmin" />}>
           <Route
