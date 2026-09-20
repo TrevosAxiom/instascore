@@ -199,7 +199,11 @@ export function OperationsDashboardPage() {
                 </Button>
                 <Button
                   onClick={() => {
-                    if (window.confirm('Confirm that a restorable host-level backup has been checked.'))
+                    if (
+                      window.confirm(
+                        'Confirm that a restorable host-level backup has been checked.',
+                      )
+                    )
                       actionMutation.mutate('verify_backup');
                   }}
                   variant="outlined"

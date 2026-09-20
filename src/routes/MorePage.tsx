@@ -31,29 +31,35 @@ export function MorePage() {
       description="Teams, competitions, account preferences and platform tools in one place."
     >
       {publicNavigationGroups.map((group) => {
-        const items = publicNavigation.filter((item) => item.group === group && (!item.requiresAuth || state?.authenticated));
-        return <Stack key={group} spacing={1.5}>
-          <Typography variant="h5" fontWeight={950}>{group}</Typography>
-          <Grid container spacing={1.5}>
-        {items.map(({ label: title, path, description }) => (
-          <Grid key={path} size={{ xs: 6, sm: 4, lg: 3 }}>
-            <Card sx={{ height: '100%' }}>
-              <CardContent>
-                <Typography variant="h6" fontWeight={950}>
-                  {title}
-                </Typography>
-                <Typography color="text.secondary" sx={{ my: 1 }}>
-                  {description}
-                </Typography>
-                <Button component={RouterLink} to={path} variant="outlined">
-                  Open {title}
-                </Button>
-              </CardContent>
-            </Card>
-          </Grid>
-        ))}
-          </Grid>
-        </Stack>;
+        const items = publicNavigation.filter(
+          (item) => item.group === group && (!item.requiresAuth || state?.authenticated),
+        );
+        return (
+          <Stack key={group} spacing={1.5}>
+            <Typography variant="h5" fontWeight={950}>
+              {group}
+            </Typography>
+            <Grid container spacing={1.5}>
+              {items.map(({ label: title, path, description }) => (
+                <Grid key={path} size={{ xs: 6, sm: 4, lg: 3 }}>
+                  <Card sx={{ height: '100%' }}>
+                    <CardContent>
+                      <Typography variant="h6" fontWeight={950}>
+                        {title}
+                      </Typography>
+                      <Typography color="text.secondary" sx={{ my: 1 }}>
+                        {description}
+                      </Typography>
+                      <Button component={RouterLink} to={path} variant="outlined">
+                        Open {title}
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              ))}
+            </Grid>
+          </Stack>
+        );
       })}
 
       <Card>

@@ -226,7 +226,13 @@ export interface CommerceOrder {
   paymentReference: string | null;
   createdAt: string;
   paidAt: string | null;
-  items: { name: string; type: string; quantity: number; unitPriceMinor: number; totalMinor: number }[];
+  items: {
+    name: string;
+    type: string;
+    quantity: number;
+    unitPriceMinor: number;
+    totalMinor: number;
+  }[];
 }
 
 export interface CommerceEntitlement {
@@ -243,7 +249,12 @@ export interface CommerceEntitlement {
 export interface CommerceAdminDashboard {
   products: CommerceProduct[];
   orders: CommerceOrder[];
-  report: { grossRevenueMinor: number; paidOrders: number; pendingOrders: number; activeProducts: number };
+  report: {
+    grossRevenueMinor: number;
+    paidOrders: number;
+    pendingOrders: number;
+    activeProducts: number;
+  };
 }
 
 export interface BasketballLiveGame {

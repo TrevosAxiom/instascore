@@ -38,9 +38,16 @@ describe('fantasy foundation UI', () => {
       api: { ...testApi, createFantasyLeague, joinFantasyLeague },
     });
 
-    fireEvent.change(await screen.findByLabelText(/new league name/i), { target: { value: 'Weekend rivals' } });
+    fireEvent.change(await screen.findByLabelText(/new league name/i), {
+      target: { value: 'Weekend rivals' },
+    });
     fireEvent.click(screen.getByRole('button', { name: /create league/i }));
-    await waitFor(() => expect(createFantasyLeague).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({ name: 'Weekend rivals', visibility: 'private' })));
+    await waitFor(() =>
+      expect(createFantasyLeague).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({ name: 'Weekend rivals', visibility: 'private' }),
+      ),
+    );
 
     fireEvent.change(screen.getByLabelText(/invite code/i), { target: { value: 'abc123' } });
     fireEvent.click(screen.getByRole('button', { name: /join league/i }));

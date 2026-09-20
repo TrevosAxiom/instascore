@@ -414,7 +414,9 @@ export interface ApiClient {
   updateCommerceProduct: (uuid: string, input: Record<string, unknown>) => Promise<CommerceProduct>;
   settleCommerceOrder: (uuid: string, paymentReference: string) => Promise<CommerceOrder>;
   fulfilCommerceOrder: (uuid: string) => Promise<CommerceOrder>;
-  redeemCommerceTicket: (accessCode: string) => Promise<{ status: string; accessCode: string; redeemedAt: string }>;
+  redeemCommerceTicket: (
+    accessCode: string,
+  ) => Promise<{ status: string; accessCode: string; redeemedAt: string }>;
 }
 
 export function createApiClient(settings: BootstrapSettings): ApiClient {
@@ -1010,13 +1012,30 @@ export function createApiClient(settings: BootstrapSettings): ApiClient {
     getMyEntitlements: () => request<CommerceEntitlement[]>('/commerce/entitlements'),
     getCommerceAdmin: () => request<CommerceAdminDashboard>('/admin/commerce'),
     createCommerceProduct: (input) =>
-      request<CommerceProduct>('/admin/commerce/products', { method: 'POST', body: JSON.stringify(input) }),
+      request<CommerceProduct>('/admin/commerce/products', {
+        method: 'POST',
+        body: JSON.stringify(input),
+      }),
     updateCommerceProduct: (uuid, input) =>
-      request<CommerceProduct>(`/admin/commerce/products/${uuid}`, { method: 'PATCH', body: JSON.stringify(input) }),
+      request<CommerceProduct>(`/admin/commerce/products/${uuid}`, {
+        method: 'PATCH',
+        body: JSON.stringify(input),
+      }),
     settleCommerceOrder: (uuid, paymentReference) =>
-      request<CommerceOrder>(`/admin/commerce/orders/${uuid}/settle`, { method: 'POST', body: JSON.stringify({ paymentReference }) }),
-    fulfilCommerceOrder: (uuid) => request<CommerceOrder>(`/admin/commerce/orders/${uuid}/fulfil`, { method: 'POST', body: JSON.stringify({}) }),
-    redeemCommerceTicket: (accessCode) => request('/admin/commerce/tickets/redeem', { method: 'POST', body: JSON.stringify({ accessCode }) }),
+      request<CommerceOrder>(`/admin/commerce/orders/${uuid}/settle`, {
+        method: 'POST',
+        body: JSON.stringify({ paymentReference }),
+      }),
+    fulfilCommerceOrder: (uuid) =>
+      request<CommerceOrder>(`/admin/commerce/orders/${uuid}/fulfil`, {
+        method: 'POST',
+        body: JSON.stringify({}),
+      }),
+    redeemCommerceTicket: (accessCode) =>
+      request('/admin/commerce/tickets/redeem', {
+        method: 'POST',
+        body: JSON.stringify({ accessCode }),
+      }),
   };
 }
 

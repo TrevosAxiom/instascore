@@ -146,13 +146,39 @@ export function AppShell() {
                 Explore
               </Button>
             </Stack>
-            <Menu anchorEl={exploreAnchor} open={Boolean(exploreAnchor)} onClose={() => setExploreAnchor(null)} MenuListProps={{ 'aria-label': 'Explore InstaScore' }} slotProps={{ paper: { sx: { width: 340, maxHeight: 'min(620px, 78vh)' } } }}>
+            <Menu
+              anchorEl={exploreAnchor}
+              open={Boolean(exploreAnchor)}
+              onClose={() => setExploreAnchor(null)}
+              MenuListProps={{ 'aria-label': 'Explore InstaScore' }}
+              slotProps={{ paper: { sx: { width: 340, maxHeight: 'min(620px, 78vh)' } } }}
+            >
               {publicNavigationGroups.map((group, groupIndex) => {
-                const items = publicNavigation.filter((item) => item.group === group && (!item.requiresAuth || auth.state?.authenticated));
+                const items = publicNavigation.filter(
+                  (item) =>
+                    item.group === group && (!item.requiresAuth || auth.state?.authenticated),
+                );
                 return [
                   ...(groupIndex ? [<Divider key={`${group}-divider`} />] : []),
                   <ListSubheader key={`${group}-header`}>{group}</ListSubheader>,
-                  ...items.map((item) => <MenuItem key={item.path} component={RouterLink} to={item.path} selected={location.pathname.startsWith(item.path)} onClick={() => setExploreAnchor(null)} sx={{ display: 'block', py: 1 }}><Box fontWeight={900}>{item.label}</Box><Box component="span" sx={{ display: 'block', color: 'text.secondary', fontSize: 12 }}>{item.description}</Box></MenuItem>),
+                  ...items.map((item) => (
+                    <MenuItem
+                      key={item.path}
+                      component={RouterLink}
+                      to={item.path}
+                      selected={location.pathname.startsWith(item.path)}
+                      onClick={() => setExploreAnchor(null)}
+                      sx={{ display: 'block', py: 1 }}
+                    >
+                      <Box fontWeight={900}>{item.label}</Box>
+                      <Box
+                        component="span"
+                        sx={{ display: 'block', color: 'text.secondary', fontSize: 12 }}
+                      >
+                        {item.description}
+                      </Box>
+                    </MenuItem>
+                  )),
                 ];
               })}
             </Menu>

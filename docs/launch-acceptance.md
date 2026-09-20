@@ -1,4 +1,4 @@
-# Launch acceptance — 0.23.0-rc.1
+# Launch acceptance — 0.23.0-rc.2
 
 ## Automated gates
 

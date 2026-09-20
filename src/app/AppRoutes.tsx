@@ -228,8 +228,16 @@ const TeamProfilePage = lazy(() =>
     default: module.TeamProfilePage,
   })),
 );
-const StorefrontPage = lazy(() => import('../features/commerce/StorefrontPage').then((module) => ({ default: module.StorefrontPage })));
-const AdminCommercePage = lazy(() => import('../features/commerce/AdminCommercePage').then((module) => ({ default: module.AdminCommercePage })));
+const StorefrontPage = lazy(() =>
+  import('../features/commerce/StorefrontPage').then((module) => ({
+    default: module.StorefrontPage,
+  })),
+);
+const AdminCommercePage = lazy(() =>
+  import('../features/commerce/AdminCommercePage').then((module) => ({
+    default: module.AdminCommercePage,
+  })),
+);
 
 function RouteSuspense({ children }: { children: ReactNode }) {
   return <Suspense fallback={<LoadingState label="Loading route" />}>{children}</Suspense>;
@@ -482,7 +490,14 @@ export function AppRoutes(props: { loginUrl: string }) {
           }
         />
         <Route path="contact" element={<ContactPage />} />
-        <Route path="store" element={<RouteSuspense><StorefrontPage /></RouteSuspense>} />
+        <Route
+          path="store"
+          element={
+            <RouteSuspense>
+              <StorefrontPage />
+            </RouteSuspense>
+          }
+        />
         <Route path="more" element={<MorePage />} />
         <Route path="notifications" element={<NotificationPreferencesPage />} />
         <Route path="login" element={<LoginPage />} />
@@ -589,7 +604,11 @@ export function AppRoutes(props: { loginUrl: string }) {
           />
           <Route
             path="admin/commerce"
-            element={<RouteSuspense><AdminCommercePage /></RouteSuspense>}
+            element={
+              <RouteSuspense>
+                <AdminCommercePage />
+              </RouteSuspense>
+            }
           />
           <Route
             path="admin/settings"
