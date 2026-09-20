@@ -95,6 +95,12 @@ function update_option( string $key, mixed $value, bool $autoload = false ): boo
     $GLOBALS['instascore_test_options'][ $key ] = $value;
     return true;
 }
+function add_option( string $key, mixed $value, string $deprecated = '', bool $autoload = true ): bool {
+    if ( array_key_exists( $key, $GLOBALS['instascore_test_options'] ) ) return false;
+    $GLOBALS['instascore_test_options'][ $key ] = $value;
+    return true;
+}
+function delete_option( string $key ): bool { unset( $GLOBALS['instascore_test_options'][ $key ] ); return true; }
 function get_site_transient( string $key ): mixed { return $GLOBALS['instascore_test_site_transients'][ $key ] ?? false; }
 function set_site_transient( string $key, mixed $value, int $expiration = 0 ): bool { $GLOBALS['instascore_test_site_transients'][ $key ] = $value; return true; }
 function plugin_basename( string $file ): string { return 'instascore-platform/' . basename( $file ); }

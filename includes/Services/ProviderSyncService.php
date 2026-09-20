@@ -16,6 +16,7 @@ use InstaScore\Platform\Providers\NflProviderAdapter;
 use InstaScore\Platform\Providers\SportsProviderInterface;
 use InstaScore\Platform\Repositories\ProviderRepository;
 use InstaScore\Platform\Support\Config;
+use InstaScore\Platform\Support\ProviderPollLock;
 use Throwable;
 
 final class ProviderSyncService {
@@ -67,10 +68,11 @@ final class ProviderSyncService {
 	 */
 	public function sync( string $sync_type, array $filters = array(), bool $dry_run = false ): array {
 		$started = gmdate( 'Y-m-d H:i:s' );
+		$attempt = max( 1, (int) ( $filters['attempt'] ?? 1 ) );
 		$league_ids = $this->league_ids();
 		$cooldown_until = (int) get_option( "instascore_provider_{$this->sport}_cooldown_until", 0 );
 		if ( ! $dry_run && $cooldown_until > time() ) {
-			return array(
+			$result = array(
 				'status'     => 'rate_limited',
 				'dryRun'     => false,
 				'count'      => 0,
@@ -79,6 +81,14 @@ final class ProviderSyncService {
 				'retryAfter' => $cooldown_until - time(),
 				'error'      => 'Provider polling is paused until its API quota reset window.',
 			);
+			$result['log'] = $this->repository->record_sync_log(
+				array(
+					'provider' => $this->provider_name, 'syncType' => $sync_type, 'status' => 'rate_limited',
+					'filters' => $filters, 'preview' => array(), 'retryAfterSeconds' => $result['retryAfter'],
+					'attemptCount' => $attempt, 'errorCode' => 'provider_cooldown', 'errorMessage' => $result['error'], 'startedAt' => $started,
+				)
+			);
+			return $result;
 		}
 
 		try {
@@ -89,16 +99,18 @@ final class ProviderSyncService {
 			if ( 'previous' === $sync_type ) {
 				$filters['last'] = max( 1, min( 50, (int) ( $filters['last'] ?? 20 ) ) );
 			}
+			$provider_filters = $filters;
+			unset( $provider_filters['attempt'], $provider_filters['source'], $provider_filters['cadence'] );
 			$payload = match ( $sync_type ) {
-				'competitions' => $this->normalizer->competitions( $this->provider->getCompetitions( $filters ) ),
-				'teams'        => $this->normalizer->teams( $this->provider->getTeams( $filters ) ),
-				'fixtures'     => $this->normalizer->fixtures( $this->provider->getFixtures( $filters ) ),
-				'upcoming'     => $this->upcoming_fixtures( $filters ),
-				'previous'     => $this->normalizer->fixtures( $this->provider->getFixtures( $filters ) ),
-				'live'         => $this->live_fixtures( $filters ),
-				'players'      => method_exists( $this->normalizer, 'players' ) ? $this->normalizer->players( $this->provider->getPlayers( $filters ) ) : array(),
-				'statistics'   => method_exists( $this->normalizer, 'statistics' ) ? $this->normalizer->statistics( $this->provider->getStatistics( $filters ) ) : array(),
-				'standings'    => $this->normalizer->standings( $this->provider->getStandings( (string) ( $filters['league'] ?? $filters['leagueId'] ?? $filters['competition'] ?? '' ), (string) ( $filters['season'] ?? '' ) ) ),
+				'competitions' => $this->normalizer->competitions( $this->provider->getCompetitions( $provider_filters ) ),
+				'teams'        => $this->normalizer->teams( $this->provider->getTeams( $provider_filters ) ),
+				'fixtures'     => $this->normalizer->fixtures( $this->provider->getFixtures( $provider_filters ) ),
+				'upcoming'     => $this->upcoming_fixtures( $provider_filters ),
+				'previous'     => $this->normalizer->fixtures( $this->provider->getFixtures( $provider_filters ) ),
+				'live'         => $this->live_fixtures( $provider_filters ),
+				'players'      => method_exists( $this->normalizer, 'players' ) ? $this->normalizer->players( $this->provider->getPlayers( $provider_filters ) ) : array(),
+				'statistics'   => method_exists( $this->normalizer, 'statistics' ) ? $this->normalizer->statistics( $this->provider->getStatistics( $provider_filters ) ) : array(),
+				'standings'    => $this->normalizer->standings( $this->provider->getStandings( (string) ( $provider_filters['league'] ?? $provider_filters['leagueId'] ?? $provider_filters['competition'] ?? '' ), (string) ( $provider_filters['season'] ?? '' ) ) ),
 				default        => throw new \InvalidArgumentException( 'Unsupported provider sync operation.' ),
 			};
 			$mappings = array();
@@ -123,6 +135,7 @@ final class ProviderSyncService {
 					'filters'   => $filters,
 					'preview'   => array_slice( $payload, 0, 20 ),
 					'startedAt' => $started,
+					'attemptCount' => $attempt,
 				)
 			);
 
@@ -145,6 +158,7 @@ final class ProviderSyncService {
 					'errorMessage'        => $error->getMessage(),
 					'retryAfterSeconds'   => $retry_after,
 					'startedAt'           => $started,
+					'attemptCount'        => $attempt,
 				)
 			);
 			return array( 'status' => $log['status'], 'dryRun' => $dry_run, 'count' => 0, 'preview' => array(), 'error' => $error->getMessage(), 'log' => $log );
@@ -266,6 +280,13 @@ final class ProviderSyncService {
 			'wpCronDisabled' => defined( 'DISABLE_WP_CRON' ) && DISABLE_WP_CRON,
 			'nextLiveAt'     => $next_live,
 			'nextUpcomingAt' => $next_upcoming,
+			'activeLocks'    => array_filter(
+				array(
+					'live'       => ProviderPollLock::status( $this->sport, 'live' ),
+					'upcoming'   => ProviderPollLock::status( $this->sport, 'upcoming' ),
+					'publicLive' => ProviderPollLock::status( $this->sport, 'public_live' ),
+				)
+			),
 			'issues'         => $issues,
 		);
 	}
@@ -372,11 +393,10 @@ final class ProviderSyncService {
 			return $cached;
 		}
 
-		$lock = "instascore_{$this->sport}_live_poll_lock";
-		if ( false !== get_transient( $lock ) ) {
+		$token = ProviderPollLock::acquire( $this->sport, 'public_live', max( 15, min( 60, $interval ) ) );
+		if ( null === $token ) {
 			return $this->discard_expired_live_snapshot( $cached, $interval );
 		}
-		set_transient( $lock, '1', max( 15, min( 60, $interval ) ) );
 		try {
 			$result = $this->sync( 'live', array( 'source' => 'stale_public_poll' ), false );
 			if ( 'succeeded' === ( $result['status'] ?? '' ) ) {
@@ -384,7 +404,7 @@ final class ProviderSyncService {
 			}
 			return $this->discard_expired_live_snapshot( $cached, $interval );
 		} finally {
-			delete_transient( $lock );
+			ProviderPollLock::release( $this->sport, 'public_live', $token );
 		}
 	}
 

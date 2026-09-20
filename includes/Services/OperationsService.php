@@ -66,6 +66,17 @@ final class OperationsService {
 			$result = ProviderSyncService::create_for_sport( 'basketball' )->sync( 'live', array( 'source' => 'manual_operations_action' ), false );
 		} elseif ( 'nfl_live_sync' === $action ) {
 			$result = ProviderSyncService::create_for_sport( 'nfl' )->sync( 'live', array( 'source' => 'manual_operations_action' ), false );
+		} elseif ( 'retry_failed_jobs' === $action ) {
+			$jobs = array();
+			foreach ( array( 'football', 'basketball', 'nfl' ) as $sport ) {
+				if ( ! (bool) get_option( "instascore_provider_{$sport}_polling_enabled", false ) ) continue;
+				$jobs[ $sport ] = ProviderSyncService::create_for_sport( $sport )->sync( 'live', array( 'source' => 'manual_retry_failed_jobs', 'attempt' => 1 ), false );
+			}
+			$result = array(
+				'status'  => array() === $jobs ? 'skipped' : ( count( array_filter( $jobs, static fn( array $job ): bool => 'succeeded' === ( $job['status'] ?? '' ) ) ) === count( $jobs ) ? 'succeeded' : 'partial' ),
+				'message' => array() === $jobs ? 'No enabled provider jobs are available to retry.' : 'Enabled provider live jobs were retried.',
+				'jobs'    => $jobs,
+			);
 		} else {
 			$result = array(
 				'status'    => 'queued',
@@ -99,6 +110,11 @@ final class OperationsService {
 	}
 
 	private function health_report(): array {
+		$provider_polling = array();
+		foreach ( array( 'football', 'basketball', 'nfl' ) as $sport ) {
+			$health = ProviderSyncService::create_for_sport( $sport )->health();
+			$provider_polling[ $sport ] = $health['scheduleHealth'] ?? array();
+		}
 		return array(
 			'pluginVersion' => INSTASCORE_PLATFORM_VERSION,
 			'dbVersion'     => INSTASCORE_DB_VERSION,
@@ -106,6 +122,7 @@ final class OperationsService {
 			'php'           => PHP_VERSION,
 			'timezone'      => wp_timezone_string(),
 			'generatedAt'   => gmdate( 'c' ),
+			'providerPolling' => $provider_polling,
 			'secrets'       => 'redacted',
 		);
 	}

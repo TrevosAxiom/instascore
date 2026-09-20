@@ -215,10 +215,43 @@ export function OperationsDashboardPage() {
             <Stack spacing={2}>
               <Typography variant="h6">System health report</Typography>
               <Stack direction="row" spacing={1} flexWrap="wrap">
-                {Object.entries(healthReport).map(([key, value]) => (
-                  <Chip key={key} label={`${key}: ${String(value)}`} />
-                ))}
+                {Object.entries(healthReport)
+                  .filter(([key]) => key !== 'providerPolling')
+                  .map(([key, value]) => (
+                    <Chip key={key} label={`${key}: ${String(value)}`} />
+                  ))}
               </Stack>
+              {healthReport.providerPolling && typeof healthReport.providerPolling === 'object' ? (
+                <Grid container spacing={1.5}>
+                  {Object.entries(
+                    healthReport.providerPolling as Record<string, Record<string, unknown>>,
+                  ).map(([sport, health]) => (
+                    <Grid key={sport} size={{ xs: 12, md: 4 }}>
+                      <Box sx={{ p: 1.5, border: '1px solid', borderColor: 'divider' }}>
+                        <Typography fontWeight={900} textTransform="capitalize">
+                          {sport} polling
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          Status: {typeof health.status === 'string' ? health.status : 'unknown'}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          Next live:{' '}
+                          {typeof health.nextLiveAt === 'string'
+                            ? health.nextLiveAt
+                            : 'not scheduled'}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          Active locks:{' '}
+                          {
+                            Object.keys((health.activeLocks as Record<string, unknown>) ?? {})
+                              .length
+                          }
+                        </Typography>
+                      </Box>
+                    </Grid>
+                  ))}
+                </Grid>
+              ) : null}
             </Stack>
           </CardContent>
         </Card>
