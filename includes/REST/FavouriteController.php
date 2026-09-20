@@ -9,6 +9,7 @@ namespace InstaScore\Platform\REST;
 
 use InstaScore\Platform\Repositories\FavouriteRepository;
 use InstaScore\Platform\Repositories\NotificationRepository;
+use InstaScore\Platform\Services\PersonalizationService;
 use WP_Error;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -55,7 +56,7 @@ final class FavouriteController {
 
 		register_rest_route( 'instascore/v1', '/me/feed', array(
 			'methods'             => 'GET',
-			'callback'            => fn(): WP_REST_Response => Envelope::success( $this->personal_feed() ),
+			'callback'            => array( $this, 'feed' ),
 			'permission_callback' => array( $this, 'authenticated' ),
 		) );
 
@@ -67,7 +68,7 @@ final class FavouriteController {
 
 		register_rest_route( 'instascore/v1', '/search', array(
 			'methods'             => 'GET',
-			'callback'            => fn( WP_REST_Request $request ): WP_REST_Response => Envelope::success( $this->repository()->search( sanitize_text_field( (string) $request->get_param( 'q' ) ) ) ),
+			'callback'            => array( $this, 'search' ),
 			'permission_callback' => '__return_true',
 		) );
 	}
@@ -82,7 +83,11 @@ final class FavouriteController {
 		if ( ! in_array( $type, array( 'team', 'competition', 'player' ), true ) || ! wp_is_uuid( $uuid ) ) {
 			return Envelope::error( 'instascore_invalid_favourite', __( 'A valid team, competition or player UUID is required.', 'instascore-platform' ), array(), 422 );
 		}
-		$row  = $this->repository()->follow( get_current_user_id(), $type, $uuid );
+		try {
+			$row = $this->repository()->follow( get_current_user_id(), $type, $uuid );
+		} catch ( \InvalidArgumentException $error ) {
+			return Envelope::error( 'instascore_favourite_not_found', $error->getMessage(), array(), 404 );
+		}
 		$this->notification_repository()->record_follow( get_current_user_id(), $type, $uuid, 'active' );
 		return Envelope::success( $row, array( 'oneSignalTags' => $this->tags( $type, $uuid, true ) ) );
 	}
@@ -109,19 +114,22 @@ final class FavouriteController {
 		return Envelope::success( $this->repository()->save_preferences( get_current_user_id(), (array) $request->get_json_params() ) );
 	}
 
-	/**
-	 * @return array<string,mixed>
-	 */
-	private function personal_feed(): array {
-		$favourites = $this->repository()->list_for_user( get_current_user_id() );
-		return array(
-			'favourites' => $favourites,
-			'items'      => array(),
-			'suggestions' => array(
-				array( 'type' => 'competition', 'label' => 'Follow a competition to build your personalised scores feed.' ),
-				array( 'type' => 'team', 'label' => 'Follow teams to receive fixture and result alerts.' ),
-			),
-		);
+	public function feed(): WP_REST_Response {
+		$response = Envelope::success( PersonalizationService::create()->feed( get_current_user_id() ) );
+		$response->header( 'Cache-Control', 'private, no-store' );
+		return $response;
+	}
+
+	public function search( WP_REST_Request $request ): WP_REST_Response {
+		$term = sanitize_text_field( (string) $request->get_param( 'q' ) );
+		$items = $this->repository()->search( $term );
+		if ( mb_strlen( trim( $term ) ) >= 2 ) {
+			$query = new \WP_Query( array( 'post_type' => 'post', 'post_status' => 'publish', 'posts_per_page' => 8, 's' => $term, 'ignore_sticky_posts' => true ) );
+			foreach ( $query->posts as $post ) {
+				$items[] = array( 'type' => 'news', 'uuid' => 'post-' . $post->ID, 'label' => html_entity_decode( get_the_title( $post ), ENT_QUOTES | ENT_HTML5, 'UTF-8' ), 'description' => wp_strip_all_tags( get_the_excerpt( $post ) ), 'url' => '/news/articles/' . $post->ID );
+			}
+		}
+		return Envelope::success( array_slice( $items, 0, 36 ) );
 	}
 
 	/**

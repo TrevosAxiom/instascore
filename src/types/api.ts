@@ -902,6 +902,9 @@ export interface Favourite {
   entityUuid?: string;
   status?: string;
   source?: string;
+  label?: string;
+  imageUrl?: string | null;
+  url?: string;
 }
 
 export interface UserPreferences {
@@ -912,15 +915,29 @@ export interface UserPreferences {
 
 export interface PersonalFeed {
   favourites: Favourite[];
-  items: Record<string, unknown>[];
-  suggestions: { type: string; label: string }[];
+  items: Array<{
+    type: 'fixture' | 'news';
+    uuid?: string;
+    id?: number;
+    title: string;
+    url: string;
+    status?: string;
+    kickoffAt?: string;
+    publishedAt?: string;
+    competition?: string;
+    excerpt?: string;
+    imageUrl?: string | null;
+    sportSlug?: string;
+  }>;
+  suggestions: { type: string; uuid?: string; label: string; url?: string; reason?: string }[];
 }
 
 export interface SearchResult {
-  type: FavouriteEntityType | 'fixture';
+  type: FavouriteEntityType | 'fixture' | 'news';
   uuid: string;
   label: string;
   url: string;
+  description?: string;
 }
 
 export interface AlertHistoryItem {

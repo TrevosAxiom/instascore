@@ -59,10 +59,35 @@ describe('favourites and anonymous migration UI', () => {
               status: 'active',
             },
           ]),
+        getPersonalFeed: () =>
+          Promise.resolve({
+            favourites: [],
+            items: [
+              {
+                type: 'fixture',
+                uuid: '00000000-0000-4000-8000-000000000099',
+                title: 'Lagos Lightning vs Island Titans',
+                url: '/fixtures/00000000-0000-4000-8000-000000000099',
+                status: 'scheduled',
+                competition: 'CFFL Lagos',
+              },
+            ],
+            suggestions: [
+              {
+                type: 'competition',
+                uuid: '00000000-0000-4000-8000-000000000088',
+                label: 'CFFL Lagos',
+                url: '/competitions/00000000-0000-4000-8000-000000000088',
+                reason: 'Popular on InstaScore',
+              },
+            ],
+          }),
       },
     });
 
     expect(await screen.findByText(/personal scores feed/i)).toBeInTheDocument();
+    expect(await screen.findByText('Lagos Lightning vs Island Titans')).toBeInTheDocument();
+    expect(screen.getByText('Popular on InstaScore')).toBeInTheDocument();
     fireEvent.change(await screen.findByLabelText('Team'), {
       target: { value: team.uuid },
     });

@@ -1,6 +1,7 @@
-import { Alert, Box, Button, Chip, Stack, TextField, Typography } from '@mui/material';
+import { Alert, Box, Button, Chip, Paper, Stack, TextField, Typography } from '@mui/material';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
+import { Link as RouterLink } from 'react-router';
 
 import { useApi } from '../../api/context';
 import { useAuth } from '../../app/auth-context';
@@ -190,7 +191,10 @@ export function FavouritesPage() {
                   {favourites.data.map((favourite) => (
                     <Chip
                       key={`${favourite.entity_type}-${favourite.entity_uuid}`}
-                      label={`${favourite.entity_type}: ${entityNames.get(favourite.entity_uuid ?? '') ?? 'Saved favourite'}`}
+                      component={RouterLink}
+                      clickable
+                      to={favourite.url ?? '/favourites'}
+                      label={`${favourite.entityType ?? favourite.entity_type}: ${favourite.label ?? entityNames.get(favourite.entity_uuid ?? '') ?? 'Saved favourite'}`}
                     />
                   ))}
                 </Stack>
@@ -203,11 +207,57 @@ export function FavouritesPage() {
             </Box>
             <Box className="instascore-panel">
               <Typography variant="h3">Personal scores feed</Typography>
-              {feed.data?.suggestions.map((suggestion) => (
-                <Typography key={suggestion.label} color="text.secondary">
-                  {suggestion.label}
-                </Typography>
-              ))}
+              <Stack spacing={1.25} sx={{ mt: 2 }}>
+                {(feed.data?.items ?? []).map((item) => (
+                  <Paper
+                    key={`${item.type}-${item.uuid ?? item.id}`}
+                    variant="outlined"
+                    sx={{ p: 1.5 }}
+                  >
+                    <Stack
+                      direction={{ xs: 'column', sm: 'row' }}
+                      spacing={1.5}
+                      alignItems={{ sm: 'center' }}
+                    >
+                      <Stack flex={1}>
+                        <Typography variant="overline" color="primary.main">
+                          {item.type === 'fixture' ? item.status : item.sportSlug || 'News'}
+                        </Typography>
+                        <Typography fontWeight={900}>{item.title}</Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          {item.competition || item.excerpt}
+                        </Typography>
+                      </Stack>
+                      <Button component={RouterLink} to={item.url}>
+                        Open
+                      </Button>
+                    </Stack>
+                  </Paper>
+                ))}
+                {!feed.data?.items.length && (
+                  <Typography color="text.secondary">
+                    Follow teams or competitions to populate your personalised match and news feed.
+                  </Typography>
+                )}
+              </Stack>
+            </Box>
+            <Box className="instascore-panel">
+              <Typography variant="h3">Discover next</Typography>
+              <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.25} sx={{ mt: 2 }}>
+                {(feed.data?.suggestions ?? []).map((suggestion) => (
+                  <Paper
+                    key={`${suggestion.type}-${suggestion.uuid ?? suggestion.label}`}
+                    variant="outlined"
+                    sx={{ p: 1.5, flex: 1 }}
+                  >
+                    <Typography variant="overline">{suggestion.reason ?? 'Suggested'}</Typography>
+                    <Typography fontWeight={900}>{suggestion.label}</Typography>
+                    <Button component={RouterLink} to={suggestion.url ?? '/favourites'}>
+                      Explore
+                    </Button>
+                  </Paper>
+                ))}
+              </Stack>
             </Box>
             <Box className="instascore-panel">
               <Typography variant="h3">Alert history</Typography>

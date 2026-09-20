@@ -199,6 +199,16 @@ final class NotificationDispatcher {
 
 	/** @param array<string,mixed> $fixture */
 	private function enqueue_fixture( array $fixture, string $event_uuid, string $event_type, string $category, string $collapse_key, string $title, string $body, int $ttl ): bool {
+		$entities = array(
+			array( 'type' => 'team', 'uuid' => (string) $fixture['home_team_uuid'] ),
+			array( 'type' => 'team', 'uuid' => (string) $fixture['away_team_uuid'] ),
+			array( 'type' => 'competition', 'uuid' => (string) $fixture['competition_uuid'] ),
+		);
+		$players = array();
+		if ( ! empty( $fixture['home_team_id'] ) && ! empty( $fixture['away_team_id'] ) ) {
+			$players = $this->database->get_col( $this->database->prepare( "SELECT DISTINCT p.uuid FROM {$this->database->prefix}instascore_players p JOIN {$this->database->prefix}instascore_team_registrations r ON r.player_id=p.id AND r.status='active' WHERE r.team_id IN (%d,%d) AND p.status='active'", (int) $fixture['home_team_id'], (int) $fixture['away_team_id'] ) );
+		}
+		foreach ( is_array( $players ) ? $players : array() as $player_uuid ) $entities[] = array( 'type' => 'player', 'uuid' => (string) $player_uuid );
 		return $this->jobs->enqueue(
 			$event_uuid,
 			$event_type,
@@ -213,11 +223,7 @@ final class NotificationDispatcher {
 				'collapseKey' => $collapse_key,
 				'idempotencyKey' => wp_generate_uuid4(),
 				'ttl'         => $ttl,
-				'entities'    => array(
-					array( 'type' => 'team', 'uuid' => (string) $fixture['home_team_uuid'] ),
-					array( 'type' => 'team', 'uuid' => (string) $fixture['away_team_uuid'] ),
-					array( 'type' => 'competition', 'uuid' => (string) $fixture['competition_uuid'] ),
-				),
+				'entities'    => $entities,
 			)
 		);
 	}

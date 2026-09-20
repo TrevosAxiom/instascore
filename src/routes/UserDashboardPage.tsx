@@ -428,8 +428,12 @@ export function UserDashboardPage() {
                   <Typography variant="h6" fontWeight={950}>
                     {suggestion.label}
                   </Typography>
-                  <Button component={RouterLink} to="/favourites" sx={{ mt: 1 }}>
-                    Personalise feed
+                  <Button
+                    component={RouterLink}
+                    to={suggestion.url ?? '/favourites'}
+                    sx={{ mt: 1 }}
+                  >
+                    Explore
                   </Button>
                 </CardContent>
               </Card>
