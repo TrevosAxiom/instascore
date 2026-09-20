@@ -344,6 +344,9 @@ export interface ApiClient {
   runOperationsAction: (
     action:
       | 'retry_failed_jobs'
+      | 'database_integrity_scan'
+      | 'database_retention_cleanup'
+      | 'database_safe_repair'
       | 'standings_rebuild'
       | 'fantasy_recalculation'
       | 'diagnostic_report'

@@ -52,7 +52,16 @@ export function OperationsDashboardPage() {
   });
 
   const exportMutation = useMutation({
-    mutationFn: () => api.exportOperations('diagnostic_report'),
+    mutationFn: (type: string) => api.exportOperations(type),
+    onSuccess: (result) => {
+      if (typeof URL.createObjectURL !== 'function') return;
+      const url = URL.createObjectURL(new Blob([result.content], { type: 'text/csv' }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = result.filename;
+      link.click();
+      URL.revokeObjectURL(url);
+    },
   });
 
   const filteredLogs = useMemo(() => {
@@ -181,6 +190,33 @@ export function OperationsDashboardPage() {
                   Retry failed jobs
                 </Button>
                 <Button
+                  onClick={() => actionMutation.mutate('database_integrity_scan')}
+                  variant="outlined"
+                >
+                  Scan database integrity
+                </Button>
+                <Button
+                  onClick={() => actionMutation.mutate('database_retention_cleanup')}
+                  variant="outlined"
+                  color="warning"
+                >
+                  Clean expired operational data
+                </Button>
+                <Button
+                  onClick={() => {
+                    if (
+                      window.confirm(
+                        'Repair unusable orphan registrations and incomplete provider rows? Primary teams, players, competitions and fixtures will be preserved.',
+                      )
+                    )
+                      actionMutation.mutate('database_safe_repair');
+                  }}
+                  variant="outlined"
+                  color="error"
+                >
+                  Repair unusable records
+                </Button>
+                <Button
                   onClick={() => actionMutation.mutate('standings_rebuild')}
                   variant="outlined"
                 >
@@ -192,8 +228,17 @@ export function OperationsDashboardPage() {
                 >
                   Manual fantasy recalculation
                 </Button>
-                <Button onClick={() => exportMutation.mutate()} variant="contained">
+                <Button
+                  onClick={() => exportMutation.mutate('diagnostic_report')}
+                  variant="contained"
+                >
                   Download diagnostic report
+                </Button>
+                <Button
+                  onClick={() => exportMutation.mutate('database_integrity')}
+                  variant="outlined"
+                >
+                  Export integrity CSV
                 </Button>
               </Stack>
               {actionMutation.data && (
@@ -216,7 +261,10 @@ export function OperationsDashboardPage() {
               <Typography variant="h6">System health report</Typography>
               <Stack direction="row" spacing={1} flexWrap="wrap">
                 {Object.entries(healthReport)
-                  .filter(([key]) => !['providerPolling', 'providerWatchdog'].includes(key))
+                  .filter(
+                    ([key]) =>
+                      !['providerPolling', 'providerWatchdog', 'databaseMaintenance'].includes(key),
+                  )
                   .map(([key, value]) => (
                     <Chip key={key} label={`${key}: ${String(value)}`} />
                   ))}
@@ -260,6 +308,33 @@ export function OperationsDashboardPage() {
                   'string'
                     ? String((healthReport.providerWatchdog as Record<string, unknown>).checkedAt)
                     : 'waiting for its first run'}
+                </Alert>
+              ) : null}
+              {healthReport.databaseMaintenance &&
+              typeof healthReport.databaseMaintenance === 'object' ? (
+                <Alert
+                  severity={
+                    (
+                      healthReport.databaseMaintenance as {
+                        integrity?: { status?: string };
+                      }
+                    ).integrity?.status === 'attention'
+                      ? 'warning'
+                      : 'success'
+                  }
+                >
+                  Database integrity:{' '}
+                  {(
+                    healthReport.databaseMaintenance as {
+                      integrity?: { status?: string; issueCount?: number };
+                    }
+                  ).integrity?.status ?? 'not run'}
+                  {' · '}Issues:{' '}
+                  {(
+                    healthReport.databaseMaintenance as {
+                      integrity?: { issueCount?: number };
+                    }
+                  ).integrity?.issueCount ?? 0}
                 </Alert>
               ) : null}
             </Stack>

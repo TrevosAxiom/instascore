@@ -51,7 +51,7 @@ final class OperationsService {
 	}
 
 	public function action( string $action, array $input, int $user_id ): array {
-		$allowed = array( 'retry_failed_jobs', 'standings_rebuild', 'fantasy_recalculation', 'diagnostic_report', 'bootstrap_cffl_lagos', 'football_live_sync', 'basketball_live_sync', 'nfl_live_sync' );
+		$allowed = array( 'retry_failed_jobs', 'standings_rebuild', 'fantasy_recalculation', 'diagnostic_report', 'database_integrity_scan', 'database_retention_cleanup', 'database_safe_repair', 'bootstrap_cffl_lagos', 'football_live_sync', 'basketball_live_sync', 'nfl_live_sync' );
 		if ( ! in_array( $action, $allowed, true ) ) {
 			return array( 'status' => 'rejected', 'message' => 'Unsupported operation.' );
 		}
@@ -78,6 +78,12 @@ final class OperationsService {
 				'message' => array() === $jobs ? 'No enabled provider jobs are available to retry.' : 'Enabled provider live jobs were retried.',
 				'jobs'    => $jobs,
 			);
+		} elseif ( 'database_integrity_scan' === $action ) {
+			$result = DatabaseMaintenanceService::create()->integrity_report();
+		} elseif ( 'database_retention_cleanup' === $action ) {
+			$result = DatabaseMaintenanceService::create()->cleanup_retention();
+		} elseif ( 'database_safe_repair' === $action ) {
+			$result = DatabaseMaintenanceService::create()->safe_repair();
 		} else {
 			$result = array(
 				'status'    => 'queued',
@@ -92,6 +98,11 @@ final class OperationsService {
 	}
 
 	public function export( string $type, int $user_id ): array {
+		if ( 'database_integrity' === $type ) {
+			$rows = DatabaseMaintenanceService::create()->integrity_csv_rows();
+			$this->repository->record_export( $type, $user_id, count( $rows ) - 1 );
+			return array( 'filename' => 'instascore-database-integrity-' . gmdate( 'Ymd-His' ) . '.csv', 'content' => $this->csv( $rows ), 'redacted' => true );
+		}
 		$dashboard = $this->dashboard();
 		$rows      = array(
 			array( 'section', 'metric', 'value' ),
@@ -125,6 +136,7 @@ final class OperationsService {
 			'generatedAt'   => gmdate( 'c' ),
 			'providerPolling' => $provider_polling,
 			'providerWatchdog' => get_option( 'instascore_provider_watchdog_last_run', array( 'checkedAt' => null, 'report' => array() ) ),
+			'databaseMaintenance' => array( 'integrity' => get_option( 'instascore_database_integrity_report', array( 'status' => 'not_run' ) ), 'lastCleanup' => get_option( 'instascore_database_maintenance_last_cleanup', null ) ),
 			'secrets'       => 'redacted',
 		);
 	}

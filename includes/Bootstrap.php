@@ -38,6 +38,7 @@ use InstaScore\Platform\REST\TeamPlayerController;
 use InstaScore\Platform\REST\ThemeController;
 use InstaScore\Platform\REST\YouTubeStreamingController;
 use InstaScore\Platform\Support\Assets;
+use InstaScore\Platform\Support\DatabaseMaintenanceScheduler;
 use InstaScore\Platform\Support\AdminSettings;
 use InstaScore\Platform\Support\PageProvisioner;
 use InstaScore\Platform\Support\PluginUpdater;
@@ -86,6 +87,7 @@ final class Bootstrap {
 		add_action( 'init', array( RssProvisioner::class, 'maybe_seed' ), 22 );
 		add_action( 'init', array( NotificationScheduler::class, 'register' ) );
 		add_action( 'init', array( ProviderWatchdog::class, 'register' ) );
+		add_action( 'init', array( DatabaseMaintenanceScheduler::class, 'register' ) );
 		add_action( 'init', array( YouTubeStreamScheduler::class, 'register' ) );
 		add_action( 'admin_menu', array( AdminSettings::class, 'register_menu' ) );
 		add_action( 'admin_post_instascore_save_settings', array( AdminSettings::class, 'save_settings' ) );
