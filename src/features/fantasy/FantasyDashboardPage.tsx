@@ -14,6 +14,7 @@ import {
   FormControlLabel,
   LinearProgress,
   MenuItem,
+  Portal,
   Stack,
   Switch,
   Tab,
@@ -28,10 +29,13 @@ import {
   Typography,
 } from '@mui/material';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { useApi } from '../../api/context';
 import { useAuth } from '../../app/auth-context';
+import privateLeaguesImage from '../../assets/fantasy-private-leagues-coming-soon.jpg';
+import versusImage from '../../assets/fantasy-versus-coming-soon.jpg';
+import winnerPoolImage from '../../assets/fantasy-winner-pool-coming-soon.jpg';
 import { EmptyState, ErrorState, LoadingState } from '../../components/AsyncStates';
 import { PageScaffold } from '../../components/PageScaffold';
 import type { FantasyPlayer, FantasySquadEntry } from '../../types/api';
@@ -75,6 +79,13 @@ const fantasyGuideSteps = [
   },
 ] as const;
 
+type GuideTargetRect = {
+  top: number;
+  left: number;
+  width: number;
+  height: number;
+};
+
 export function FantasyDashboardPage() {
   const api = useApi();
   const { state } = useAuth();
@@ -95,6 +106,7 @@ export function FantasyDashboardPage() {
   const [slotPicker, setSlotPicker] = useState<'offense' | 'defense' | null>(null);
   const [slotSearch, setSlotSearch] = useState('');
   const [guideStep, setGuideStep] = useState<number | null>(null);
+  const [guideTargetRect, setGuideTargetRect] = useState<GuideTargetRect | null>(null);
   const games = useQuery({ queryKey: ['fantasy', 'games'], queryFn: api.getFantasyGames });
   const activeGameUuid = selectedGameUuid || games.data?.[0]?.uuid || '';
   const activeGame = games.data?.find((game) => game.uuid === activeGameUuid);
@@ -158,14 +170,36 @@ export function FantasyDashboardPage() {
     if (guideStep === null || typeof document === 'undefined') return;
     const guideItem = fantasyGuideSteps[guideStep];
     if (!guideItem) return;
-    const target = document.querySelector<HTMLElement>(
-      `[data-fantasy-guide="${guideItem.target}"]`,
-    );
-    target?.classList.add('fantasy-guide-target');
-    if (target && typeof target.scrollIntoView === 'function') {
-      target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
-    return () => target?.classList.remove('fantasy-guide-target');
+    if (guideItem.target === 'market') setWorkspaceTab('players');
+    if (['pitch', 'captain', 'submit'].includes(guideItem.target)) setWorkspaceTab('squad');
+
+    let frame = 0;
+    const findTarget = () =>
+      document.querySelector<HTMLElement>(`[data-fantasy-guide="${guideItem.target}"]`);
+    const updateTarget = () => {
+      const rect = findTarget()?.getBoundingClientRect();
+      setGuideTargetRect(
+        rect ? { top: rect.top, left: rect.left, width: rect.width, height: rect.height } : null,
+      );
+    };
+    const revealTarget = () => {
+      const target = findTarget();
+      if (target && typeof target.scrollIntoView === 'function') {
+        target.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+      }
+      frame = window.requestAnimationFrame(() => {
+        frame = window.requestAnimationFrame(updateTarget);
+      });
+    };
+    frame = window.requestAnimationFrame(revealTarget);
+    window.addEventListener('resize', updateTarget);
+    window.addEventListener('scroll', updateTarget, true);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener('resize', updateTarget);
+      window.removeEventListener('scroll', updateTarget, true);
+      setGuideTargetRect(null);
+    };
   }, [guideStep]);
   const save = useMutation({
     mutationFn: (submit: boolean) => {
@@ -230,26 +264,7 @@ export function FantasyDashboardPage() {
               </Stack>
             </Stack>
           </Box>
-          <Box className="fantasy-mode-banners" aria-label="More fantasy modes">
-            <FantasyModeBanner
-              label="Private leagues"
-              title="Compete with your circle"
-              description="Invite-only tables using the same official squad, deadlines and scoring—no duplicate team building."
-              status="Coming next"
-            />
-            <FantasyModeBanner
-              label="Versus"
-              title="One manager. One rival."
-              description="Weekly head-to-head records with identical rules, automatic points and transparent tie-breakers."
-              status="Preview"
-            />
-            <FantasyModeBanner
-              label="Winner pool"
-              title="Regulated head-to-head stakes"
-              description="Age, identity, location and responsible-play checks before any paid challenge; escrow and refunds follow published settlement rules."
-              status="Compliance first"
-            />
-          </Box>
+          <FantasyPromotions />
           <Accordion className="instascore-panel fantasy-governance" disableGutters>
             <AccordionSummary expandIcon={<span aria-hidden="true">⌄</span>}>
               <Box>
@@ -348,11 +363,13 @@ export function FantasyDashboardPage() {
             />
           </Box>
 
-          <Box
-            className="instascore-panel fantasy-performance-panel"
-            data-fantasy-guide="performance"
-          >
-            <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" gap={2}>
+          <Box className="instascore-panel fantasy-performance-panel">
+            <Stack
+              direction={{ xs: 'column', sm: 'row' }}
+              justifyContent="space-between"
+              gap={2}
+              data-fantasy-guide="performance"
+            >
               <Box>
                 <Typography variant="overline" color="primary.main" fontWeight={900}>
                   Official standings
@@ -434,7 +451,6 @@ export function FantasyDashboardPage() {
           <Box className="fantasy-builder-grid">
             <Box
               className="instascore-panel fantasy-squad-shell"
-              data-fantasy-guide="captain"
               sx={{
                 display: { xs: workspaceTab === 'squad' ? 'block' : 'none', md: 'block' },
                 background: 'linear-gradient(145deg, rgb(7, 25, 45), rgb(12, 39, 67))',
@@ -446,6 +462,7 @@ export function FantasyDashboardPage() {
                 justifyContent="space-between"
                 gap={1}
                 alignItems={{ md: 'center' }}
+                data-fantasy-guide="captain"
               >
                 <Box>
                   <Typography
@@ -565,7 +582,6 @@ export function FantasyDashboardPage() {
 
             <Box
               className="instascore-panel fantasy-market-panel"
-              data-fantasy-guide="market"
               sx={{ display: { xs: workspaceTab === 'players' ? 'block' : 'none', md: 'block' } }}
             >
               <Stack direction="row" justifyContent="space-between" alignItems="center" gap={1}>
@@ -588,7 +604,7 @@ export function FantasyDashboardPage() {
                   </Button>
                 )}
               </Stack>
-              <Box className="fantasy-market-filters" sx={{ my: 1.5 }}>
+              <Box className="fantasy-market-filters" sx={{ my: 1.5 }} data-fantasy-guide="market">
                 <TextField
                   className="fantasy-market-search"
                   label="Search players or teams"
@@ -843,6 +859,7 @@ export function FantasyDashboardPage() {
           {guideStep !== null ? (
             <FantasyGuide
               step={guideStep}
+              targetRect={guideTargetRect}
               onBack={() => setGuideStep((current) => Math.max(0, (current ?? 0) - 1))}
               onNext={() => {
                 if (guideStep >= fantasyGuideSteps.length - 1) {
@@ -994,9 +1011,15 @@ function FantasyPitch({
   const defense = entries.filter((entry) => !isOffense(entry.position?.code));
   const offenseTarget = Math.ceil(expectedSize / 2);
   const defenseTarget = Math.floor(expectedSize / 2);
+  const defenseOpenSlots = Math.max(0, defenseTarget - defense.length);
+  const offenseOpenSlots = Math.max(0, offenseTarget - offense.length);
 
   return (
-    <Box className="fantasy-pitch" sx={{ mt: 3 }} data-fantasy-guide="pitch">
+    <Box
+      className="fantasy-pitch"
+      sx={{ mt: 3 }}
+      data-fantasy-guide={defenseOpenSlots + offenseOpenSlots === 0 ? 'pitch' : undefined}
+    >
       <Box className="fantasy-pitch-word fantasy-pitch-word--top">INSTASCORE</Box>
       <Typography className="fantasy-pitch-label fantasy-pitch-label--defense">DEFENSE</Typography>
       <Box className="fantasy-pitch-unit fantasy-pitch-unit--defense">
@@ -1011,12 +1034,13 @@ function FantasyPitch({
             onCaptain={onCaptain}
           />
         ))}
-        {Array.from({ length: Math.max(0, defenseTarget - defense.length) }, (_, index) => (
+        {Array.from({ length: defenseOpenSlots }, (_, index) => (
           <PitchSlot
             key={`defense-${index}`}
             index={defense.length + index}
             count={defenseTarget}
             unit="defense"
+            guideTarget={index === 0}
             onAdd={onAddSlot}
           />
         ))}
@@ -1037,12 +1061,13 @@ function FantasyPitch({
             onCaptain={onCaptain}
           />
         ))}
-        {Array.from({ length: Math.max(0, offenseTarget - offense.length) }, (_, index) => (
+        {Array.from({ length: offenseOpenSlots }, (_, index) => (
           <PitchSlot
             key={`offense-${index}`}
             index={offense.length + index}
             count={offenseTarget}
             unit="offense"
+            guideTarget={defenseOpenSlots === 0 && index === 0}
             onAdd={onAddSlot}
           />
         ))}
@@ -1061,11 +1086,13 @@ function PitchSlot({
   index,
   count,
   unit,
+  guideTarget,
   onAdd,
 }: {
   index: number;
   count: number;
   unit: 'offense' | 'defense';
+  guideTarget: boolean;
   onAdd: (unit: 'offense' | 'defense') => void;
 }) {
   const columns = Math.min(Math.max(count, 1), 4);
@@ -1081,6 +1108,7 @@ function PitchSlot({
       className="fantasy-pitch-slot"
       sx={{ left: `${left}%`, top: `${top}%` }}
       aria-label={`Add ${unit} player`}
+      data-fantasy-guide={guideTarget ? 'pitch' : undefined}
       onClick={() => onAdd(unit)}
     >
       <span>+</span>
@@ -1094,14 +1122,16 @@ function FantasyModeBanner({
   title,
   description,
   status,
+  image,
 }: {
   label: string;
   title: string;
   description: string;
   status: string;
+  image: string;
 }) {
   return (
-    <Box className="fantasy-mode-banner">
+    <Box className="fantasy-mode-banner" sx={{ '--fantasy-promo-image': `url(${image})` }}>
       <Stack direction="row" justifyContent="space-between" alignItems="center" gap={1}>
         <Typography variant="overline" fontWeight={1000}>
           {label}
@@ -1114,13 +1144,89 @@ function FantasyModeBanner({
   );
 }
 
+const fantasyPromotions = [
+  {
+    label: 'Private leagues',
+    title: 'Coming soon: compete with your circle',
+    description:
+      'Invite-only tables will use the same official squad, deadlines and scoring—without rebuilding your team.',
+    image: privateLeaguesImage,
+  },
+  {
+    label: 'Versus',
+    title: 'Coming soon: one manager, one rival',
+    description:
+      'Weekly head-to-head records will use identical rules, automatic points and transparent tie-breakers.',
+    image: versusImage,
+  },
+  {
+    label: 'Winner pool',
+    title: 'Coming soon: governed winner challenges',
+    description:
+      'This planned mode remains subject to age, identity, location, responsible-play and settlement controls.',
+    image: winnerPoolImage,
+  },
+] as const;
+
+function FantasyPromotions() {
+  const trackRef = useRef<HTMLDivElement | null>(null);
+  const [activeSlide, setActiveSlide] = useState(0);
+
+  const updateActiveSlide = () => {
+    const track = trackRef.current;
+    if (!track) return;
+    const cards = Array.from(track.children) as HTMLElement[];
+    const closest = cards.reduce(
+      (best, card, index) => {
+        const distance = Math.abs(card.offsetLeft - track.scrollLeft);
+        return distance < best.distance ? { index, distance } : best;
+      },
+      { index: 0, distance: Number.POSITIVE_INFINITY },
+    );
+    setActiveSlide(closest.index);
+  };
+
+  const goToSlide = (index: number) => {
+    const card = trackRef.current?.children[index] as HTMLElement | undefined;
+    if (card && typeof card.scrollIntoView === 'function') {
+      card.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'start' });
+    }
+    setActiveSlide(index);
+  };
+
+  return (
+    <Box className="fantasy-promotions" aria-label="Fantasy modes coming soon">
+      <Box ref={trackRef} className="fantasy-mode-banners" onScroll={updateActiveSlide}>
+        {fantasyPromotions.map((promotion) => (
+          <FantasyModeBanner key={promotion.label} {...promotion} status="Coming soon" />
+        ))}
+      </Box>
+      <Box className="fantasy-promo-pagination" aria-label="Choose a coming-soon feature">
+        {fantasyPromotions.map((promotion, index) => (
+          <Box
+            component="button"
+            type="button"
+            key={promotion.label}
+            className={index === activeSlide ? 'is-active' : ''}
+            aria-label={`Show ${promotion.label}`}
+            aria-current={index === activeSlide ? 'true' : undefined}
+            onClick={() => goToSlide(index)}
+          />
+        ))}
+      </Box>
+    </Box>
+  );
+}
+
 function FantasyGuide({
   step,
+  targetRect,
   onBack,
   onNext,
   onSkip,
 }: {
   step: number;
+  targetRect: GuideTargetRect | null;
   onBack: () => void;
   onNext: () => void;
   onSkip: () => void;
@@ -1128,54 +1234,72 @@ function FantasyGuide({
   const item = fantasyGuideSteps[step];
   if (!item) return null;
   const finalStep = step === fantasyGuideSteps.length - 1;
+  const targetIsLow = targetRect
+    ? targetRect.top + targetRect.height / 2 > window.innerHeight / 2
+    : false;
   return (
-    <Box
-      className="fantasy-guide"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="fantasy-guide-title"
-    >
-      <Box className="fantasy-guide-backdrop" aria-hidden="true" />
-      <Box className="fantasy-guide-card">
-        <Box className="fantasy-guide-motion" aria-hidden="true">
-          <span>+</span>
-          <i />
-        </Box>
-        <Typography variant="overline" color="primary.main" fontWeight={1000}>
-          {item.eyebrow}
-        </Typography>
-        <Typography id="fantasy-guide-title" variant="h3">
-          {item.title}
-        </Typography>
-        <Typography color="text.secondary">{item.body}</Typography>
-        <Box
-          className="fantasy-guide-progress"
-          aria-label={`Guide step ${step + 1} of ${fantasyGuideSteps.length}`}
-        >
-          {fantasyGuideSteps.map((guideItem, index) => (
-            <span
-              key={guideItem.target}
-              className={index === step ? 'is-active' : index < step ? 'is-done' : ''}
-            />
-          ))}
-        </Box>
-        <Stack direction="row" justifyContent="space-between" alignItems="center" gap={1}>
-          <Button size="small" color="inherit" onClick={onSkip}>
-            Skip guide
-          </Button>
-          <Stack direction="row" gap={1}>
-            {step > 0 ? (
-              <Button size="small" onClick={onBack}>
-                Back
-              </Button>
-            ) : null}
-            <Button variant="contained" size="small" onClick={onNext}>
-              {finalStep ? 'Start playing' : 'Next'}
+    <Portal>
+      <Box
+        className={`fantasy-guide${targetIsLow ? ' fantasy-guide--target-low' : ''}`}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="fantasy-guide-title"
+      >
+        {targetRect ? (
+          <Box
+            className="fantasy-guide-focus"
+            aria-hidden="true"
+            sx={{
+              top: Math.max(8, targetRect.top - 8),
+              left: Math.max(8, targetRect.left - 8),
+              width: Math.min(window.innerWidth - 16, targetRect.width + 16),
+              height: Math.min(window.innerHeight - 16, targetRect.height + 16),
+            }}
+          />
+        ) : (
+          <Box className="fantasy-guide-backdrop" aria-hidden="true" />
+        )}
+        <Box className="fantasy-guide-card">
+          <Box className="fantasy-guide-motion" aria-hidden="true">
+            <span>+</span>
+            <i />
+          </Box>
+          <Typography variant="overline" color="primary.main" fontWeight={1000}>
+            {item.eyebrow}
+          </Typography>
+          <Typography id="fantasy-guide-title" variant="h3">
+            {item.title}
+          </Typography>
+          <Typography color="text.secondary">{item.body}</Typography>
+          <Box
+            className="fantasy-guide-progress"
+            aria-label={`Guide step ${step + 1} of ${fantasyGuideSteps.length}`}
+          >
+            {fantasyGuideSteps.map((guideItem, index) => (
+              <span
+                key={guideItem.target}
+                className={index === step ? 'is-active' : index < step ? 'is-done' : ''}
+              />
+            ))}
+          </Box>
+          <Stack direction="row" justifyContent="space-between" alignItems="center" gap={1}>
+            <Button size="small" color="inherit" onClick={onSkip}>
+              Skip guide
             </Button>
+            <Stack direction="row" gap={1}>
+              {step > 0 ? (
+                <Button size="small" onClick={onBack}>
+                  Back
+                </Button>
+              ) : null}
+              <Button variant="contained" size="small" onClick={onNext}>
+                {finalStep ? 'Start playing' : 'Next'}
+              </Button>
+            </Stack>
           </Stack>
-        </Stack>
+        </Box>
       </Box>
-    </Box>
+    </Portal>
   );
 }
 

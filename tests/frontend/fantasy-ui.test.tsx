@@ -101,7 +101,10 @@ describe('fantasy foundation UI', () => {
     expect(await screen.findByText(/My squad history/i)).toBeInTheDocument();
     expect(await screen.findByText(/Lagos Blitz Crew/)).toBeInTheDocument();
     expect(await screen.findByText('74 pts')).toBeInTheDocument();
-    expect(screen.getByText(/regulated head-to-head stakes/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/coming soon/i)).toHaveLength(6);
+    expect(screen.getByRole('button', { name: /show private leagues/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /show versus/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /show winner pool/i })).toBeInTheDocument();
   });
 
   it('shows an animated, replayable first-visit guide without trapping returning users', async () => {

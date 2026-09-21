@@ -2,7 +2,7 @@
 Contributors: instascore
 Requires at least: 6.6
 Requires PHP: 8.2
-Stable tag: 0.23.0-rc.8
+Stable tag: 0.23.0-rc.9
 License: GPL-2.0-or-later
 
 WordPress backend and React application shell for InstaScore.
@@ -12,6 +12,13 @@ WordPress backend and React application shell for InstaScore.
 See README.md for the shortcode, development server and production build steps.
 
 == Changelog ==
+
+= 0.23.0-rc.9 =
+* Rebuilt the fantasy walkthrough as a top-layer spotlight tour that anchors to the exact control described.
+* Added automatic scrolling, mobile workspace-tab switching and obstruction-aware guide placement.
+* Added original branded artwork for Private Leagues, Versus and governed Winner Pool previews.
+* Converted fantasy promotions into a swipeable, snap-aligned mobile carousel with pagination.
+* Clarified every unreleased fantasy mode with explicit Coming soon language.
 
 = 0.23.0-rc.8 =
 * Restored the release package pipeline so WordPress can discover and install the latest fantasy update.
