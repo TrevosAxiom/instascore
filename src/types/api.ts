@@ -12,6 +12,13 @@ export interface ApiErrorDetail {
   fields?: Record<string, string>;
 }
 
+export interface EmailVerificationChallenge {
+  verificationRequired: true;
+  email: string;
+  message: string;
+  expiresIn: number;
+}
+
 export interface BootstrapSettings {
   apiBase: string;
   appBase: string;

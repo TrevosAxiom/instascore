@@ -2,7 +2,7 @@
 Contributors: instascore
 Requires at least: 6.6
 Requires PHP: 8.2
-Stable tag: 0.23.0-rc.5
+Stable tag: 0.23.0-rc.6
 License: GPL-2.0-or-later
 
 WordPress backend and React application shell for InstaScore.
@@ -12,6 +12,12 @@ WordPress backend and React application shell for InstaScore.
 See README.md for the shortcode, development server and production build steps.
 
 == Changelog ==
+
+= 0.23.0-rc.6 =
+* Added email OTP verification to registration, including expiry, resend cooldowns and abuse limits.
+* Prevented unverified accounts from signing in until verification is complete.
+* Added a responsive verification experience to the native InstaScore login and registration flow.
+* Branded WordPress transactional emails with the InstaScore design and Lagos Wolverines attribution.
 
 = 0.23.0-rc.5 =
 * Added guest fantasy browsing, custom fantasy team names and an official weekly performance table.

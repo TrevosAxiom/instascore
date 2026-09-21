@@ -19,6 +19,14 @@ export const testApi: ApiClient = {
     }),
   login: () => Promise.reject(new Error('Not configured')),
   register: () => Promise.reject(new Error('Not configured')),
+  verifyEmail: () => Promise.reject(new Error('Not configured')),
+  resendEmailVerification: (email) =>
+    Promise.resolve({
+      verificationRequired: true,
+      email,
+      message: 'Enter the six-digit code sent to your email.',
+      expiresIn: 600,
+    }),
   forgotPassword: () => Promise.resolve({ message: 'Check your email.' }),
   logout: () => Promise.resolve(),
   setTheme: (theme) => Promise.resolve(theme),

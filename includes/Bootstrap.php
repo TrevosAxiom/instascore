@@ -40,6 +40,7 @@ use InstaScore\Platform\REST\ThemeController;
 use InstaScore\Platform\REST\YouTubeStreamingController;
 use InstaScore\Platform\Support\Assets;
 use InstaScore\Platform\Support\DatabaseMaintenanceScheduler;
+use InstaScore\Platform\Support\EmailBranding;
 use InstaScore\Platform\Support\AdminSettings;
 use InstaScore\Platform\Support\PageProvisioner;
 use InstaScore\Platform\Support\PluginUpdater;
@@ -70,6 +71,7 @@ final class Bootstrap {
 	public function register(): void {
 		PluginUpdater::register();
 		SecurityHardening::register();
+		EmailBranding::register();
 		add_action( 'plugins_loaded', array( $this, 'maybe_migrate' ) );
 		add_action( 'rest_api_init', array( $this, 'register_rest_routes' ) );
 		add_action( 'init', array( Shortcode::class, 'register' ) );

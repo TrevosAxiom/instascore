@@ -2,6 +2,7 @@ import type {
   ApiEnvelope,
   AlertHistoryItem,
   AuthState,
+  EmailVerificationChallenge,
   BasketballLiveGame,
   FootballProviderLiveGame,
   FootballMatchDetails,
@@ -98,7 +99,13 @@ export class ApiError extends Error {
 export interface ApiClient {
   getAuthState: () => Promise<AuthState>;
   login: (input: { email: string; password: string; remember: boolean }) => Promise<AuthState>;
-  register: (input: { displayName: string; email: string; password: string }) => Promise<AuthState>;
+  register: (input: {
+    displayName: string;
+    email: string;
+    password: string;
+  }) => Promise<AuthState | EmailVerificationChallenge>;
+  verifyEmail: (input: { email: string; code: string }) => Promise<AuthState>;
+  resendEmailVerification: (email: string) => Promise<EmailVerificationChallenge>;
   forgotPassword: (email: string) => Promise<{ message: string }>;
   logout: () => Promise<unknown>;
   setTheme: (theme: ThemePreference) => Promise<ThemePreference>;
@@ -493,13 +500,26 @@ export function createApiClient(settings: BootstrapSettings): ApiClient {
       return state;
     },
     async register(input) {
-      const state = await request<AuthState>('/auth/register', {
+      const state = await request<AuthState | EmailVerificationChallenge>('/auth/register', {
+        method: 'POST',
+        body: JSON.stringify(input),
+      });
+      if ('nonce' in state) nonce = state.nonce ?? nonce;
+      return state;
+    },
+    async verifyEmail(input) {
+      const state = await request<AuthState>('/auth/verify-email', {
         method: 'POST',
         body: JSON.stringify(input),
       });
       nonce = state.nonce ?? nonce;
       return state;
     },
+    resendEmailVerification: (email) =>
+      request<EmailVerificationChallenge>('/auth/resend-verification', {
+        method: 'POST',
+        body: JSON.stringify({ email }),
+      }),
     forgotPassword: (email) =>
       request<{ message: string }>('/auth/forgot-password', {
         method: 'POST',

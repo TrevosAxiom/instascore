@@ -39,13 +39,15 @@ const registerSchema = z
   });
 type LoginForm = z.infer<typeof loginSchema>;
 type RegisterForm = z.infer<typeof registerSchema>;
+type VerificationForm = { code: string };
 
 export function LoginPage() {
   const api = useApi();
   const client = useQueryClient();
   const navigate = useNavigate();
   const location = useLocation();
-  const [tab, setTab] = useState<'login' | 'register' | 'forgot'>('login');
+  const [tab, setTab] = useState<'login' | 'register' | 'verify' | 'forgot'>('login');
+  const [verificationEmail, setVerificationEmail] = useState('');
   const login = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
     defaultValues: { email: '', password: '', remember: true },
@@ -58,12 +60,24 @@ export function LoginPage() {
     resolver: zodResolver(z.object({ email: z.email('Enter a valid email address.') })),
     defaultValues: { email: '' },
   });
+  const verification = useForm<VerificationForm>({
+    resolver: zodResolver(
+      z.object({ code: z.string().regex(/^\d{6}$/, 'Enter the six-digit code.') }),
+    ),
+    defaultValues: { code: '' },
+  });
   const destination = new URLSearchParams(location.search).get('redirect') || '/dashboard';
   const authMutation = useMutation({
     mutationFn: (values: LoginForm) => api.login(values),
     onSuccess: (state) => {
       client.setQueryData(['auth', 'status'], state);
       void navigate(destination, { replace: true });
+    },
+    onError: (error) => {
+      if (error instanceof ApiError && error.code === 'instascore_email_verification_required') {
+        setVerificationEmail(login.getValues('email'));
+        setTab('verify');
+      }
     },
   });
   const registerMutation = useMutation({
@@ -73,15 +87,36 @@ export function LoginPage() {
         email: values.email,
         password: values.password,
       }),
+    onSuccess: (result) => {
+      if ('verificationRequired' in result) {
+        setVerificationEmail(result.email);
+        verification.reset();
+        setTab('verify');
+        return;
+      }
+      client.setQueryData(['auth', 'status'], result);
+      void navigate(destination, { replace: true });
+    },
+  });
+  const verificationMutation = useMutation({
+    mutationFn: ({ code }: VerificationForm) => api.verifyEmail({ email: verificationEmail, code }),
     onSuccess: (state) => {
       client.setQueryData(['auth', 'status'], state);
       void navigate(destination, { replace: true });
     },
   });
+  const resendMutation = useMutation({
+    mutationFn: () => api.resendEmailVerification(verificationEmail),
+  });
   const forgotMutation = useMutation({
     mutationFn: ({ email }: { email: string }) => api.forgotPassword(email),
   });
-  const error = authMutation.error ?? registerMutation.error ?? forgotMutation.error;
+  const error =
+    verificationMutation.error ??
+    resendMutation.error ??
+    authMutation.error ??
+    registerMutation.error ??
+    forgotMutation.error;
 
   return (
     <PageScaffold
@@ -95,8 +130,8 @@ export function LoginPage() {
         sx={{ width: '100%', maxWidth: 560, mx: 'auto', p: { xs: 2, sm: 4 } }}
       >
         <Tabs
-          value={tab}
-          onChange={(_event, value: typeof tab) => setTab(value)}
+          value={tab === 'login' || tab === 'register' ? tab : false}
+          onChange={(_event, value: 'login' | 'register') => setTab(value)}
           variant="fullWidth"
           sx={{ mb: 3 }}
         >
@@ -212,6 +247,48 @@ export function LoginPage() {
             >
               Create account
             </Button>
+          </Stack>
+        )}
+        {tab === 'verify' && (
+          <Stack
+            component="form"
+            spacing={2}
+            onSubmit={(event) =>
+              void verification.handleSubmit((values) => verificationMutation.mutate(values))(event)
+            }
+          >
+            <Typography variant="h5" fontWeight={950}>
+              Verify your email
+            </Typography>
+            <Typography color="text.secondary">
+              Enter the six-digit code sent to <strong>{verificationEmail}</strong>. The code
+              expires after 10 minutes.
+            </Typography>
+            <TextField
+              label="Verification code"
+              autoComplete="one-time-code"
+              inputMode="numeric"
+              autoFocus
+              inputProps={{ maxLength: 6, pattern: '[0-9]*' }}
+              error={!!verification.formState.errors.code}
+              helperText={verification.formState.errors.code?.message}
+              {...verification.register('code')}
+            />
+            {resendMutation.isSuccess ? (
+              <Alert severity="success">A new verification code was sent.</Alert>
+            ) : null}
+            <Button
+              type="submit"
+              variant="contained"
+              size="large"
+              disabled={verificationMutation.isPending}
+            >
+              Verify and continue
+            </Button>
+            <Button disabled={resendMutation.isPending} onClick={() => resendMutation.mutate()}>
+              Send a new code
+            </Button>
+            <Button onClick={() => setTab('login')}>Back to sign in</Button>
           </Stack>
         )}
         {tab === 'forgot' && (
