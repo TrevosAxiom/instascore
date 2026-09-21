@@ -37,12 +37,42 @@ import { PageScaffold } from '../../components/PageScaffold';
 import type { FantasyPlayer, FantasySquadEntry } from '../../types/api';
 
 const fantasyGuideSteps = [
-  { target: 'identity', eyebrow: 'Step 1 · Your team', title: 'Make it yours', body: 'Choose the competition, name your fantasy team and keep an eye on budget and the deadline.' },
-  { target: 'pitch', eyebrow: 'Step 2 · Build', title: 'Tap a + on the pitch', body: 'Empty slots open a quick player search already filtered for offense or defense.' },
-  { target: 'market', eyebrow: 'Step 3 · Scout', title: 'Search the full market', body: 'Compare price, points, ownership, position and team before adding a player.' },
-  { target: 'captain', eyebrow: 'Step 4 · Lead', title: 'Set captain and vice-captain', body: 'Your captain scores double. The vice-captain takes over if the captain does not play.' },
-  { target: 'performance', eyebrow: 'Step 5 · Track', title: 'Follow every gameweek', body: 'Weekly tables and saved squad history let you review the exact selection and performance later.' },
-  { target: 'submit', eyebrow: 'Step 6 · Lock in', title: 'Save, review, submit', body: 'Drafts stay editable until the deadline. Submit only when the squad, formation and captaincy are ready.' },
+  {
+    target: 'identity',
+    eyebrow: 'Step 1 · Your team',
+    title: 'Make it yours',
+    body: 'Choose the competition, name your fantasy team and keep an eye on budget and the deadline.',
+  },
+  {
+    target: 'pitch',
+    eyebrow: 'Step 2 · Build',
+    title: 'Tap a + on the pitch',
+    body: 'Empty slots open a quick player search already filtered for offense or defense.',
+  },
+  {
+    target: 'market',
+    eyebrow: 'Step 3 · Scout',
+    title: 'Search the full market',
+    body: 'Compare price, points, ownership, position and team before adding a player.',
+  },
+  {
+    target: 'captain',
+    eyebrow: 'Step 4 · Lead',
+    title: 'Set captain and vice-captain',
+    body: 'Your captain scores double. The vice-captain takes over if the captain does not play.',
+  },
+  {
+    target: 'performance',
+    eyebrow: 'Step 5 · Track',
+    title: 'Follow every gameweek',
+    body: 'Weekly tables and saved squad history let you review the exact selection and performance later.',
+  },
+  {
+    target: 'submit',
+    eyebrow: 'Step 6 · Lock in',
+    title: 'Save, review, submit',
+    body: 'Drafts stay editable until the deadline. Submit only when the squad, formation and captaincy are ready.',
+  },
 ] as const;
 
 export function FantasyDashboardPage() {
@@ -128,7 +158,9 @@ export function FantasyDashboardPage() {
     if (guideStep === null || typeof document === 'undefined') return;
     const guideItem = fantasyGuideSteps[guideStep];
     if (!guideItem) return;
-    const target = document.querySelector<HTMLElement>(`[data-fantasy-guide="${guideItem.target}"]`);
+    const target = document.querySelector<HTMLElement>(
+      `[data-fantasy-guide="${guideItem.target}"]`,
+    );
     target?.classList.add('fantasy-guide-target');
     if (target && typeof target.scrollIntoView === 'function') {
       target.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -229,14 +261,39 @@ export function FantasyDashboardPage() {
             </AccordionSummary>
             <AccordionDetails>
               <Box component="ol" className="fantasy-governance-list">
-                <li><strong>One official market:</strong> prices and eligibility are set per season by the competition administrator.</li>
-                <li><strong>Budget and team caps:</strong> every purchase must remain within budget, position quotas and the maximum players allowed from one real team.</li>
-                <li><strong>Deadline lock:</strong> squads, captaincy and transfers lock at the published gameweek deadline; no backdating is allowed.</li>
-                <li><strong>Like-for-like transfers:</strong> the incoming player must match the outgoing fantasy position and be available.</li>
-                <li><strong>Transfer cost:</strong> the first completed transfer in a gameweek is free; each additional transfer deducts four fantasy points.</li>
-                <li><strong>Price integrity:</strong> the squad uses the season price list. Admin opening prices lock after the first submitted squad.</li>
-                <li><strong>Audit and recovery:</strong> every save, submission and transfer is revisioned; each gameweek keeps its own immutable lineup and score record.</li>
-                <li><strong>Challenge integrity:</strong> versus and winner-pool opponents use the same gameweek, deadline, player pool and scoring version. Ties, cancelled games and corrections follow published settlement rules.</li>
+                <li>
+                  <strong>One official market:</strong> prices and eligibility are set per season by
+                  the competition administrator.
+                </li>
+                <li>
+                  <strong>Budget and team caps:</strong> every purchase must remain within budget,
+                  position quotas and the maximum players allowed from one real team.
+                </li>
+                <li>
+                  <strong>Deadline lock:</strong> squads, captaincy and transfers lock at the
+                  published gameweek deadline; no backdating is allowed.
+                </li>
+                <li>
+                  <strong>Like-for-like transfers:</strong> the incoming player must match the
+                  outgoing fantasy position and be available.
+                </li>
+                <li>
+                  <strong>Transfer cost:</strong> the first completed transfer in a gameweek is
+                  free; each additional transfer deducts four fantasy points.
+                </li>
+                <li>
+                  <strong>Price integrity:</strong> the squad uses the season price list. Admin
+                  opening prices lock after the first submitted squad.
+                </li>
+                <li>
+                  <strong>Audit and recovery:</strong> every save, submission and transfer is
+                  revisioned; each gameweek keeps its own immutable lineup and score record.
+                </li>
+                <li>
+                  <strong>Challenge integrity:</strong> versus and winner-pool opponents use the
+                  same gameweek, deadline, player pool and scoring version. Ties, cancelled games
+                  and corrections follow published settlement rules.
+                </li>
               </Box>
             </AccordionDetails>
           </Accordion>
@@ -291,7 +348,10 @@ export function FantasyDashboardPage() {
             />
           </Box>
 
-          <Box className="instascore-panel fantasy-performance-panel" data-fantasy-guide="performance">
+          <Box
+            className="instascore-panel fantasy-performance-panel"
+            data-fantasy-guide="performance"
+          >
             <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" gap={2}>
               <Box>
                 <Typography variant="overline" color="primary.main" fontWeight={900}>
@@ -458,7 +518,12 @@ export function FantasyDashboardPage() {
                   />
                 </AccordionDetails>
               </Accordion>
-              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ mt: 1.5 }} data-fantasy-guide="submit">
+              <Stack
+                direction={{ xs: 'column', sm: 'row' }}
+                spacing={1}
+                sx={{ mt: 1.5 }}
+                data-fantasy-guide="submit"
+              >
                 <Button
                   variant="contained"
                   disabled={
@@ -650,22 +715,39 @@ export function FantasyDashboardPage() {
               </Typography>
               <Typography variant="h3">My squad history</Typography>
               <Typography color="text.secondary" sx={{ mb: 2 }}>
-                Revisit the exact team you submitted and see how it performed after points are confirmed.
+                Revisit the exact team you submitted and see how it performed after points are
+                confirmed.
               </Typography>
               {history.isLoading ? <LoadingState label="Loading squad history" /> : null}
-              {history.isError ? <ErrorState description="Your saved gameweek squads could not be loaded." /> : null}
+              {history.isError ? (
+                <ErrorState description="Your saved gameweek squads could not be loaded." />
+              ) : null}
               <Box className="fantasy-history-grid">
                 {(history.data ?? []).map((week) => (
                   <Accordion key={week.gameweekUuid} disableGutters>
                     <AccordionSummary expandIcon={<span aria-hidden="true">⌄</span>}>
-                      <Stack direction="row" justifyContent="space-between" alignItems="center" gap={2} width="100%">
+                      <Stack
+                        direction="row"
+                        justifyContent="space-between"
+                        alignItems="center"
+                        gap={2}
+                        width="100%"
+                      >
                         <Box>
                           <Typography fontWeight={900}>{week.gameweekName}</Typography>
-                          <Typography variant="body2" color="text.secondary">{week.teamName} · {week.players.length} players</Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            {week.teamName} · {week.players.length} players
+                          </Typography>
                         </Box>
                         <Stack direction="row" gap={1} alignItems="center">
-                          <Chip size="small" label={`${week.gameweekPoints} pts`} color={week.pointsStatus === 'confirmed' ? 'success' : 'default'} />
-                          {week.rank ? <Chip size="small" variant="outlined" label={`#${week.rank}`} /> : null}
+                          <Chip
+                            size="small"
+                            label={`${week.gameweekPoints} pts`}
+                            color={week.pointsStatus === 'confirmed' ? 'success' : 'default'}
+                          />
+                          {week.rank ? (
+                            <Chip size="small" variant="outlined" label={`#${week.rank}`} />
+                          ) : null}
                         </Stack>
                       </Stack>
                     </AccordionSummary>
@@ -674,21 +756,29 @@ export function FantasyDashboardPage() {
                         {week.players.map((entry) => (
                           <Chip
                             key={entry.fantasyPlayerUuid}
-                            avatar={<Avatar src={entry.player?.photoUrl ?? undefined}>{entry.player?.name?.[0]}</Avatar>}
+                            avatar={
+                              <Avatar src={entry.player?.photoUrl ?? undefined}>
+                                {entry.player?.name?.[0]}
+                              </Avatar>
+                            }
                             label={`${entry.player?.name ?? 'Player'}${entry.isCaptain ? ' (C)' : entry.isViceCaptain ? ' (V)' : ''}`}
                             variant={entry.slotType === 'bench' ? 'outlined' : 'filled'}
                           />
                         ))}
                       </Stack>
                       <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5 }}>
-                        Season total: {week.seasonPoints} · {week.pointsStatus === 'confirmed' ? 'Final' : 'Provisional'}
+                        Season total: {week.seasonPoints} ·{' '}
+                        {week.pointsStatus === 'confirmed' ? 'Final' : 'Provisional'}
                       </Typography>
                     </AccordionDetails>
                   </Accordion>
                 ))}
               </Box>
               {!history.isLoading && history.data?.length === 0 ? (
-                <EmptyState title="No saved gameweeks yet" description="Save or submit your first squad to start your weekly history." />
+                <EmptyState
+                  title="No saved gameweeks yet"
+                  description="Save or submit your first squad to start your weekly history."
+                />
               ) : null}
             </Box>
           ) : null}
@@ -715,8 +805,15 @@ export function FantasyDashboardPage() {
               <Stack spacing={0.75} sx={{ mt: 1 }}>
                 {(players.data ?? [])
                   .filter((player) => !selectedIds.has(player.uuid))
-                  .filter((player) => slotPicker === (isOffense(player.position.code) ? 'offense' : 'defense'))
-                  .filter((player) => `${player.player.name} ${player.team.name}`.toLowerCase().includes(slotSearch.trim().toLowerCase()))
+                  .filter(
+                    (player) =>
+                      slotPicker === (isOffense(player.position.code) ? 'offense' : 'defense'),
+                  )
+                  .filter((player) =>
+                    `${player.player.name} ${player.team.name}`
+                      .toLowerCase()
+                      .includes(slotSearch.trim().toLowerCase()),
+                  )
                   .slice(0, 12)
                   .map((player) => (
                     <PlayerRow
@@ -732,7 +829,14 @@ export function FantasyDashboardPage() {
             </DialogContent>
             <DialogActions>
               <Button onClick={() => setSlotPicker(null)}>Cancel</Button>
-              <Button onClick={() => { setSlotPicker(null); setWorkspaceTab('players'); }}>Open full market</Button>
+              <Button
+                onClick={() => {
+                  setSlotPicker(null);
+                  setWorkspaceTab('players');
+                }}
+              >
+                Open full market
+              </Button>
             </DialogActions>
           </Dialog>
 
@@ -999,7 +1103,9 @@ function FantasyModeBanner({
   return (
     <Box className="fantasy-mode-banner">
       <Stack direction="row" justifyContent="space-between" alignItems="center" gap={1}>
-        <Typography variant="overline" fontWeight={1000}>{label}</Typography>
+        <Typography variant="overline" fontWeight={1000}>
+          {label}
+        </Typography>
         <Chip size="small" label={status} />
       </Stack>
       <Typography variant="h4">{title}</Typography>
@@ -1023,25 +1129,49 @@ function FantasyGuide({
   if (!item) return null;
   const finalStep = step === fantasyGuideSteps.length - 1;
   return (
-    <Box className="fantasy-guide" role="dialog" aria-modal="true" aria-labelledby="fantasy-guide-title">
+    <Box
+      className="fantasy-guide"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="fantasy-guide-title"
+    >
       <Box className="fantasy-guide-backdrop" aria-hidden="true" />
       <Box className="fantasy-guide-card">
         <Box className="fantasy-guide-motion" aria-hidden="true">
-          <span>+</span><i />
+          <span>+</span>
+          <i />
         </Box>
-        <Typography variant="overline" color="primary.main" fontWeight={1000}>{item.eyebrow}</Typography>
-        <Typography id="fantasy-guide-title" variant="h3">{item.title}</Typography>
+        <Typography variant="overline" color="primary.main" fontWeight={1000}>
+          {item.eyebrow}
+        </Typography>
+        <Typography id="fantasy-guide-title" variant="h3">
+          {item.title}
+        </Typography>
         <Typography color="text.secondary">{item.body}</Typography>
-        <Box className="fantasy-guide-progress" aria-label={`Guide step ${step + 1} of ${fantasyGuideSteps.length}`}>
+        <Box
+          className="fantasy-guide-progress"
+          aria-label={`Guide step ${step + 1} of ${fantasyGuideSteps.length}`}
+        >
           {fantasyGuideSteps.map((guideItem, index) => (
-            <span key={guideItem.target} className={index === step ? 'is-active' : index < step ? 'is-done' : ''} />
+            <span
+              key={guideItem.target}
+              className={index === step ? 'is-active' : index < step ? 'is-done' : ''}
+            />
           ))}
         </Box>
         <Stack direction="row" justifyContent="space-between" alignItems="center" gap={1}>
-          <Button size="small" color="inherit" onClick={onSkip}>Skip guide</Button>
+          <Button size="small" color="inherit" onClick={onSkip}>
+            Skip guide
+          </Button>
           <Stack direction="row" gap={1}>
-            {step > 0 ? <Button size="small" onClick={onBack}>Back</Button> : null}
-            <Button variant="contained" size="small" onClick={onNext}>{finalStep ? 'Start playing' : 'Next'}</Button>
+            {step > 0 ? (
+              <Button size="small" onClick={onBack}>
+                Back
+              </Button>
+            ) : null}
+            <Button variant="contained" size="small" onClick={onNext}>
+              {finalStep ? 'Start playing' : 'Next'}
+            </Button>
           </Stack>
         </Stack>
       </Box>

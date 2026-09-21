@@ -534,8 +534,7 @@ body.instascore-standalone .instascore-app-bar .MuiIconButton-root {
   border: 1px solid rgba(243, 198, 67, 0.32);
   border-radius: 16px;
   background:
-    radial-gradient(circle at 100% 0, rgba(243, 198, 67, 0.22), transparent 38%),
-    rgb(7, 25, 45);
+    radial-gradient(circle at 100% 0, rgba(243, 198, 67, 0.22), transparent 38%), rgb(7, 25, 45);
   color: #fff5d6;
 }
 
@@ -652,23 +651,41 @@ body.instascore-standalone .instascore-app-bar .MuiIconButton-root {
   z-index: 1501 !important;
   outline: 4px solid #f3c643 !important;
   outline-offset: 5px;
-  box-shadow: 0 0 0 10px rgba(243, 198, 67, 0.18), 0 18px 60px rgba(0, 0, 0, 0.3) !important;
+  box-shadow:
+    0 0 0 10px rgba(243, 198, 67, 0.18),
+    0 18px 60px rgba(0, 0, 0, 0.3) !important;
   animation: fantasy-guide-pulse 1.6s ease-in-out infinite;
 }
 
 @keyframes fantasy-guide-arrive {
-  from { transform: translateY(24px) scale(0.96); opacity: 0; }
-  to { transform: translateY(0) scale(1); opacity: 1; }
+  from {
+    transform: translateY(24px) scale(0.96);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
 }
 
 @keyframes fantasy-guide-bob {
-  0%, 100% { transform: translateY(0) rotate(-3deg); }
-  50% { transform: translateY(-8px) rotate(3deg); }
+  0%,
+  100% {
+    transform: translateY(0) rotate(-3deg);
+  }
+  50% {
+    transform: translateY(-8px) rotate(3deg);
+  }
 }
 
 @keyframes fantasy-guide-pulse {
-  0%, 100% { outline-offset: 4px; }
-  50% { outline-offset: 9px; }
+  0%,
+  100% {
+    outline-offset: 4px;
+  }
+  50% {
+    outline-offset: 9px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

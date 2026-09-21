@@ -94,7 +94,9 @@ describe('fantasy foundation UI', () => {
     const dialog = await screen.findByRole('dialog');
     expect(within(dialog).getByText(/add an offensive player/i)).toBeInTheDocument();
     fireEvent.click(within(dialog).getByRole('button', { name: /select Ada Touchdown/i }));
-    expect(await screen.findByText(/Ada Touchdown added to your starting lineup/i)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/Ada Touchdown added to your starting lineup/i),
+    ).toBeInTheDocument();
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     expect(await screen.findByText(/My squad history/i)).toBeInTheDocument();
     expect(await screen.findByText(/Lagos Blitz Crew/)).toBeInTheDocument();
@@ -109,9 +111,13 @@ describe('fantasy foundation UI', () => {
     const guide = await screen.findByRole('dialog', { name: /make it yours/i });
     expect(within(guide).getByText(/step 1/i)).toBeInTheDocument();
     fireEvent.click(within(guide).getByRole('button', { name: /next/i }));
-    expect(await screen.findByRole('dialog', { name: /tap a \+ on the pitch/i })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('dialog', { name: /tap a \+ on the pitch/i }),
+    ).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /skip guide/i }));
-    await waitFor(() => expect(screen.queryByRole('dialog', { name: /tap a \+/i })).not.toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog', { name: /tap a \+/i })).not.toBeInTheDocument(),
+    );
     expect(localStorage.getItem('instascore-fantasy-guide-v1')).toBe('skipped');
     fireEvent.click(screen.getByRole('button', { name: /show guide/i }));
     expect(await screen.findByRole('dialog', { name: /make it yours/i })).toBeInTheDocument();
