@@ -1,6 +1,6 @@
 {
-  "_EmbedShell-AZtwMvEM.js": {
-    "file": "assets/EmbedShell-AZtwMvEM.js",
+  "_EmbedShell-sR0YwzUN.js": {
+    "file": "assets/EmbedShell-sR0YwzUN.js",
     "name": "EmbedShell",
     "imports": [
       "_data-Di6wkr1N.js",
@@ -16,8 +16,8 @@
       "_mui-BCj1E7Pl.js"
     ]
   },
-  "_LiveScoresBoard-CJQaEKQl.js": {
-    "file": "assets/LiveScoresBoard-CJQaEKQl.js",
+  "_LiveScoresBoard-53FPt0xy.js": {
+    "file": "assets/LiveScoresBoard-53FPt0xy.js",
     "name": "LiveScoresBoard",
     "imports": [
       "_data-Di6wkr1N.js",
@@ -34,8 +34,8 @@
       "_mui-BCj1E7Pl.js"
     ]
   },
-  "_MediaUploadField-DP204N2-.js": {
-    "file": "assets/MediaUploadField-DP204N2-.js",
+  "_MediaUploadField-tRX9yVMZ.js": {
+    "file": "assets/MediaUploadField-tRX9yVMZ.js",
     "name": "MediaUploadField",
     "imports": [
       "_data-Di6wkr1N.js",
@@ -101,7 +101,7 @@
     "src": "src/assets/instascore-sports-splash-v2.jpg"
   },
   "src/features/admin/AdminAccountsPage.tsx": {
-    "file": "assets/AdminAccountsPage-DizfpGCn.js",
+    "file": "assets/AdminAccountsPage-CBkCYNfJ.js",
     "name": "AdminAccountsPage",
     "src": "src/features/admin/AdminAccountsPage.tsx",
     "isDynamicEntry": true,
@@ -114,7 +114,7 @@
     ]
   },
   "src/features/admin/AdminDashboardPage.tsx": {
-    "file": "assets/AdminDashboardPage-Dt6jzWCG.js",
+    "file": "assets/AdminDashboardPage-CUouiTvv.js",
     "name": "AdminDashboardPage",
     "src": "src/features/admin/AdminDashboardPage.tsx",
     "isDynamicEntry": true,
@@ -127,7 +127,7 @@
     ]
   },
   "src/features/admin/AdminSettingsPage.tsx": {
-    "file": "assets/AdminSettingsPage-Dvlr6Za7.js",
+    "file": "assets/AdminSettingsPage-CaDmorHz.js",
     "name": "AdminSettingsPage",
     "src": "src/features/admin/AdminSettingsPage.tsx",
     "isDynamicEntry": true,
@@ -140,7 +140,7 @@
     ]
   },
   "src/features/basketball/BasketballLivePage.tsx": {
-    "file": "assets/BasketballLivePage-CHw27Ehs.js",
+    "file": "assets/BasketballLivePage-lUrkWwIz.js",
     "name": "BasketballLivePage",
     "src": "src/features/basketball/BasketballLivePage.tsx",
     "isDynamicEntry": true,
@@ -153,7 +153,7 @@
     ]
   },
   "src/features/basketball/BasketballMatchDetailPage.tsx": {
-    "file": "assets/BasketballMatchDetailPage-CDBPu5-v.js",
+    "file": "assets/BasketballMatchDetailPage-ZWgI_MS3.js",
     "name": "BasketballMatchDetailPage",
     "src": "src/features/basketball/BasketballMatchDetailPage.tsx",
     "isDynamicEntry": true,
@@ -166,7 +166,7 @@
     ]
   },
   "src/features/commerce/AdminCommercePage.tsx": {
-    "file": "assets/AdminCommercePage---U3or8P.js",
+    "file": "assets/AdminCommercePage-C4epaxaw.js",
     "name": "AdminCommercePage",
     "src": "src/features/commerce/AdminCommercePage.tsx",
     "isDynamicEntry": true,
@@ -179,7 +179,7 @@
     ]
   },
   "src/features/commerce/StorefrontPage.tsx": {
-    "file": "assets/StorefrontPage-DRqc8_O7.js",
+    "file": "assets/StorefrontPage-DJanTOju.js",
     "name": "StorefrontPage",
     "src": "src/features/commerce/StorefrontPage.tsx",
     "isDynamicEntry": true,
@@ -192,7 +192,7 @@
     ]
   },
   "src/features/competitions/AdminCompetitionsPage.tsx": {
-    "file": "assets/AdminCompetitionsPage-COkVvaaf.js",
+    "file": "assets/AdminCompetitionsPage-DE-H5hmw.js",
     "name": "AdminCompetitionsPage",
     "src": "src/features/competitions/AdminCompetitionsPage.tsx",
     "isDynamicEntry": true,
@@ -201,12 +201,12 @@
       "src/main.tsx",
       "_react-DyjswXl9.js",
       "_forms-xvcm9ToG.js",
-      "_MediaUploadField-DP204N2-.js",
+      "_MediaUploadField-tRX9yVMZ.js",
       "_mui-BCj1E7Pl.js"
     ]
   },
   "src/features/competitions/CompetitionDetailPage.tsx": {
-    "file": "assets/CompetitionDetailPage-DYVJtod-.js",
+    "file": "assets/CompetitionDetailPage-Bvdmml_L.js",
     "name": "CompetitionDetailPage",
     "src": "src/features/competitions/CompetitionDetailPage.tsx",
     "isDynamicEntry": true,
@@ -219,7 +219,7 @@
     ]
   },
   "src/features/competitions/CompetitionDirectoryPage.tsx": {
-    "file": "assets/CompetitionDirectoryPage-BAr16z4b.js",
+    "file": "assets/CompetitionDirectoryPage-BbPdcH77.js",
     "name": "CompetitionDirectoryPage",
     "src": "src/features/competitions/CompetitionDirectoryPage.tsx",
     "isDynamicEntry": true,
@@ -232,7 +232,7 @@
     ]
   },
   "src/features/discipline/DisciplineAdminPage.tsx": {
-    "file": "assets/DisciplineAdminPage-DkRi6g5V.js",
+    "file": "assets/DisciplineAdminPage-B9dHZ9VW.js",
     "name": "DisciplineAdminPage",
     "src": "src/features/discipline/DisciplineAdminPage.tsx",
     "isDynamicEntry": true,
@@ -245,7 +245,7 @@
     ]
   },
   "src/features/fantasy/AdminFantasyPage.tsx": {
-    "file": "assets/AdminFantasyPage-B5R0Cb7I.js",
+    "file": "assets/AdminFantasyPage-Clkr6-l0.js",
     "name": "AdminFantasyPage",
     "src": "src/features/fantasy/AdminFantasyPage.tsx",
     "isDynamicEntry": true,
@@ -258,7 +258,7 @@
     ]
   },
   "src/features/fantasy/FantasyDashboardPage.tsx": {
-    "file": "assets/FantasyDashboardPage-Cm3uh5EB.js",
+    "file": "assets/FantasyDashboardPage-aTr-yAdf.js",
     "name": "FantasyDashboardPage",
     "src": "src/features/fantasy/FantasyDashboardPage.tsx",
     "isDynamicEntry": true,
@@ -271,7 +271,7 @@
     ]
   },
   "src/features/fantasy/FantasyLeaguePage.tsx": {
-    "file": "assets/FantasyLeaguePage-BVsh_qQW.js",
+    "file": "assets/FantasyLeaguePage-hdITXXiT.js",
     "name": "FantasyLeaguePage",
     "src": "src/features/fantasy/FantasyLeaguePage.tsx",
     "isDynamicEntry": true,
@@ -284,7 +284,7 @@
     ]
   },
   "src/features/fantasy/FantasyPointsPage.tsx": {
-    "file": "assets/FantasyPointsPage-PX-5oVfr.js",
+    "file": "assets/FantasyPointsPage-CLdJ9LOd.js",
     "name": "FantasyPointsPage",
     "src": "src/features/fantasy/FantasyPointsPage.tsx",
     "isDynamicEntry": true,
@@ -297,7 +297,7 @@
     ]
   },
   "src/features/fantasy/FantasyTransfersPage.tsx": {
-    "file": "assets/FantasyTransfersPage-WcUKaAXf.js",
+    "file": "assets/FantasyTransfersPage-B6G5QEaV.js",
     "name": "FantasyTransfersPage",
     "src": "src/features/fantasy/FantasyTransfersPage.tsx",
     "isDynamicEntry": true,
@@ -310,7 +310,7 @@
     ]
   },
   "src/features/favourites/FavouritesPage.tsx": {
-    "file": "assets/FavouritesPage-C2kiIaxH.js",
+    "file": "assets/FavouritesPage-rtu3ac-r.js",
     "name": "FavouritesPage",
     "src": "src/features/favourites/FavouritesPage.tsx",
     "isDynamicEntry": true,
@@ -323,7 +323,7 @@
     ]
   },
   "src/features/fixtures/AdminFixturesPage.tsx": {
-    "file": "assets/AdminFixturesPage-DB03b2pW.js",
+    "file": "assets/AdminFixturesPage-Ce-Co-um.js",
     "name": "AdminFixturesPage",
     "src": "src/features/fixtures/AdminFixturesPage.tsx",
     "isDynamicEntry": true,
@@ -336,7 +336,7 @@
     ]
   },
   "src/features/fixtures/FixtureDetailPage.tsx": {
-    "file": "assets/FixtureDetailPage-RFIDE9l0.js",
+    "file": "assets/FixtureDetailPage-CfCk4RG0.js",
     "name": "FixtureDetailPage",
     "src": "src/features/fixtures/FixtureDetailPage.tsx",
     "isDynamicEntry": true,
@@ -352,7 +352,7 @@
     ]
   },
   "src/features/fixtures/FixtureListPage.tsx": {
-    "file": "assets/FixtureListPage-CWwL3cgf.js",
+    "file": "assets/FixtureListPage-B44BQ_B8.js",
     "name": "FixtureListPage",
     "src": "src/features/fixtures/FixtureListPage.tsx",
     "isDynamicEntry": true,
@@ -360,13 +360,13 @@
       "_data-Di6wkr1N.js",
       "_react-DyjswXl9.js",
       "src/main.tsx",
-      "_LiveScoresBoard-CJQaEKQl.js",
+      "_LiveScoresBoard-53FPt0xy.js",
       "_mui-BCj1E7Pl.js",
       "_forms-xvcm9ToG.js"
     ]
   },
   "src/features/fixtures/FootballMatchDetailPage.tsx": {
-    "file": "assets/FootballMatchDetailPage-IQD_HWBb.js",
+    "file": "assets/FootballMatchDetailPage-B0cAXdyT.js",
     "name": "FootballMatchDetailPage",
     "src": "src/features/fixtures/FootballMatchDetailPage.tsx",
     "isDynamicEntry": true,
@@ -379,7 +379,7 @@
     ]
   },
   "src/features/fixtures/NflMatchDetailPage.tsx": {
-    "file": "assets/NflMatchDetailPage-Dh0gmdvp.js",
+    "file": "assets/NflMatchDetailPage-jBgHL2yn.js",
     "name": "NflMatchDetailPage",
     "src": "src/features/fixtures/NflMatchDetailPage.tsx",
     "isDynamicEntry": true,
@@ -392,7 +392,7 @@
     ]
   },
   "src/features/fixtures/ReplayLibraryPage.tsx": {
-    "file": "assets/ReplayLibraryPage-DEGrXmW5.js",
+    "file": "assets/ReplayLibraryPage-BRGST25P.js",
     "name": "ReplayLibraryPage",
     "src": "src/features/fixtures/ReplayLibraryPage.tsx",
     "isDynamicEntry": true,
@@ -405,7 +405,7 @@
     ]
   },
   "src/features/fixtures/ResultsPage.tsx": {
-    "file": "assets/ResultsPage-HU6ACaPu.js",
+    "file": "assets/ResultsPage--i9GxPzB.js",
     "name": "ResultsPage",
     "src": "src/features/fixtures/ResultsPage.tsx",
     "isDynamicEntry": true,
@@ -413,13 +413,13 @@
       "_data-Di6wkr1N.js",
       "_react-DyjswXl9.js",
       "src/main.tsx",
-      "_LiveScoresBoard-CJQaEKQl.js",
+      "_LiveScoresBoard-53FPt0xy.js",
       "_mui-BCj1E7Pl.js",
       "_forms-xvcm9ToG.js"
     ]
   },
   "src/features/fixtures/StreamAnalyticsAdminPage.tsx": {
-    "file": "assets/StreamAnalyticsAdminPage-BEN2vhdr.js",
+    "file": "assets/StreamAnalyticsAdminPage-CqPYpbqP.js",
     "name": "StreamAnalyticsAdminPage",
     "src": "src/features/fixtures/StreamAnalyticsAdminPage.tsx",
     "isDynamicEntry": true,
@@ -427,13 +427,13 @@
       "_data-Di6wkr1N.js",
       "_react-DyjswXl9.js",
       "src/main.tsx",
-      "_MediaUploadField-DP204N2-.js",
+      "_MediaUploadField-tRX9yVMZ.js",
       "_mui-BCj1E7Pl.js",
       "_forms-xvcm9ToG.js"
     ]
   },
   "src/features/news/AdminRssPage.tsx": {
-    "file": "assets/AdminRssPage-Cfu8f9Mp.js",
+    "file": "assets/AdminRssPage-BY0fD4s2.js",
     "name": "AdminRssPage",
     "src": "src/features/news/AdminRssPage.tsx",
     "isDynamicEntry": true,
@@ -446,7 +446,7 @@
     ]
   },
   "src/features/news/NewsArticlePage.tsx": {
-    "file": "assets/NewsArticlePage-DOEBVa2W.js",
+    "file": "assets/NewsArticlePage-YktRCJHD.js",
     "name": "NewsArticlePage",
     "src": "src/features/news/NewsArticlePage.tsx",
     "isDynamicEntry": true,
@@ -459,7 +459,7 @@
     ]
   },
   "src/features/news/NewsPage.tsx": {
-    "file": "assets/NewsPage-q8wV-Vlv.js",
+    "file": "assets/NewsPage-vN6KY_nh.js",
     "name": "NewsPage",
     "src": "src/features/news/NewsPage.tsx",
     "isDynamicEntry": true,
@@ -472,7 +472,7 @@
     ]
   },
   "src/features/notifications/AdminNotificationTestPage.tsx": {
-    "file": "assets/AdminNotificationTestPage-DFTEAFeI.js",
+    "file": "assets/AdminNotificationTestPage-DstMof1b.js",
     "name": "AdminNotificationTestPage",
     "src": "src/features/notifications/AdminNotificationTestPage.tsx",
     "isDynamicEntry": true,
@@ -485,7 +485,7 @@
     ]
   },
   "src/features/notifications/NotificationPreferencesPage.tsx": {
-    "file": "assets/NotificationPreferencesPage-DQjRJeiI.js",
+    "file": "assets/NotificationPreferencesPage-C1ehMm23.js",
     "name": "NotificationPreferencesPage",
     "src": "src/features/notifications/NotificationPreferencesPage.tsx",
     "isDynamicEntry": true,
@@ -498,7 +498,7 @@
     ]
   },
   "src/features/operations/MatchDayDashboardPage.tsx": {
-    "file": "assets/MatchDayDashboardPage-DO_vP9Fl.js",
+    "file": "assets/MatchDayDashboardPage-C7755iOE.js",
     "name": "MatchDayDashboardPage",
     "src": "src/features/operations/MatchDayDashboardPage.tsx",
     "isDynamicEntry": true,
@@ -511,7 +511,7 @@
     ]
   },
   "src/features/operations/OperationsDashboardPage.tsx": {
-    "file": "assets/OperationsDashboardPage-C69CrbLM.js",
+    "file": "assets/OperationsDashboardPage-Cba9qAjs.js",
     "name": "OperationsDashboardPage",
     "src": "src/features/operations/OperationsDashboardPage.tsx",
     "isDynamicEntry": true,
@@ -524,7 +524,7 @@
     ]
   },
   "src/features/players/PlayerDirectoryPage.tsx": {
-    "file": "assets/PlayerDirectoryPage-BJpkc3Eq.js",
+    "file": "assets/PlayerDirectoryPage-BZKNvN6l.js",
     "name": "PlayerDirectoryPage",
     "src": "src/features/players/PlayerDirectoryPage.tsx",
     "isDynamicEntry": true,
@@ -537,7 +537,7 @@
     ]
   },
   "src/features/players/PlayerProfilePage.tsx": {
-    "file": "assets/PlayerProfilePage-C3Loi6Wd.js",
+    "file": "assets/PlayerProfilePage-DnBOzRdT.js",
     "name": "PlayerProfilePage",
     "src": "src/features/players/PlayerProfilePage.tsx",
     "isDynamicEntry": true,
@@ -550,7 +550,7 @@
     ]
   },
   "src/features/portals/CompetitionPortalPage.tsx": {
-    "file": "assets/CompetitionPortalPage-CifHzEtQ.js",
+    "file": "assets/CompetitionPortalPage-C5o76d24.js",
     "name": "CompetitionPortalPage",
     "src": "src/features/portals/CompetitionPortalPage.tsx",
     "isDynamicEntry": true,
@@ -563,7 +563,7 @@
     ]
   },
   "src/features/providers/AdminProvidersPage.tsx": {
-    "file": "assets/AdminProvidersPage-Bee9niIf.js",
+    "file": "assets/AdminProvidersPage-GgOAmzWy.js",
     "name": "AdminProvidersPage",
     "src": "src/features/providers/AdminProvidersPage.tsx",
     "isDynamicEntry": true,
@@ -576,7 +576,7 @@
     ]
   },
   "src/features/scoring/ScorekeeperControlsPage.tsx": {
-    "file": "assets/ScorekeeperControlsPage-xL2natal.js",
+    "file": "assets/ScorekeeperControlsPage-Dv84FcO9.js",
     "name": "ScorekeeperControlsPage",
     "src": "src/features/scoring/ScorekeeperControlsPage.tsx",
     "isDynamicEntry": true,
@@ -591,7 +591,7 @@
     ]
   },
   "src/features/search/SearchPage.tsx": {
-    "file": "assets/SearchPage-CmM8R8sO.js",
+    "file": "assets/SearchPage-DwP3NUam.js",
     "name": "SearchPage",
     "src": "src/features/search/SearchPage.tsx",
     "isDynamicEntry": true,
@@ -604,7 +604,7 @@
     ]
   },
   "src/features/standings/LeagueTablePage.tsx": {
-    "file": "assets/LeagueTablePage-D_sI6KxV.js",
+    "file": "assets/LeagueTablePage-BVQfVuy6.js",
     "name": "LeagueTablePage",
     "src": "src/features/standings/LeagueTablePage.tsx",
     "isDynamicEntry": true,
@@ -617,7 +617,7 @@
     ]
   },
   "src/features/standings/StatisticsPages.tsx": {
-    "file": "assets/StatisticsPages-CT8Vt5qG.js",
+    "file": "assets/StatisticsPages-CKbaSMby.js",
     "name": "StatisticsPages",
     "src": "src/features/standings/StatisticsPages.tsx",
     "isDynamicEntry": true,
@@ -630,7 +630,7 @@
     ]
   },
   "src/features/teams/AdminTeamsPage.tsx": {
-    "file": "assets/AdminTeamsPage-C3c5Q0K1.js",
+    "file": "assets/AdminTeamsPage-B3lWYgDf.js",
     "name": "AdminTeamsPage",
     "src": "src/features/teams/AdminTeamsPage.tsx",
     "isDynamicEntry": true,
@@ -639,12 +639,12 @@
       "_react-DyjswXl9.js",
       "_forms-xvcm9ToG.js",
       "src/main.tsx",
-      "_MediaUploadField-DP204N2-.js",
+      "_MediaUploadField-tRX9yVMZ.js",
       "_mui-BCj1E7Pl.js"
     ]
   },
   "src/features/teams/TeamDirectoryPage.tsx": {
-    "file": "assets/TeamDirectoryPage-BPqbZg8p.js",
+    "file": "assets/TeamDirectoryPage-PMxGH1__.js",
     "name": "TeamDirectoryPage",
     "src": "src/features/teams/TeamDirectoryPage.tsx",
     "isDynamicEntry": true,
@@ -657,7 +657,7 @@
     ]
   },
   "src/features/teams/TeamProfilePage.tsx": {
-    "file": "assets/TeamProfilePage-DnqMgOxA.js",
+    "file": "assets/TeamProfilePage-DNN6-DPx.js",
     "name": "TeamProfilePage",
     "src": "src/features/teams/TeamProfilePage.tsx",
     "isDynamicEntry": true,
@@ -670,7 +670,7 @@
     ]
   },
   "src/features/widgets/FixtureWidgetPage.tsx": {
-    "file": "assets/FixtureWidgetPage-BC5cA_Ks.js",
+    "file": "assets/FixtureWidgetPage-CuLMos7-.js",
     "name": "FixtureWidgetPage",
     "src": "src/features/widgets/FixtureWidgetPage.tsx",
     "isDynamicEntry": true,
@@ -678,13 +678,13 @@
       "_data-Di6wkr1N.js",
       "_react-DyjswXl9.js",
       "src/main.tsx",
-      "_EmbedShell-AZtwMvEM.js",
+      "_EmbedShell-sR0YwzUN.js",
       "_mui-BCj1E7Pl.js",
       "_forms-xvcm9ToG.js"
     ]
   },
   "src/features/widgets/LiveScoreWidgetPage.tsx": {
-    "file": "assets/LiveScoreWidgetPage-DmMQUyLb.js",
+    "file": "assets/LiveScoreWidgetPage-DsQ44jEr.js",
     "name": "LiveScoreWidgetPage",
     "src": "src/features/widgets/LiveScoreWidgetPage.tsx",
     "isDynamicEntry": true,
@@ -694,13 +694,13 @@
       "src/main.tsx",
       "_useLiveMatchStream-BCQj6p2x.js",
       "_LiveScoreboard-Dq-SgFDS.js",
-      "_EmbedShell-AZtwMvEM.js",
+      "_EmbedShell-sR0YwzUN.js",
       "_mui-BCj1E7Pl.js",
       "_forms-xvcm9ToG.js"
     ]
   },
   "src/features/widgets/TableWidgetPage.tsx": {
-    "file": "assets/TableWidgetPage-CBAXmdI7.js",
+    "file": "assets/TableWidgetPage-CtFcCr7T.js",
     "name": "TableWidgetPage",
     "src": "src/features/widgets/TableWidgetPage.tsx",
     "isDynamicEntry": true,
@@ -708,13 +708,13 @@
       "_data-Di6wkr1N.js",
       "_react-DyjswXl9.js",
       "src/main.tsx",
-      "_EmbedShell-AZtwMvEM.js",
+      "_EmbedShell-sR0YwzUN.js",
       "_mui-BCj1E7Pl.js",
       "_forms-xvcm9ToG.js"
     ]
   },
   "src/main.tsx": {
-    "file": "assets/main-C-sK35tA.js",
+    "file": "assets/main-DfytMV0C.js",
     "name": "main",
     "src": "src/main.tsx",
     "isEntry": true,
@@ -774,7 +774,7 @@
       "src/features/commerce/AdminCommercePage.tsx"
     ],
     "css": [
-      "assets/main-D7I5ow3S.css"
+      "assets/main-CDD7rjjf.css"
     ],
     "assets": [
       "assets/instascore-logo-brand-Cz-ftuRu.png",

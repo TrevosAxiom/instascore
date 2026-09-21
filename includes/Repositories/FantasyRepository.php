@@ -275,12 +275,35 @@ final class FantasyRepository {
 	}
 
 	/**
+	 * Return the user's persisted squad for every gameweek in a fantasy game.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	public function squad_history_for_user( int $user_id, int $game_id ): array {
+		$rows = $this->database->get_results(
+			$this->database->prepare(
+				"SELECT sq.*,gw.uuid gameweek_uuid,gw.name gameweek_name,gw.sequence_number,gw.deadline_at,gw.status gameweek_status,
+					COALESCE(t.gameweek_points,0) gameweek_points,COALESCE(t.season_points,0) season_points,t.rank_position,t.status points_status
+				FROM {$this->database->prefix}instascore_fantasy_squads sq
+				JOIN {$this->database->prefix}instascore_fantasy_gameweeks gw ON gw.id = sq.gameweek_id
+				LEFT JOIN {$this->database->prefix}instascore_fantasy_squad_totals t ON t.squad_id = sq.id AND t.gameweek_id = gw.id
+				WHERE sq.user_id = %d AND sq.fantasy_game_id = %d
+				ORDER BY gw.sequence_number DESC",
+				$user_id,
+				$game_id
+			),
+			ARRAY_A
+		);
+		return is_array( $rows ) ? $rows : array();
+	}
+
+	/**
 	 * @return array<int,array<string,mixed>>
 	 */
 	public function squad_players( int $squad_id ): array {
 		$rows = $this->database->get_results(
 			$this->database->prepare(
-				"SELECT sp.*,fp.uuid fantasy_player_uuid,fp.price_cents,fp.team_id,p.uuid player_uuid,p.display_name player_name,t.uuid team_uuid,t.name team_name,pos.code position_code,pos.name position_name
+				"SELECT sp.*,fp.uuid fantasy_player_uuid,fp.price_cents,fp.team_id,p.uuid player_uuid,p.display_name player_name,p.photo_url,t.uuid team_uuid,t.name team_name,pos.code position_code,pos.name position_name
 				FROM {$this->database->prefix}instascore_fantasy_squad_players sp
 				JOIN {$this->database->prefix}instascore_fantasy_players fp ON fp.id = sp.fantasy_player_id
 				JOIN {$this->database->prefix}instascore_players p ON p.id = fp.player_id

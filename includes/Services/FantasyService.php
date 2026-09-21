@@ -122,6 +122,34 @@ final class FantasyService {
 		return $this->present_squad( $context, $squad );
 	}
 
+	/** @return array<int,array<string,mixed>> */
+	public function squad_history( int $user_id, string $game_uuid ): array {
+		$game = $this->repository->find_game( $game_uuid );
+		if ( null === $game ) {
+			throw new ValidationException( array( 'game' => 'not_found' ) );
+		}
+		return array_map(
+			function ( array $row ): array {
+				return array(
+					'squadUuid'      => $row['uuid'],
+					'teamName'       => $row['name'],
+					'gameweekUuid'   => $row['gameweek_uuid'],
+					'gameweekName'   => $row['gameweek_name'],
+					'sequenceNumber' => (int) $row['sequence_number'],
+					'deadlineAt'     => $row['deadline_at'],
+					'status'         => $row['status'],
+					'gameweekStatus' => $row['gameweek_status'],
+					'gameweekPoints' => (int) $row['gameweek_points'],
+					'seasonPoints'   => (int) $row['season_points'],
+					'rank'           => null === $row['rank_position'] ? null : (int) $row['rank_position'],
+					'pointsStatus'   => $row['points_status'] ?? 'pending',
+					'players'        => array_map( array( $this, 'present_squad_player' ), $this->repository->squad_players( (int) $row['id'] ) ),
+				);
+			},
+			$this->repository->squad_history_for_user( $user_id, (int) $game['id'] )
+		);
+	}
+
 	/**
 	 * @param array<string,mixed> $input Squad input.
 	 */
@@ -493,7 +521,7 @@ final class FantasyService {
 			'isViceCaptain'     => (bool) $row['is_vice_captain'],
 			'priceCents'        => (int) $row['price_cents'],
 			'position'          => array( 'code' => $row['position_code'], 'name' => $row['position_name'] ),
-			'player'            => array( 'uuid' => $row['player_uuid'], 'name' => $row['player_name'] ),
+			'player'            => array( 'uuid' => $row['player_uuid'], 'name' => $row['player_name'], 'photoUrl' => $row['photo_url'] ?? null ),
 			'team'              => array( 'uuid' => $row['team_uuid'] ?? '', 'name' => $row['team_name'] ?? 'Free agent' ),
 		);
 	}

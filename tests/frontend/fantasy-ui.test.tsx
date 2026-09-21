@@ -1,5 +1,5 @@
-import { fireEvent, screen, waitFor } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { FantasyDashboardPage } from '../../src/features/fantasy/FantasyDashboardPage';
 import { AppRoutes } from '../../src/app/AppRoutes';
@@ -7,6 +7,10 @@ import type { FantasySquadEntry } from '../../src/types/api';
 import { adminAuth, guestAuth, renderApp, testApi } from './test-utils';
 
 describe('fantasy foundation UI', () => {
+  beforeEach(() => {
+    localStorage.setItem('instascore-fantasy-guide-v1', 'complete');
+  });
+
   it('renders player pool, tracks budget and saves a squad through the server API', async () => {
     const saveFantasySquad = vi.fn(testApi.saveFantasySquad);
     renderApp(<FantasyDashboardPage />, {
@@ -58,5 +62,58 @@ describe('fantasy foundation UI', () => {
     expect(screen.queryByRole('button', { name: /join league/i })).not.toBeInTheDocument();
     expect(createFantasyLeague).not.toHaveBeenCalled();
     expect(joinFantasyLeague).not.toHaveBeenCalled();
+  });
+
+  it('adds a player from a pitch slot and exposes saved gameweek history', async () => {
+    renderApp(<FantasyDashboardPage />, {
+      auth: adminAuth,
+      api: {
+        ...testApi,
+        getFantasySquadHistory: () =>
+          Promise.resolve([
+            {
+              squadUuid: '00000000-0000-4000-8000-000000000150',
+              teamName: 'Lagos Blitz Crew',
+              gameweekUuid: '00000000-0000-4000-8000-000000000122',
+              gameweekName: 'Gameweek 1',
+              sequenceNumber: 1,
+              deadlineAt: '2026-08-01 12:00:00',
+              status: 'submitted' as const,
+              gameweekStatus: 'completed',
+              gameweekPoints: 74,
+              seasonPoints: 74,
+              rank: 1,
+              pointsStatus: 'confirmed',
+              players: [],
+            },
+          ]),
+      },
+    });
+
+    fireEvent.click(await screen.findByRole('button', { name: /add offense player/i }));
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByText(/add an offensive player/i)).toBeInTheDocument();
+    fireEvent.click(within(dialog).getByRole('button', { name: /select Ada Touchdown/i }));
+    expect(await screen.findByText(/Ada Touchdown added to your starting lineup/i)).toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(await screen.findByText(/My squad history/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Lagos Blitz Crew/)).toBeInTheDocument();
+    expect(await screen.findByText('74 pts')).toBeInTheDocument();
+    expect(screen.getByText(/regulated head-to-head stakes/i)).toBeInTheDocument();
+  });
+
+  it('shows an animated, replayable first-visit guide without trapping returning users', async () => {
+    localStorage.removeItem('instascore-fantasy-guide-v1');
+    renderApp(<FantasyDashboardPage />, { auth: adminAuth });
+
+    const guide = await screen.findByRole('dialog', { name: /make it yours/i });
+    expect(within(guide).getByText(/step 1/i)).toBeInTheDocument();
+    fireEvent.click(within(guide).getByRole('button', { name: /next/i }));
+    expect(await screen.findByRole('dialog', { name: /tap a \+ on the pitch/i })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /skip guide/i }));
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: /tap a \+/i })).not.toBeInTheDocument());
+    expect(localStorage.getItem('instascore-fantasy-guide-v1')).toBe('skipped');
+    fireEvent.click(screen.getByRole('button', { name: /show guide/i }));
+    expect(await screen.findByRole('dialog', { name: /make it yours/i })).toBeInTheDocument();
   });
 });

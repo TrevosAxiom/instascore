@@ -39,6 +39,7 @@ import type {
   FantasyPerformanceRow,
   FantasyPointBreakdown,
   FantasySquadEntry,
+  FantasySquadHistory,
   FantasySquadState,
   FantasyScoringRule,
   FantasyRecalculationResult,
@@ -363,6 +364,7 @@ export interface ApiClient {
     updates: Array<{ fantasyPlayerUuid: string; priceCents: number }>,
   ) => Promise<FantasyPricing>;
   getFantasySquad: (uuid: string) => Promise<FantasySquadState>;
+  getFantasySquadHistory: (uuid: string) => Promise<FantasySquadHistory[]>;
   saveFantasySquad: (
     uuid: string,
     input: { name: string; baseRevision: number; players: FantasySquadEntry[] },
@@ -957,6 +959,8 @@ export function createApiClient(settings: BootstrapSettings): ApiClient {
         body: JSON.stringify({ updates }),
       }),
     getFantasySquad: (uuid) => request<FantasySquadState>(`/fantasy/games/${uuid}/squad`),
+    getFantasySquadHistory: (uuid) =>
+      request<FantasySquadHistory[]>(`/fantasy/games/${uuid}/squad-history`),
     saveFantasySquad: (uuid, input) =>
       request<FantasySquadState>(`/fantasy/games/${uuid}/squad`, {
         method: 'POST',

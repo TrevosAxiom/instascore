@@ -1213,6 +1213,22 @@ export interface FantasyPerformanceRow {
   status: string;
 }
 
+export interface FantasySquadHistory {
+  squadUuid: string;
+  teamName: string;
+  gameweekUuid: string;
+  gameweekName: string;
+  sequenceNumber: number;
+  deadlineAt: string;
+  status: 'draft' | 'submitted';
+  gameweekStatus: string;
+  gameweekPoints: number;
+  seasonPoints: number;
+  rank: number | null;
+  pointsStatus: string;
+  players: FantasySquadEntry[];
+}
+
 export interface FantasyLeague {
   uuid: string;
   name: string;

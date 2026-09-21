@@ -527,6 +527,7 @@ export const testApi: ApiClient = {
       },
       squad: null,
     }),
+  getFantasySquadHistory: () => Promise.resolve([]),
   saveFantasySquad: (_uuid, input) =>
     Promise.resolve({
       game: {

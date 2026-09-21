@@ -2,7 +2,7 @@
 Contributors: instascore
 Requires at least: 6.6
 Requires PHP: 8.2
-Stable tag: 0.23.0-rc.6
+Stable tag: 0.23.0-rc.7
 License: GPL-2.0-or-later
 
 WordPress backend and React application shell for InstaScore.
@@ -12,6 +12,13 @@ WordPress backend and React application shell for InstaScore.
 See README.md for the shortcode, development server and production build steps.
 
 == Changelog ==
+
+= 0.23.0-rc.7 =
+* Added governed fantasy transfer guidance covering budgets, positions, team limits, deadlines, pricing and audits.
+* Added searchable offense and defense player selection directly from empty pitch slots.
+* Added persistent per-gameweek squad history with selections, captaincy, points, totals, rank and score status.
+* Added compact previews for private leagues, versus play and compliance-gated winner-pool challenges.
+* Added an animated, accessible first-visit fantasy guide with replay, skip and reduced-motion support.
 
 = 0.23.0-rc.6 =
 * Added email OTP verification to registration, including expiry, resend cooldowns and abuse limits.
