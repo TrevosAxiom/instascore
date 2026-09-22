@@ -247,7 +247,10 @@ export interface ApiClient {
     input: { body: string; parentUuid?: string },
   ) => Promise<ChatMessage>;
   getFantasyChat: (gameUuid: string) => Promise<MatchChatRoom>;
-  postFantasyChat: (gameUuid: string, input: { body: string; parentUuid?: string }) => Promise<ChatMessage>;
+  postFantasyChat: (
+    gameUuid: string,
+    input: { body: string; parentUuid?: string },
+  ) => Promise<ChatMessage>;
   reactToChatMessage: (messageUuid: string, reaction: string) => Promise<{ updated: boolean }>;
   reportChatMessage: (messageUuid: string, reason: string) => Promise<{ reported: boolean }>;
   moderateChatMessage: (messageUuid: string) => Promise<{ moderated: boolean }>;
