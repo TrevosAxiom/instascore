@@ -19,6 +19,11 @@ describe('fantasy foundation UI', () => {
     });
 
     expect(await screen.findByText('InstaScore Fantasy')).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /squad performance/i })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    expect(screen.getByRole('tab', { name: /weekly table/i })).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText(/fantasy team name/i), {
       target: { value: 'Lagos Blitz Crew' },
     });
@@ -39,14 +44,16 @@ describe('fantasy foundation UI', () => {
     });
   });
 
-  it('allows guests to browse the fantasy builder and weekly performance table', async () => {
+  it('prompts guests to sign in before showing the fantasy walkthrough', async () => {
     renderApp(<AppRoutes loginUrl="/login" />, { route: '/fantasy', auth: guestAuth });
 
-    expect(await screen.findByText('InstaScore Fantasy')).toBeInTheDocument();
-    expect(await screen.findByText(/weekly performance table/i)).toBeInTheDocument();
-    expect(screen.getByText('Touchdown Kings')).toBeInTheDocument();
-    expect(screen.getByText(/any fantasy action will open secure login/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /save draft/i })).toBeDisabled();
+    expect(
+      await screen.findByRole('dialog', { name: /join the fantasy action/i }),
+    ).toBeInTheDocument();
+    expect(screen.getByAltText(/flag football players under stadium lights/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Step 1 · Your team/i)).not.toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /sign in/i })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tab', { name: /register/i })).toBeInTheDocument();
   });
 
   it('places every manager in the official competition without private league controls', async () => {

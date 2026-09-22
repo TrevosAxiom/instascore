@@ -11,7 +11,7 @@ final class MatchChatService {
 	public function fantasy_room( string $game_uuid, int $viewer_id ): array { $game_id = $this->fantasy_game_id( $game_uuid ); return array( 'messages' => array_map( array( $this, 'present' ), $this->repository->room_messages( 'fantasy', $game_id, $viewer_id ) ), 'banned' => $viewer_id > 0 && $this->repository->room_banned( $viewer_id, 'fantasy', $game_id ) ); }
 	public function fantasy_post( string $game_uuid, array $input, int $user_id ): array {
 		$game_id = $this->fantasy_game_id( $game_uuid ); if ( $this->repository->room_banned( $user_id, 'fantasy', $game_id ) ) { throw new ValidationException( array( 'chat' => 'banned' ) ); }
-		$body = trim( sanitize_textarea_field( (string) ( $input['body'] ?? '' ) ) );
+		$body = $this->sanitize_body( (string) ( $input['body'] ?? '' ) );
 		if ( '' === $body || mb_strlen( $body ) > 280 ) { throw new ValidationException( array( 'body' => 'Use between 1 and 280 characters.' ) ); }
 		$this->enforce_rate_limit( 'fantasy-' . $game_uuid, $user_id );
 		$parent_id = empty( $input['parentUuid'] ) ? null : $this->repository->room_parent_id( sanitize_text_field( (string) $input['parentUuid'] ), 'fantasy', $game_id );
@@ -20,7 +20,7 @@ final class MatchChatService {
 	}
 	public function post( string $fixture_uuid, array $input, int $user_id ): array {
 		$fixture_id = $this->fixture_id( $fixture_uuid ); if ( $this->repository->banned( $user_id, $fixture_id ) ) { throw new ValidationException( array( 'chat' => 'banned' ) ); }
-		$body = trim( sanitize_textarea_field( (string) ( $input['body'] ?? '' ) ) );
+		$body = $this->sanitize_body( (string) ( $input['body'] ?? '' ) );
 		if ( '' === $body || mb_strlen( $body ) > 280 ) { throw new ValidationException( array( 'body' => 'Use between 1 and 280 characters.' ) ); }
 		$this->enforce_rate_limit( $fixture_uuid, $user_id );
 		$parent_id = empty( $input['parentUuid'] ) ? null : $this->repository->parent_id( sanitize_text_field( (string) $input['parentUuid'] ), $fixture_id );
@@ -35,5 +35,17 @@ final class MatchChatService {
 	private function fantasy_game_id( string $uuid ): int { $id = $this->repository->fantasy_game_id( $uuid ); if ( null === $id ) { throw new ValidationException( array( 'fantasy' => 'not_found' ) ); } return $id; }
 	private function message( string $uuid ): array { $row = $this->repository->message( $uuid ); if ( null === $row || 'active' !== $row['status'] ) { throw new ValidationException( array( 'message' => 'not_found' ) ); } return $row; }
 	private function enforce_rate_limit( string $fixture_uuid, int $user_id ): void { $key = 'instascore_chat_rate_' . $user_id . '_' . substr( hash( 'sha256', $fixture_uuid ), 0, 12 ); $now = time(); $values = get_transient( $key ); $values = array_values( array_filter( is_array( $values ) ? $values : array(), static fn( int $time ): bool => $time > $now - 30 ) ); if ( count( $values ) >= 5 ) { throw new ValidationException( array( 'chat' => 'Please slow down before posting again.' ) ); } $values[] = $now; set_transient( $key, $values, 30 ); }
+	private function sanitize_body( string $value ): string {
+		$value = trim( $value );
+		if ( str_starts_with( $value, '[gif]' ) ) {
+			$url = esc_url_raw( trim( substr( $value, 5 ) ), array( 'https' ) );
+			$host = strtolower( (string) wp_parse_url( $url, PHP_URL_HOST ) );
+			if ( '' === $url || ! in_array( $host, array( 'media.giphy.com', 'i.giphy.com', 'media.tenor.com' ), true ) ) {
+				throw new ValidationException( array( 'body' => 'Use a trusted GIPHY or Tenor GIF link.' ) );
+			}
+			return '[gif]' . $url;
+		}
+		return trim( sanitize_textarea_field( $value ) );
+	}
 	private function present( array $row ): array { return array( 'uuid' => $row['uuid'], 'body' => $row['body'], 'author' => array( 'uuid' => $row['user_uuid'], 'displayName' => $row['display_name'] ), 'parent' => empty( $row['parent_uuid'] ) ? null : array( 'uuid' => $row['parent_uuid'], 'displayName' => $row['parent_display_name'] ?? '' ), 'reactions' => array_map( static fn( array $item ): array => array( 'reaction' => $item['reaction'], 'count' => (int) $item['total'], 'reacted' => (bool) $item['reacted'] ), $row['reactions'] ?? array() ), 'reportCount' => (int) ( $row['report_count'] ?? 0 ), 'createdAt' => $row['created_at'] ); }
 }

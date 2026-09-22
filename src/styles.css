@@ -517,8 +517,38 @@ body.instascore-standalone .instascore-app-bar .MuiIconButton-root {
 .fantasy-command-bar,
 .fantasy-performance-panel,
 .fantasy-official-league,
-.fantasy-history-panel {
+.fantasy-history-panel,
+.fantasy-insights-panel {
   padding: 16px !important;
+}
+
+.fantasy-insights-panel {
+  overflow: hidden;
+  padding: 0 !important;
+}
+.fantasy-insights-tabs {
+  min-height: 52px;
+  border-bottom: 1px solid rgba(7, 25, 45, 0.12);
+  background: rgb(7, 25, 45);
+}
+.fantasy-insights-tabs .MuiTab-root {
+  min-height: 52px;
+  color: rgba(255, 255, 255, 0.72);
+  font-weight: 1000;
+  letter-spacing: 0.02em;
+}
+.fantasy-insights-tabs .MuiTab-root.Mui-selected {
+  background: #f3c643;
+  color: rgb(7, 25, 45);
+}
+.fantasy-insights-tabs .MuiTabs-indicator {
+  height: 3px;
+  background: rgb(7, 25, 45);
+}
+.fantasy-insights-panel > .fantasy-history-panel,
+.fantasy-insights-panel > .fantasy-performance-panel,
+.fantasy-insights-content {
+  padding: 20px !important;
 }
 
 .fantasy-readiness-bar {
@@ -829,6 +859,127 @@ body.instascore-standalone .instascore-app-bar .MuiIconButton-root {
   border-radius: 12px;
   background: var(--instascore-surface, #fff);
 }
+.fantasy-banter-message .MuiIconButton-root {
+  width: 30px;
+  height: 30px;
+  color: var(--instascore-muted, #607086);
+}
+.fantasy-banter-gif {
+  display: block;
+  width: min(100%, 320px);
+  max-height: 280px;
+  margin-top: 8px;
+  border-radius: 12px;
+  object-fit: cover;
+}
+.fantasy-chat-tool {
+  width: 40px;
+  height: 40px;
+  border: 1px solid rgba(7, 25, 45, 0.14) !important;
+  border-radius: 11px !important;
+  color: rgb(7, 25, 45) !important;
+}
+.fantasy-gif-tool span {
+  font-size: 0.66rem;
+  font-weight: 1000;
+  letter-spacing: -0.02em;
+}
+.fantasy-emoji-picker {
+  padding: 8px;
+  border: 1px solid rgba(7, 25, 45, 0.12);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--instascore-surface, #fff) 94%, #f3c643 6%);
+}
+.fantasy-emoji-picker .MuiIconButton-root {
+  width: 38px;
+  height: 38px;
+  font-size: 1.12rem;
+}
+.fantasy-banter-gif-preview {
+  position: relative;
+  width: fit-content;
+  max-width: 100%;
+}
+.fantasy-banter-gif-preview > img,
+.fantasy-banter-gif-dialog-preview > img {
+  display: block;
+  max-width: 100%;
+  max-height: 240px;
+  border-radius: 12px;
+  object-fit: contain;
+}
+.fantasy-banter-gif-preview > .MuiIconButton-root {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: rgba(7, 25, 45, 0.82);
+  color: white;
+}
+.fantasy-banter-gif-dialog-preview {
+  display: grid;
+  place-items: center;
+  margin-top: 16px;
+  padding: 10px;
+  border-radius: 14px;
+  background: rgb(7, 25, 45);
+}
+
+.fantasy-auth-dialog .MuiDialog-paper {
+  overflow: hidden;
+  border: 1px solid rgba(243, 198, 67, 0.28);
+  border-radius: 22px;
+  background: var(--instascore-surface, #fff);
+}
+.fantasy-auth-layout {
+  display: grid;
+  grid-template-columns: minmax(300px, 0.9fr) minmax(340px, 1fr);
+  min-height: 610px;
+}
+.fantasy-auth-visual {
+  position: relative;
+  min-height: 610px;
+  overflow: hidden;
+  background: rgb(7, 25, 45);
+}
+.fantasy-auth-visual::after {
+  position: absolute;
+  inset: 0;
+  content: '';
+  background: linear-gradient(180deg, rgba(7, 25, 45, 0.08) 32%, rgba(7, 25, 45, 0.94) 100%);
+}
+.fantasy-auth-visual > img {
+  width: 100%;
+  height: 100%;
+  min-height: 610px;
+  object-fit: cover;
+  object-position: center;
+}
+.fantasy-auth-visual-copy {
+  position: absolute;
+  z-index: 1;
+  right: 26px;
+  bottom: 28px;
+  left: 26px;
+  color: white;
+}
+.fantasy-auth-visual-copy .MuiTypography-overline {
+  color: #f3c643;
+  font-weight: 1000;
+  letter-spacing: 0.16em;
+}
+.fantasy-auth-visual-copy .MuiTypography-h3 {
+  margin-block: 4px 8px;
+  color: white;
+  font-size: clamp(1.65rem, 3vw, 2.45rem);
+  line-height: 0.98;
+}
+.fantasy-auth-visual-copy .MuiTypography-body1 {
+  color: rgba(255, 255, 255, 0.78);
+}
+.fantasy-auth-form-shell {
+  align-self: center;
+  padding: clamp(24px, 4vw, 44px);
+}
 
 @media (min-width: 1024px) {
   .fantasy-page-stack {
@@ -855,21 +1006,17 @@ body.instascore-standalone .instascore-app-bar .MuiIconButton-root {
     grid-column: 1 / -1;
     grid-row: 4;
   }
-  .fantasy-page-stack > .fantasy-performance-panel {
-    grid-column: 1;
-    grid-row: 5;
-  }
   .fantasy-page-stack > .fantasy-mobile-tabs {
-    grid-column: 1;
-    grid-row: 6;
+    grid-column: 1 / -1;
+    grid-row: 5;
   }
   .fantasy-page-stack > .fantasy-builder-grid {
     grid-column: 1 / -1;
-    grid-row: 7;
+    grid-row: 6;
   }
-  .fantasy-page-stack > .fantasy-history-panel {
-    grid-column: 1;
-    grid-row: 8;
+  .fantasy-page-stack > .fantasy-insights-panel {
+    grid-column: 1 / -1;
+    grid-row: 7;
   }
   .fantasy-governance,
   .fantasy-chat-control {
@@ -1331,6 +1478,38 @@ body.instascore-standalone .instascore-app-bar .MuiIconButton-root {
 }
 
 @media (max-width: 767px) {
+  .fantasy-auth-dialog .MuiDialog-paper {
+    margin: 12px;
+    max-height: calc(100% - 24px);
+    border-radius: 18px;
+  }
+  .fantasy-auth-layout {
+    grid-template-columns: 1fr;
+    min-height: 0;
+  }
+  .fantasy-auth-visual {
+    min-height: 190px;
+    max-height: 28vh;
+  }
+  .fantasy-auth-visual > img {
+    min-height: 190px;
+    object-position: center 56%;
+  }
+  .fantasy-auth-visual-copy {
+    right: 18px;
+    bottom: 16px;
+    left: 18px;
+  }
+  .fantasy-auth-visual-copy .MuiTypography-h3 {
+    max-width: 310px;
+    font-size: 1.55rem;
+  }
+  .fantasy-auth-visual-copy .MuiTypography-body1 {
+    display: none;
+  }
+  .fantasy-auth-form-shell {
+    padding: 20px;
+  }
   .fantasy-readiness-bar {
     top: 62px;
     margin-inline: -8px;

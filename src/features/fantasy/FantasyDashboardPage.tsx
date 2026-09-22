@@ -90,7 +90,7 @@ type GuideTargetRect = {
 
 export function FantasyDashboardPage() {
   const api = useApi();
-  const { state } = useAuth();
+  const { state, isLoading: authLoading } = useAuth();
   const queryClient = useQueryClient();
   const [selectedGameUuid, setSelectedGameUuid] = useState('');
   const [search, setSearch] = useState('');
@@ -111,6 +111,9 @@ export function FantasyDashboardPage() {
   const [reviewOpen, setReviewOpen] = useState(false);
   const [playerDetail, setPlayerDetail] = useState<FantasyPlayer | null>(null);
   const [leaderboardMode, setLeaderboardMode] = useState<'gameweek' | 'overall'>('gameweek');
+  const [insightsTab, setInsightsTab] = useState<'squad' | 'table'>(() =>
+    state?.authenticated ? 'squad' : 'table',
+  );
   const [watchlist, setWatchlist] = useState<Set<string>>(() => {
     if (typeof window === 'undefined') return new Set();
     const saved: unknown = JSON.parse(
@@ -210,9 +213,15 @@ export function FantasyDashboardPage() {
       window.localStorage.setItem('instascore-fantasy-watchlist', JSON.stringify([...watchlist]));
   }, [watchlist]);
   useEffect(() => {
-    if (!activeGameUuid || typeof window === 'undefined') return;
+    if (!activeGameUuid || authLoading || typeof window === 'undefined') return;
+    if (!state?.authenticated) {
+      setGuideStep(null);
+      setAuthOpen(true);
+      return;
+    }
+    setAuthOpen(false);
     if (!window.localStorage.getItem('instascore-fantasy-guide-v1')) setGuideStep(0);
-  }, [activeGameUuid]);
+  }, [activeGameUuid, authLoading, state?.authenticated]);
   useEffect(() => {
     if (guideStep === null || typeof document === 'undefined') return;
     const guideItem = fantasyGuideSteps[guideStep];
@@ -473,113 +482,6 @@ export function FantasyDashboardPage() {
             >
               {readinessIssues.length ? 'Fix now' : 'Review team'}
             </Button>
-          </Box>
-
-          <Box className="instascore-panel fantasy-performance-panel">
-            <Stack
-              direction={{ xs: 'column', sm: 'row' }}
-              justifyContent="space-between"
-              gap={2}
-              data-fantasy-guide="performance"
-            >
-              <Box>
-                <Typography variant="overline" color="primary.main" fontWeight={900}>
-                  Official standings
-                </Typography>
-                <Typography variant="h3">Weekly performance table</Typography>
-                <Typography color="text.secondary">
-                  Compare each fantasy team’s gameweek score and season total.
-                </Typography>
-              </Box>
-              {performanceWeeks.length ? (
-                <Stack direction="row" gap={1} alignItems="center">
-                  <Tabs
-                    value={leaderboardMode}
-                    onChange={(_, value: 'gameweek' | 'overall') => setLeaderboardMode(value)}
-                    className="fantasy-leaderboard-tabs"
-                  >
-                    <Tab value="gameweek" label="Gameweek" />
-                    <Tab value="overall" label="Overall" />
-                  </Tabs>
-                  <TextField
-                    select
-                    label="Gameweek"
-                    value={activeTableGameweek}
-                    onChange={(event) => setTableGameweek(event.target.value)}
-                    sx={{ minWidth: 190 }}
-                  >
-                    {performanceWeeks.map((week) => (
-                      <MenuItem key={week.gameweekUuid} value={week.gameweekUuid}>
-                        {week.gameweekName}
-                      </MenuItem>
-                    ))}
-                  </TextField>
-                </Stack>
-              ) : null}
-            </Stack>
-            {performance.isLoading ? <LoadingState label="Loading weekly fantasy table" /> : null}
-            {performance.isError ? (
-              <ErrorState description="The weekly fantasy table could not be loaded." />
-            ) : null}
-            {performanceRows.length ? (
-              <>
-                <Box className="fantasy-podium">
-                  {performanceRows.slice(0, 3).map((row, index) => (
-                    <Box
-                      key={`podium-${row.teamName}`}
-                      className={`fantasy-podium-place place-${index + 1}`}
-                    >
-                      <Avatar>{row.managerName.slice(0, 1)}</Avatar>
-                      <strong>
-                        #{index + 1} {row.teamName}
-                      </strong>
-                      <small>
-                        {leaderboardMode === 'overall' ? row.totalPoints : row.gameweekPoints} pts
-                      </small>
-                    </Box>
-                  ))}
-                </Box>
-                <TableContainer sx={{ mt: 2 }}>
-                  <Table size="small" aria-label="Weekly fantasy performance table">
-                    <TableHead>
-                      <TableRow>
-                        <TableCell>Rank</TableCell>
-                        <TableCell>Fantasy team</TableCell>
-                        <TableCell>Manager</TableCell>
-                        <TableCell align="right">GW points</TableCell>
-                        <TableCell align="right">Total</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {performanceRows.map((row, index) => (
-                        <TableRow
-                          key={`${row.gameweekUuid}-${row.rank}-${row.teamName}`}
-                          className={
-                            row.managerName === state?.user?.displayName ? 'is-current-manager' : ''
-                          }
-                        >
-                          <TableCell>
-                            #{leaderboardMode === 'overall' ? index + 1 : row.rank}{' '}
-                            <RankMovement rank={row.rank} previousRank={row.previousRank} />
-                          </TableCell>
-                          <TableCell sx={{ fontWeight: 900 }}>{row.teamName}</TableCell>
-                          <TableCell>{row.managerName}</TableCell>
-                          <TableCell align="right">{row.gameweekPoints}</TableCell>
-                          <TableCell align="right" sx={{ fontWeight: 900 }}>
-                            {row.totalPoints}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-              </>
-            ) : !performance.isLoading && !performance.isError ? (
-              <EmptyState
-                title="No weekly scores yet"
-                description="Submitted teams will appear after the first fantasy points are calculated."
-              />
-            ) : null}
           </Box>
 
           <Tabs
@@ -901,93 +803,231 @@ export function FantasyDashboardPage() {
             </Box>
           </Box>
 
-          {state?.authenticated ? (
-            <Box className="instascore-panel fantasy-history-panel">
-              <Typography variant="overline" color="primary.main" fontWeight={900}>
-                Saved every gameweek
-              </Typography>
-              <Typography variant="h3">My squad history</Typography>
-              <Typography color="text.secondary" sx={{ mb: 2 }}>
-                Revisit the exact team you submitted and see how it performed after points are
-                confirmed.
-              </Typography>
-              {history.isLoading ? <LoadingState label="Loading squad history" /> : null}
-              {history.isError ? (
-                <ErrorState description="Your saved gameweek squads could not be loaded." />
-              ) : null}
-              {(history.data?.length ?? 0) > 1 ? (
-                <Box className="fantasy-form-chart" aria-label="Gameweek points trend">
+          <Box className="instascore-panel fantasy-insights-panel" data-fantasy-guide="performance">
+            <Tabs
+              value={insightsTab}
+              onChange={(_, value: 'squad' | 'table') => setInsightsTab(value)}
+              className="fantasy-insights-tabs"
+              variant="fullWidth"
+              aria-label="Fantasy performance views"
+            >
+              <Tab value="squad" label="Squad Performance" />
+              <Tab value="table" label="Weekly Table" />
+            </Tabs>
+
+            {insightsTab === 'squad' && state?.authenticated ? (
+              <Box className="fantasy-history-panel" role="tabpanel">
+                <Typography variant="overline" color="primary.main" fontWeight={900}>
+                  Saved every gameweek
+                </Typography>
+                <Typography variant="h3">My squad history</Typography>
+                <Typography color="text.secondary" sx={{ mb: 2 }}>
+                  Revisit the exact team you submitted and see how it performed after points are
+                  confirmed.
+                </Typography>
+                {history.isLoading ? <LoadingState label="Loading squad history" /> : null}
+                {history.isError ? (
+                  <ErrorState description="Your saved gameweek squads could not be loaded." />
+                ) : null}
+                {(history.data?.length ?? 0) > 1 ? (
+                  <Box className="fantasy-form-chart" aria-label="Gameweek points trend">
+                    {(history.data ?? []).map((week) => (
+                      <Box key={`chart-${week.gameweekUuid}`}>
+                        <span
+                          style={{ height: `${Math.max(8, Math.min(100, week.gameweekPoints))}%` }}
+                        />
+                        <small>{week.gameweekName}</small>
+                        <strong>{week.gameweekPoints}</strong>
+                      </Box>
+                    ))}
+                  </Box>
+                ) : null}
+                <Box className="fantasy-history-grid">
                   {(history.data ?? []).map((week) => (
-                    <Box key={`chart-${week.gameweekUuid}`}>
-                      <span
-                        style={{ height: `${Math.max(8, Math.min(100, week.gameweekPoints))}%` }}
-                      />
-                      <small>{week.gameweekName}</small>
-                      <strong>{week.gameweekPoints}</strong>
-                    </Box>
+                    <Accordion key={week.gameweekUuid} disableGutters>
+                      <AccordionSummary expandIcon={<span aria-hidden="true">⌄</span>}>
+                        <Stack
+                          direction="row"
+                          justifyContent="space-between"
+                          alignItems="center"
+                          gap={2}
+                          width="100%"
+                        >
+                          <Box>
+                            <Typography fontWeight={900}>{week.gameweekName}</Typography>
+                            <Typography variant="body2" color="text.secondary">
+                              {week.teamName} · {week.players.length} players
+                            </Typography>
+                          </Box>
+                          <Stack direction="row" gap={1} alignItems="center">
+                            <Chip
+                              size="small"
+                              label={`${week.gameweekPoints} pts`}
+                              color={week.pointsStatus === 'confirmed' ? 'success' : 'default'}
+                            />
+                            {week.rank ? (
+                              <Chip size="small" variant="outlined" label={`#${week.rank}`} />
+                            ) : null}
+                          </Stack>
+                        </Stack>
+                      </AccordionSummary>
+                      <AccordionDetails>
+                        <Stack direction="row" flexWrap="wrap" gap={0.75}>
+                          {week.players.map((entry) => (
+                            <Chip
+                              key={entry.fantasyPlayerUuid}
+                              avatar={
+                                <Avatar src={entry.player?.photoUrl ?? undefined}>
+                                  {entry.player?.name?.[0]}
+                                </Avatar>
+                              }
+                              label={`${entry.player?.name ?? 'Player'}${entry.isCaptain ? ' (C)' : entry.isViceCaptain ? ' (V)' : ''}`}
+                              variant={entry.slotType === 'bench' ? 'outlined' : 'filled'}
+                            />
+                          ))}
+                        </Stack>
+                        <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5 }}>
+                          Season total: {week.seasonPoints} ·{' '}
+                          {week.pointsStatus === 'confirmed' ? 'Final' : 'Provisional'}
+                        </Typography>
+                      </AccordionDetails>
+                    </Accordion>
                   ))}
                 </Box>
-              ) : null}
-              <Box className="fantasy-history-grid">
-                {(history.data ?? []).map((week) => (
-                  <Accordion key={week.gameweekUuid} disableGutters>
-                    <AccordionSummary expandIcon={<span aria-hidden="true">⌄</span>}>
-                      <Stack
-                        direction="row"
-                        justifyContent="space-between"
-                        alignItems="center"
-                        gap={2}
-                        width="100%"
-                      >
-                        <Box>
-                          <Typography fontWeight={900}>{week.gameweekName}</Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            {week.teamName} · {week.players.length} players
-                          </Typography>
-                        </Box>
-                        <Stack direction="row" gap={1} alignItems="center">
-                          <Chip
-                            size="small"
-                            label={`${week.gameweekPoints} pts`}
-                            color={week.pointsStatus === 'confirmed' ? 'success' : 'default'}
-                          />
-                          {week.rank ? (
-                            <Chip size="small" variant="outlined" label={`#${week.rank}`} />
-                          ) : null}
-                        </Stack>
-                      </Stack>
-                    </AccordionSummary>
-                    <AccordionDetails>
-                      <Stack direction="row" flexWrap="wrap" gap={0.75}>
-                        {week.players.map((entry) => (
-                          <Chip
-                            key={entry.fantasyPlayerUuid}
-                            avatar={
-                              <Avatar src={entry.player?.photoUrl ?? undefined}>
-                                {entry.player?.name?.[0]}
-                              </Avatar>
-                            }
-                            label={`${entry.player?.name ?? 'Player'}${entry.isCaptain ? ' (C)' : entry.isViceCaptain ? ' (V)' : ''}`}
-                            variant={entry.slotType === 'bench' ? 'outlined' : 'filled'}
-                          />
-                        ))}
-                      </Stack>
-                      <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5 }}>
-                        Season total: {week.seasonPoints} ·{' '}
-                        {week.pointsStatus === 'confirmed' ? 'Final' : 'Provisional'}
-                      </Typography>
-                    </AccordionDetails>
-                  </Accordion>
-                ))}
+                {!history.isLoading && history.data?.length === 0 ? (
+                  <EmptyState
+                    title="No saved gameweeks yet"
+                    description="Save or submit your first squad to start your weekly history."
+                  />
+                ) : null}
               </Box>
-              {!history.isLoading && history.data?.length === 0 ? (
+            ) : null}
+
+            {insightsTab === 'squad' && !state?.authenticated ? (
+              <Box className="fantasy-insights-content" role="tabpanel">
                 <EmptyState
-                  title="No saved gameweeks yet"
-                  description="Save or submit your first squad to start your weekly history."
+                  title="Sign in to see squad performance"
+                  description="Your saved gameweek squads, scores and performance history will appear here."
                 />
-              ) : null}
-            </Box>
-          ) : null}
+                <Button variant="contained" onClick={() => setAuthOpen(true)}>
+                  Sign in or register
+                </Button>
+              </Box>
+            ) : null}
+
+            {insightsTab === 'table' ? (
+              <Box className="fantasy-performance-panel" role="tabpanel">
+                <Stack
+                  direction={{ xs: 'column', sm: 'row' }}
+                  justifyContent="space-between"
+                  gap={2}
+                >
+                  <Box>
+                    <Typography variant="overline" color="primary.main" fontWeight={900}>
+                      Official standings
+                    </Typography>
+                    <Typography variant="h3">Weekly performance table</Typography>
+                    <Typography color="text.secondary">
+                      Compare each fantasy team’s gameweek score and season total.
+                    </Typography>
+                  </Box>
+                  {performanceWeeks.length ? (
+                    <Stack direction="row" gap={1} alignItems="center">
+                      <Tabs
+                        value={leaderboardMode}
+                        onChange={(_, value: 'gameweek' | 'overall') => setLeaderboardMode(value)}
+                        className="fantasy-leaderboard-tabs"
+                      >
+                        <Tab value="gameweek" label="Gameweek" />
+                        <Tab value="overall" label="Overall" />
+                      </Tabs>
+                      <TextField
+                        select
+                        label="Gameweek"
+                        value={activeTableGameweek}
+                        onChange={(event) => setTableGameweek(event.target.value)}
+                        sx={{ minWidth: 190 }}
+                      >
+                        {performanceWeeks.map((week) => (
+                          <MenuItem key={week.gameweekUuid} value={week.gameweekUuid}>
+                            {week.gameweekName}
+                          </MenuItem>
+                        ))}
+                      </TextField>
+                    </Stack>
+                  ) : null}
+                </Stack>
+                {performance.isLoading ? (
+                  <LoadingState label="Loading weekly fantasy table" />
+                ) : null}
+                {performance.isError ? (
+                  <ErrorState description="The weekly fantasy table could not be loaded." />
+                ) : null}
+                {performanceRows.length ? (
+                  <>
+                    <Box className="fantasy-podium">
+                      {performanceRows.slice(0, 3).map((row, index) => (
+                        <Box
+                          key={`podium-${row.teamName}`}
+                          className={`fantasy-podium-place place-${index + 1}`}
+                        >
+                          <Avatar>{row.managerName.slice(0, 1)}</Avatar>
+                          <strong>
+                            #{index + 1} {row.teamName}
+                          </strong>
+                          <small>
+                            {leaderboardMode === 'overall' ? row.totalPoints : row.gameweekPoints}{' '}
+                            pts
+                          </small>
+                        </Box>
+                      ))}
+                    </Box>
+                    <TableContainer sx={{ mt: 2 }}>
+                      <Table size="small" aria-label="Weekly fantasy performance table">
+                        <TableHead>
+                          <TableRow>
+                            <TableCell>Rank</TableCell>
+                            <TableCell>Fantasy team</TableCell>
+                            <TableCell>Manager</TableCell>
+                            <TableCell align="right">GW points</TableCell>
+                            <TableCell align="right">Total</TableCell>
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
+                          {performanceRows.map((row, index) => (
+                            <TableRow
+                              key={`${row.gameweekUuid}-${row.rank}-${row.teamName}`}
+                              className={
+                                row.managerName === state?.user?.displayName
+                                  ? 'is-current-manager'
+                                  : ''
+                              }
+                            >
+                              <TableCell>
+                                #{leaderboardMode === 'overall' ? index + 1 : row.rank}{' '}
+                                <RankMovement rank={row.rank} previousRank={row.previousRank} />
+                              </TableCell>
+                              <TableCell sx={{ fontWeight: 900 }}>{row.teamName}</TableCell>
+                              <TableCell>{row.managerName}</TableCell>
+                              <TableCell align="right">{row.gameweekPoints}</TableCell>
+                              <TableCell align="right" sx={{ fontWeight: 900 }}>
+                                {row.totalPoints}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
+                  </>
+                ) : !performance.isLoading && !performance.isError ? (
+                  <EmptyState
+                    title="No weekly scores yet"
+                    description="Submitted teams will appear after the first fantasy points are calculated."
+                  />
+                ) : null}
+              </Box>
+            ) : null}
+          </Box>
 
           <Dialog
             open={Boolean(slotPicker)}
@@ -1046,7 +1086,7 @@ export function FantasyDashboardPage() {
             </DialogActions>
           </Dialog>
 
-          {guideStep !== null ? (
+          {guideStep !== null && state?.authenticated ? (
             <FantasyGuide
               step={guideStep}
               targetRect={guideTargetRect}

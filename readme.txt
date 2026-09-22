@@ -2,7 +2,7 @@
 Contributors: instascore
 Requires at least: 6.6
 Requires PHP: 8.2
-Stable tag: 0.23.0-rc.13
+Stable tag: 0.23.0-rc.14
 License: GPL-2.0-or-later
 
 WordPress backend and React application shell for InstaScore.
@@ -12,6 +12,13 @@ WordPress backend and React application shell for InstaScore.
 See README.md for the shortcode, development server and production build steps.
 
 == Changelog ==
+
+= 0.23.0-rc.14 =
+* Consolidated Squad Performance and Weekly Table into the final tabbed fantasy dashboard panel.
+* Added an automatic fantasy login and registration gate for guests with original branded flag-football artwork.
+* Restricted the fantasy walkthrough to authenticated managers and preserved public weekly standings access.
+* Upgraded Fantasy Banter with accessible action icons, emoji selection and inline GIF previews.
+* Added trusted-host GIF validation in both the chat interface and server-side moderation pipeline.
 
 = 0.23.0-rc.13 =
 * Replaced desktop Market Governance and Fantasy Banter accordions with persistent floating action heads.
