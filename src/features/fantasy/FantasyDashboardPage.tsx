@@ -1086,11 +1086,16 @@ export function FantasyDashboardPage() {
           <Box className="fantasy-mobile-heads">
             <Button
               aria-label="Open fantasy market governance"
+              title="Market governance"
               onClick={() => setGovernanceOpen(true)}
             >
               §
             </Button>
-            <Button aria-label="Open league banter" onClick={() => setBanterOpen(true)}>
+            <Button
+              aria-label="Open league banter"
+              title="Fantasy league banter"
+              onClick={() => setBanterOpen(true)}
+            >
               💬
             </Button>
           </Box>

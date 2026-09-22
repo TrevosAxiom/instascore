@@ -2,7 +2,7 @@
 Contributors: instascore
 Requires at least: 6.6
 Requires PHP: 8.2
-Stable tag: 0.23.0-rc.12
+Stable tag: 0.23.0-rc.13
 License: GPL-2.0-or-later
 
 WordPress backend and React application shell for InstaScore.
@@ -12,6 +12,11 @@ WordPress backend and React application shell for InstaScore.
 See README.md for the shortcode, development server and production build steps.
 
 == Changelog ==
+
+= 0.23.0-rc.13 =
+* Replaced desktop Market Governance and Fantasy Banter accordions with persistent floating action heads.
+* Restored the fantasy team setup and builder to the full available workspace width.
+* Added accessible labels, tooltips and desktop hover/focus feedback to the floating controls.
 
 = 0.23.0-rc.12 =
 * Replaced the broken fantasy desktop pseudo-sidebar with an explicit two-column workspace grid.
