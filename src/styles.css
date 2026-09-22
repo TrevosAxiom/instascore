@@ -763,6 +763,14 @@ body.instascore-standalone .instascore-app-bar .MuiIconButton-root {
   color: rgba(255, 255, 255, 0.72);
 }
 
+.fantasy-mode-banner .MuiChip-root {
+  border: 1px solid rgba(243, 198, 67, 0.72);
+  background: rgb(243, 198, 67);
+  color: rgb(7, 25, 45);
+  font-weight: 1000;
+  text-transform: uppercase;
+}
+
 .fantasy-promo-pagination {
   display: none;
 }
@@ -793,19 +801,64 @@ body.instascore-standalone .instascore-app-bar .MuiIconButton-root {
 }
 
 @media (min-width: 1024px) {
-  .fantasy-page-stack > .fantasy-performance-panel,
-  .fantasy-page-stack > .fantasy-history-panel {
-    width: calc(65% - 8px);
+  .fantasy-page-stack {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 420px);
+    gap: 16px !important;
   }
-  .fantasy-page-stack > .fantasy-governance,
-  .fantasy-page-stack > .fantasy-chat-control {
-    width: calc(35% - 8px);
-    margin-left: auto !important;
+  .fantasy-page-stack > .fantasy-official-league,
+  .fantasy-page-stack > .fantasy-promotions {
+    grid-column: 1 / -1;
+  }
+  .fantasy-page-stack > .fantasy-command-bar {
+    grid-column: 1;
+    grid-row: 3 / span 2;
+    align-self: stretch;
+  }
+  .fantasy-page-stack > .fantasy-governance {
+    grid-column: 2;
+    grid-row: 3;
   }
   .fantasy-page-stack > .fantasy-chat-control {
+    grid-column: 2;
+    grid-row: 4;
     position: sticky;
     z-index: 8;
     top: 96px;
+  }
+  .fantasy-page-stack > .fantasy-readiness-bar {
+    grid-column: 1 / -1;
+    grid-row: 5;
+  }
+  .fantasy-page-stack > .fantasy-performance-panel {
+    grid-column: 1;
+    grid-row: 6;
+  }
+  .fantasy-page-stack > .fantasy-mobile-tabs {
+    grid-column: 1;
+    grid-row: 7;
+  }
+  .fantasy-page-stack > .fantasy-builder-grid {
+    grid-column: 1 / -1;
+    grid-row: 8;
+  }
+  .fantasy-page-stack > .fantasy-history-panel {
+    grid-column: 1;
+    grid-row: 9;
+  }
+  .fantasy-governance,
+  .fantasy-chat-control {
+    margin: 0 !important;
+  }
+  .fantasy-governance .MuiAccordionSummary-root,
+  .fantasy-chat-control .MuiAccordionSummary-root {
+    min-height: 0;
+    padding: 8px 12px;
+  }
+  .fantasy-governance .MuiTypography-h4,
+  .fantasy-chat-control .MuiTypography-h4 {
+    font-size: clamp(1.15rem, 1.4vw, 1.45rem);
+    line-height: 1.02;
   }
   .fantasy-market-panel {
     position: sticky;

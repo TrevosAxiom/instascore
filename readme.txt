@@ -2,7 +2,7 @@
 Contributors: instascore
 Requires at least: 6.6
 Requires PHP: 8.2
-Stable tag: 0.23.0-rc.11
+Stable tag: 0.23.0-rc.12
 License: GPL-2.0-or-later
 
 WordPress backend and React application shell for InstaScore.
@@ -12,6 +12,11 @@ WordPress backend and React application shell for InstaScore.
 See README.md for the shortcode, development server and production build steps.
 
 == Changelog ==
+
+= 0.23.0-rc.12 =
+* Replaced the broken fantasy desktop pseudo-sidebar with an explicit two-column workspace grid.
+* Removed the large empty rows between promotions and team setup while preserving the compact control rail.
+* Improved governance and banter header scale and corrected Coming soon badge contrast.
 
 = 0.23.0-rc.11 =
 * Corrected release-candidate source formatting so the GitHub packaging workflow can publish the installable update.
