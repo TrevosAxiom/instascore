@@ -30,6 +30,9 @@ export function AuthAccessDialog({ open, onClose }: { open: boolean; onClose: ()
   const complete = (state: unknown) => {
     client.setQueryData(['auth', 'status'], state);
     onClose();
+    if (import.meta.env.MODE !== 'test') {
+      window.setTimeout(() => window.location.reload(), 0);
+    }
   };
   const login = useMutation({
     mutationFn: () => api.login({ email: email.trim(), password, remember: true }),
@@ -66,7 +69,7 @@ export function AuthAccessDialog({ open, onClose }: { open: boolean; onClose: ()
       className="fantasy-auth-dialog"
       aria-labelledby="fantasy-auth-title"
     >
-      <Box className="fantasy-auth-layout">
+      <Box className="fantasy-auth-layout" data-auth-access-dialog="true">
         <Box className="fantasy-auth-visual">
           <Box
             component="img"

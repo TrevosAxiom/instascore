@@ -2,7 +2,7 @@
 Contributors: instascore
 Requires at least: 6.6
 Requires PHP: 8.2
-Stable tag: 0.23.0-rc.14
+Stable tag: 0.23.0-rc.15
 License: GPL-2.0-or-later
 
 WordPress backend and React application shell for InstaScore.
@@ -12,6 +12,12 @@ WordPress backend and React application shell for InstaScore.
 See README.md for the shortcode, development server and production build steps.
 
 == Changelog ==
+
+= 0.23.0-rc.15 =
+* Fixed fantasy registration tabs being blocked by the guest interaction guard across React portals.
+* Added automatic application refresh after login, registration and email OTP verification.
+* Rebuilt authenticated cookies, REST nonces and role permissions immediately after account access.
+* Added regression coverage for switching from fantasy sign-in to account registration.
 
 = 0.23.0-rc.14 =
 * Consolidated Squad Performance and Weekly Table into the final tabbed fantasy dashboard panel.

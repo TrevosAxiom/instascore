@@ -296,6 +296,7 @@ export function FantasyDashboardPage() {
           onClickCapture={(event) => {
             if (state?.authenticated) return;
             const target = event.target as HTMLElement;
+            if (target.closest('[data-auth-access-dialog="true"]')) return;
             if (
               !target.closest(
                 'button, input, textarea, [role="button"], [role="tab"], [role="combobox"]',

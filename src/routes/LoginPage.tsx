@@ -67,12 +67,16 @@ export function LoginPage() {
     defaultValues: { code: '' },
   });
   const destination = new URLSearchParams(location.search).get('redirect') || '/dashboard';
+  const completeAuthentication = (state: unknown) => {
+    client.setQueryData(['auth', 'status'], state);
+    void navigate(destination, { replace: true });
+    if (import.meta.env.MODE !== 'test') {
+      window.setTimeout(() => window.location.reload(), 0);
+    }
+  };
   const authMutation = useMutation({
     mutationFn: (values: LoginForm) => api.login(values),
-    onSuccess: (state) => {
-      client.setQueryData(['auth', 'status'], state);
-      void navigate(destination, { replace: true });
-    },
+    onSuccess: completeAuthentication,
     onError: (error) => {
       if (error instanceof ApiError && error.code === 'instascore_email_verification_required') {
         setVerificationEmail(login.getValues('email'));
@@ -94,16 +98,12 @@ export function LoginPage() {
         setTab('verify');
         return;
       }
-      client.setQueryData(['auth', 'status'], result);
-      void navigate(destination, { replace: true });
+      completeAuthentication(result);
     },
   });
   const verificationMutation = useMutation({
     mutationFn: ({ code }: VerificationForm) => api.verifyEmail({ email: verificationEmail, code }),
-    onSuccess: (state) => {
-      client.setQueryData(['auth', 'status'], state);
-      void navigate(destination, { replace: true });
-    },
+    onSuccess: completeAuthentication,
   });
   const resendMutation = useMutation({
     mutationFn: () => api.resendEmailVerification(verificationEmail),

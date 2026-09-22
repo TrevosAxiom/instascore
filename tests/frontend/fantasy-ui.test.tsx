@@ -53,7 +53,9 @@ describe('fantasy foundation UI', () => {
     expect(screen.getByAltText(/flag football players under stadium lights/i)).toBeInTheDocument();
     expect(screen.queryByText(/Step 1 · Your team/i)).not.toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /sign in/i })).toHaveAttribute('aria-selected', 'true');
-    expect(screen.getByRole('tab', { name: /register/i })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('tab', { name: /register/i }));
+    expect(screen.getByRole('tab', { name: /register/i })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByLabelText(/full name/i)).toBeInTheDocument();
   });
 
   it('places every manager in the official competition without private league controls', async () => {
