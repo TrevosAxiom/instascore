@@ -2,7 +2,7 @@
 Contributors: instascore
 Requires at least: 6.6
 Requires PHP: 8.2
-Stable tag: 0.23.0-rc.9
+Stable tag: 0.23.0-rc.10
 License: GPL-2.0-or-later
 
 WordPress backend and React application shell for InstaScore.
@@ -12,6 +12,14 @@ WordPress backend and React application shell for InstaScore.
 See README.md for the shortcode, development server and production build steps.
 
 == Changelog ==
+
+= 0.23.0-rc.10 =
+* Added fantasy interaction authentication with inline sign-in, registration and email OTP verification.
+* Enforced fantasy team naming during onboarding and defaulted new squads to the manager's CFFL team name.
+* Added persistent league-specific Fantasy Banter rooms with replies, reactions, reporting and moderation controls.
+* Rebuilt the fantasy workspace with sticky readiness guidance, collapsible market controls and mobile action heads.
+* Added submission review, player profiles, watchlists, podium standings, rank movement and gameweek performance charts.
+* Added database migration 23 for reusable fixture and fantasy chat-room scopes.
 
 = 0.23.0-rc.9 =
 * Rebuilt the fantasy walkthrough as a top-layer spotlight tour that anchors to the exact control described.

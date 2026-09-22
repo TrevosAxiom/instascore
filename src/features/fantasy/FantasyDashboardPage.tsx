@@ -38,7 +38,9 @@ import versusImage from '../../assets/fantasy-versus-coming-soon.jpg';
 import winnerPoolImage from '../../assets/fantasy-winner-pool-coming-soon.jpg';
 import { EmptyState, ErrorState, LoadingState } from '../../components/AsyncStates';
 import { PageScaffold } from '../../components/PageScaffold';
+import { AuthAccessDialog } from '../../components/AuthAccessDialog';
 import type { FantasyPlayer, FantasySquadEntry } from '../../types/api';
+import { FantasyBanter } from './FantasyBanter';
 
 const fantasyGuideSteps = [
   {
@@ -101,7 +103,23 @@ export function FantasyDashboardPage() {
   const [affordableOnly, setAffordableOnly] = useState(false);
   const [workspaceTab, setWorkspaceTab] = useState<'squad' | 'players' | 'bench'>('squad');
   const [selectionMessage, setSelectionMessage] = useState('');
-  const [teamName, setTeamName] = useState('My InstaScore Squad');
+  const [teamName, setTeamName] = useState('');
+  const [teamNameTouched, setTeamNameTouched] = useState(false);
+  const [authOpen, setAuthOpen] = useState(false);
+  const [banterOpen, setBanterOpen] = useState(false);
+  const [governanceOpen, setGovernanceOpen] = useState(false);
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const [playerDetail, setPlayerDetail] = useState<FantasyPlayer | null>(null);
+  const [leaderboardMode, setLeaderboardMode] = useState<'gameweek' | 'overall'>('gameweek');
+  const [watchlist, setWatchlist] = useState<Set<string>>(() => {
+    if (typeof window === 'undefined') return new Set();
+    const saved: unknown = JSON.parse(
+      window.localStorage.getItem('instascore-fantasy-watchlist') || '[]',
+    );
+    return new Set(
+      Array.isArray(saved) ? saved.filter((item): item is string => typeof item === 'string') : [],
+    );
+  });
   const [tableGameweek, setTableGameweek] = useState('');
   const [slotPicker, setSlotPicker] = useState<'offense' | 'defense' | null>(null);
   const [slotSearch, setSlotSearch] = useState('');
@@ -156,12 +174,41 @@ export function FantasyDashboardPage() {
     squadEntries.length === game?.squadSize && starting.length === game.startingSize;
   const performanceWeeks = uniqueBy(performance.data ?? [], (row) => row.gameweekUuid);
   const activeTableGameweek = tableGameweek || performanceWeeks[0]?.gameweekUuid || '';
-  const performanceRows = (performance.data ?? []).filter(
-    (row) => row.gameweekUuid === activeTableGameweek,
-  );
+  const performanceRows = (performance.data ?? [])
+    .filter((row) => row.gameweekUuid === activeTableGameweek)
+    .sort((a, b) =>
+      leaderboardMode === 'overall' ? b.totalPoints - a.totalPoints : a.rank - b.rank,
+    );
+  const hasCaptain = starting.some((entry) => entry.isCaptain);
+  const hasViceCaptain = starting.some((entry) => entry.isViceCaptain);
+  const readinessIssues = [
+    ...(teamName.trim().length < 3 ? ['Name your fantasy team'] : []),
+    ...(squadEntries.length < (game?.squadSize ?? 0)
+      ? [
+          `Pick ${Math.max(0, (game?.squadSize ?? 0) - squadEntries.length)} more player${(game?.squadSize ?? 0) - squadEntries.length === 1 ? '' : 's'}`,
+        ]
+      : []),
+    ...(starting.length < (game?.startingSize ?? 0)
+      ? [
+          `Fill ${Math.max(0, (game?.startingSize ?? 0) - starting.length)} starting slot${(game?.startingSize ?? 0) - starting.length === 1 ? '' : 's'}`,
+        ]
+      : []),
+    ...(!hasCaptain ? ['Choose a captain'] : []),
+    ...(!hasViceCaptain ? ['Choose a vice-captain'] : []),
+    ...(remaining < 0 ? ['Bring the squad under budget'] : []),
+  ];
   useEffect(() => {
     if (squad.data?.squad?.name) setTeamName(squad.data.squad.name);
   }, [squad.data?.squad?.name]);
+  useEffect(() => {
+    if (!squad.data?.squad?.name && !teamNameTouched && state?.user?.displayName) {
+      setTeamName(`${state.user.displayName} CFFL Team`);
+    }
+  }, [squad.data?.squad?.name, state?.user?.displayName, teamNameTouched]);
+  useEffect(() => {
+    if (typeof window !== 'undefined')
+      window.localStorage.setItem('instascore-fantasy-watchlist', JSON.stringify([...watchlist]));
+  }, [watchlist]);
   useEffect(() => {
     if (!activeGameUuid || typeof window === 'undefined') return;
     if (!window.localStorage.getItem('instascore-fantasy-guide-v1')) setGuideStep(0);
@@ -204,7 +251,7 @@ export function FantasyDashboardPage() {
   const save = useMutation({
     mutationFn: (submit: boolean) => {
       const payload = {
-        name: teamName.trim() || 'My InstaScore Squad',
+        name: teamName.trim(),
         baseRevision: squad.data?.squad?.revision ?? 0,
         players: renumber(squadEntries),
       };
@@ -234,11 +281,27 @@ export function FantasyDashboardPage() {
         />
       ) : null}
       {activeGameUuid && game ? (
-        <Stack spacing={3}>
+        <Stack
+          spacing={3}
+          className="fantasy-page-stack"
+          onClickCapture={(event) => {
+            if (state?.authenticated) return;
+            const target = event.target as HTMLElement;
+            if (
+              !target.closest(
+                'button, input, textarea, [role="button"], [role="tab"], [role="combobox"]',
+              )
+            )
+              return;
+            event.preventDefault();
+            event.stopPropagation();
+            setAuthOpen(true);
+          }}
+        >
           {!state?.authenticated ? (
             <Alert severity="info">
-              You can browse the player market, build a temporary squad and view the weekly table.
-              Sign in only when you are ready to save or submit your team.
+              <strong>Sign in to play.</strong> Any fantasy action will open secure login or
+              registration—your picks, team name and banter stay tied to your account.
             </Alert>
           ) : null}
           <Box className="instascore-panel fantasy-official-league">
@@ -312,6 +375,25 @@ export function FantasyDashboardPage() {
               </Box>
             </AccordionDetails>
           </Accordion>
+          <Accordion className="instascore-panel fantasy-chat-control" disableGutters>
+            <AccordionSummary expandIcon={<span aria-hidden="true">⌄</span>}>
+              <Box>
+                <Typography variant="overline" color="primary.main" fontWeight={1000}>
+                  Live room
+                </Typography>
+                <Typography variant="h4">Fantasy league banter</Typography>
+              </Box>
+            </AccordionSummary>
+            <AccordionDetails>
+              <Typography color="text.secondary" sx={{ mb: 1.5 }}>
+                React to every gameweek with the managers in this league. Moderation, reporting and
+                rate limits apply.
+              </Typography>
+              <Button variant="contained" fullWidth onClick={() => setBanterOpen(true)}>
+                Open live banter
+              </Button>
+            </AccordionDetails>
+          </Accordion>
           <Box className="instascore-panel fantasy-command-bar" data-fantasy-guide="identity">
             <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" gap={2}>
               <Stack direction={{ xs: 'column', sm: 'row' }} gap={1.5} sx={{ flex: 1 }}>
@@ -334,11 +416,17 @@ export function FantasyDashboardPage() {
                 <TextField
                   label="Fantasy team name"
                   value={teamName}
-                  onChange={(event) => setTeamName(event.target.value)}
+                  onChange={(event) => {
+                    setTeamNameTouched(true);
+                    setTeamName(event.target.value);
+                  }}
                   inputProps={{ maxLength: 80 }}
                   helperText={
-                    state?.authenticated ? 'Saved with your squad' : 'Sign in to save this name'
+                    teamName.trim().length < 3
+                      ? 'A team name of at least 3 characters is required.'
+                      : 'Saved with your squad'
                   }
+                  error={state?.authenticated && teamName.trim().length < 3}
                   fullWidth
                 />
               </Stack>
@@ -363,6 +451,30 @@ export function FantasyDashboardPage() {
             />
           </Box>
 
+          <Box className={`fantasy-readiness-bar${readinessIssues.length ? '' : ' is-ready'}`}>
+            <Stack direction="row" alignItems="center" gap={1} minWidth={0}>
+              <span className="fantasy-readiness-dot" />
+              <Box minWidth={0}>
+                <Typography fontWeight={1000} noWrap>
+                  {squad.data?.gameweek.name ?? 'Current gameweek'} ·{' '}
+                  {readinessIssues.length
+                    ? `${readinessIssues.length} action${readinessIssues.length === 1 ? '' : 's'} remaining`
+                    : 'Ready to submit'}
+                </Typography>
+                <Typography variant="caption" noWrap>
+                  {readinessIssues[0] ?? deadlineLabel(squad.data?.gameweek.deadlineAt)}
+                </Typography>
+              </Box>
+            </Stack>
+            <Button
+              size="small"
+              variant={readinessIssues.length ? 'outlined' : 'contained'}
+              onClick={() => (readinessIssues.length ? setGuideStep(0) : setReviewOpen(true))}
+            >
+              {readinessIssues.length ? 'Fix now' : 'Review team'}
+            </Button>
+          </Box>
+
           <Box className="instascore-panel fantasy-performance-panel">
             <Stack
               direction={{ xs: 'column', sm: 'row' }}
@@ -380,19 +492,29 @@ export function FantasyDashboardPage() {
                 </Typography>
               </Box>
               {performanceWeeks.length ? (
-                <TextField
-                  select
-                  label="Gameweek"
-                  value={activeTableGameweek}
-                  onChange={(event) => setTableGameweek(event.target.value)}
-                  sx={{ minWidth: 190 }}
-                >
-                  {performanceWeeks.map((week) => (
-                    <MenuItem key={week.gameweekUuid} value={week.gameweekUuid}>
-                      {week.gameweekName}
-                    </MenuItem>
-                  ))}
-                </TextField>
+                <Stack direction="row" gap={1} alignItems="center">
+                  <Tabs
+                    value={leaderboardMode}
+                    onChange={(_, value: 'gameweek' | 'overall') => setLeaderboardMode(value)}
+                    className="fantasy-leaderboard-tabs"
+                  >
+                    <Tab value="gameweek" label="Gameweek" />
+                    <Tab value="overall" label="Overall" />
+                  </Tabs>
+                  <TextField
+                    select
+                    label="Gameweek"
+                    value={activeTableGameweek}
+                    onChange={(event) => setTableGameweek(event.target.value)}
+                    sx={{ minWidth: 190 }}
+                  >
+                    {performanceWeeks.map((week) => (
+                      <MenuItem key={week.gameweekUuid} value={week.gameweekUuid}>
+                        {week.gameweekName}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                </Stack>
               ) : null}
             </Stack>
             {performance.isLoading ? <LoadingState label="Loading weekly fantasy table" /> : null}
@@ -400,32 +522,58 @@ export function FantasyDashboardPage() {
               <ErrorState description="The weekly fantasy table could not be loaded." />
             ) : null}
             {performanceRows.length ? (
-              <TableContainer sx={{ mt: 2 }}>
-                <Table size="small" aria-label="Weekly fantasy performance table">
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Rank</TableCell>
-                      <TableCell>Fantasy team</TableCell>
-                      <TableCell>Manager</TableCell>
-                      <TableCell align="right">GW points</TableCell>
-                      <TableCell align="right">Total</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {performanceRows.map((row) => (
-                      <TableRow key={`${row.gameweekUuid}-${row.rank}-${row.teamName}`}>
-                        <TableCell>#{row.rank}</TableCell>
-                        <TableCell sx={{ fontWeight: 900 }}>{row.teamName}</TableCell>
-                        <TableCell>{row.managerName}</TableCell>
-                        <TableCell align="right">{row.gameweekPoints}</TableCell>
-                        <TableCell align="right" sx={{ fontWeight: 900 }}>
-                          {row.totalPoints}
-                        </TableCell>
+              <>
+                <Box className="fantasy-podium">
+                  {performanceRows.slice(0, 3).map((row, index) => (
+                    <Box
+                      key={`podium-${row.teamName}`}
+                      className={`fantasy-podium-place place-${index + 1}`}
+                    >
+                      <Avatar>{row.managerName.slice(0, 1)}</Avatar>
+                      <strong>
+                        #{index + 1} {row.teamName}
+                      </strong>
+                      <small>
+                        {leaderboardMode === 'overall' ? row.totalPoints : row.gameweekPoints} pts
+                      </small>
+                    </Box>
+                  ))}
+                </Box>
+                <TableContainer sx={{ mt: 2 }}>
+                  <Table size="small" aria-label="Weekly fantasy performance table">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Rank</TableCell>
+                        <TableCell>Fantasy team</TableCell>
+                        <TableCell>Manager</TableCell>
+                        <TableCell align="right">GW points</TableCell>
+                        <TableCell align="right">Total</TableCell>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
+                    </TableHead>
+                    <TableBody>
+                      {performanceRows.map((row, index) => (
+                        <TableRow
+                          key={`${row.gameweekUuid}-${row.rank}-${row.teamName}`}
+                          className={
+                            row.managerName === state?.user?.displayName ? 'is-current-manager' : ''
+                          }
+                        >
+                          <TableCell>
+                            #{leaderboardMode === 'overall' ? index + 1 : row.rank}{' '}
+                            <RankMovement rank={row.rank} previousRank={row.previousRank} />
+                          </TableCell>
+                          <TableCell sx={{ fontWeight: 900 }}>{row.teamName}</TableCell>
+                          <TableCell>{row.managerName}</TableCell>
+                          <TableCell align="right">{row.gameweekPoints}</TableCell>
+                          <TableCell align="right" sx={{ fontWeight: 900 }}>
+                            {row.totalPoints}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </>
             ) : !performance.isLoading && !performance.isError ? (
               <EmptyState
                 title="No weekly scores yet"
@@ -547,7 +695,8 @@ export function FantasyDashboardPage() {
                     !state?.authenticated ||
                     save.isPending ||
                     remaining < 0 ||
-                    squad.data?.gameweek.locked
+                    squad.data?.gameweek.locked ||
+                    teamName.trim().length < 3
                   }
                   onClick={() => save.mutate(false)}
                 >
@@ -561,9 +710,10 @@ export function FantasyDashboardPage() {
                     save.isPending ||
                     !isComplete ||
                     remaining < 0 ||
-                    squad.data?.gameweek.locked
+                    squad.data?.gameweek.locked ||
+                    teamName.trim().length < 3
                   }
-                  onClick={() => save.mutate(true)}
+                  onClick={() => setReviewOpen(true)}
                 >
                   Submit team
                 </Button>
@@ -580,127 +730,154 @@ export function FantasyDashboardPage() {
               ) : null}
             </Box>
 
-            <Box
+            <Accordion
               className="instascore-panel fantasy-market-panel"
+              defaultExpanded
+              disableGutters
               sx={{ display: { xs: workspaceTab === 'players' ? 'block' : 'none', md: 'block' } }}
             >
-              <Stack direction="row" justifyContent="space-between" alignItems="center" gap={1}>
-                <Box>
-                  <Typography variant="h4">Player market</Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    {players.data?.length ?? 0} players · {squadEntries.length} selected
-                  </Typography>
-                </Box>
-                {(search || position || team) && (
-                  <Button
-                    size="small"
-                    onClick={() => {
-                      setSearch('');
-                      setPosition('');
-                      setTeam('');
-                    }}
-                  >
-                    Clear
-                  </Button>
-                )}
-              </Stack>
-              <Box className="fantasy-market-filters" sx={{ my: 1.5 }} data-fantasy-guide="market">
-                <TextField
-                  className="fantasy-market-search"
-                  label="Search players or teams"
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                  fullWidth
-                />
-                <TextField
-                  select
-                  label="Position"
-                  value={position}
-                  onChange={(event) => setPosition(event.target.value)}
-                  sx={{ minWidth: 150 }}
+              <AccordionSummary expandIcon={<span aria-hidden="true">⌄</span>}>
+                <Stack
+                  direction="row"
+                  justifyContent="space-between"
+                  alignItems="center"
+                  gap={1}
+                  width="100%"
                 >
-                  <MenuItem value="">All</MenuItem>
-                  {positions.map((item) => (
-                    <MenuItem key={item.position.code} value={item.position.code}>
-                      {item.position.name}
-                    </MenuItem>
-                  ))}
-                </TextField>
-                <TextField
-                  select
-                  label="Team"
-                  value={team}
-                  onChange={(event) => setTeam(event.target.value)}
-                  sx={{ minWidth: 180 }}
+                  <Box>
+                    <Typography variant="h4">Player market</Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {players.data?.length ?? 0} players · {squadEntries.length} selected
+                    </Typography>
+                  </Box>
+                  {(search || position || team) && (
+                    <Button
+                      size="small"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setSearch('');
+                        setPosition('');
+                        setTeam('');
+                      }}
+                    >
+                      Clear
+                    </Button>
+                  )}
+                </Stack>
+              </AccordionSummary>
+              <AccordionDetails sx={{ p: 0 }}>
+                <Box
+                  className="fantasy-market-filters"
+                  sx={{ my: 1.5 }}
+                  data-fantasy-guide="market"
                 >
-                  <MenuItem value="">All</MenuItem>
-                  {teams.map((item) => (
-                    <MenuItem key={item.team.uuid} value={item.team.uuid}>
-                      {item.team.name}
-                    </MenuItem>
-                  ))}
-                </TextField>
-                <TextField
-                  select
-                  label="Sort"
-                  value={sort}
-                  onChange={(event) => setSort(event.target.value)}
-                  sx={{ minWidth: 150 }}
-                >
-                  <MenuItem value="points">Points</MenuItem>
-                  <MenuItem value="ownership">Ownership</MenuItem>
-                  <MenuItem value="price">Price</MenuItem>
-                  <MenuItem value="name">Name</MenuItem>
-                </TextField>
-                <FormControlLabel
-                  className="fantasy-affordable-toggle"
-                  control={
-                    <Switch
-                      checked={affordableOnly}
-                      onChange={(event) => setAffordableOnly(event.target.checked)}
-                    />
-                  }
-                  label="Affordable only"
-                />
-              </Box>
-              {players.isLoading ? <LoadingState label="Loading player market" /> : null}
-              <Box
-                sx={{
-                  display: 'grid',
-                  gridTemplateColumns: '1fr',
-                  gap: 0.75,
-                }}
-              >
-                {marketPlayers.map((player) => (
-                  <PlayerRow
-                    key={player.uuid}
-                    player={player}
-                    selected={selectedIds.has(player.uuid)}
-                    disabled={
-                      !selectedIds.has(player.uuid) && squadEntries.length >= game.squadSize
-                    }
-                    disabledReason={selectionBlockReason(player)}
-                    onToggle={() => togglePlayer(player)}
+                  <TextField
+                    className="fantasy-market-search"
+                    label="Search players or teams"
+                    value={search}
+                    onChange={(event) => setSearch(event.target.value)}
+                    fullWidth
                   />
-                ))}
-              </Box>
-              {(players.data?.length ?? 0) > visiblePlayers ? (
-                <Box sx={{ textAlign: 'center', mt: 3 }}>
-                  <Button
-                    variant="outlined"
-                    onClick={() => setVisiblePlayers((count) => count + 24)}
+                  <TextField
+                    select
+                    label="Position"
+                    value={position}
+                    onChange={(event) => setPosition(event.target.value)}
+                    sx={{ minWidth: 150 }}
                   >
-                    Show more players
-                  </Button>
+                    <MenuItem value="">All</MenuItem>
+                    {positions.map((item) => (
+                      <MenuItem key={item.position.code} value={item.position.code}>
+                        {item.position.name}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                  <TextField
+                    select
+                    label="Team"
+                    value={team}
+                    onChange={(event) => setTeam(event.target.value)}
+                    sx={{ minWidth: 180 }}
+                  >
+                    <MenuItem value="">All</MenuItem>
+                    {teams.map((item) => (
+                      <MenuItem key={item.team.uuid} value={item.team.uuid}>
+                        {item.team.name}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                  <TextField
+                    select
+                    label="Sort"
+                    value={sort}
+                    onChange={(event) => setSort(event.target.value)}
+                    sx={{ minWidth: 150 }}
+                  >
+                    <MenuItem value="points">Points</MenuItem>
+                    <MenuItem value="ownership">Ownership</MenuItem>
+                    <MenuItem value="price">Price</MenuItem>
+                    <MenuItem value="name">Name</MenuItem>
+                  </TextField>
+                  <FormControlLabel
+                    className="fantasy-affordable-toggle"
+                    control={
+                      <Switch
+                        checked={affordableOnly}
+                        onChange={(event) => setAffordableOnly(event.target.checked)}
+                      />
+                    }
+                    label="Affordable only"
+                  />
                 </Box>
-              ) : null}
-              {!players.isLoading && players.data?.length === 0 ? (
-                <EmptyState
-                  title="No players match these filters"
-                  description="Clear a filter or search another name."
-                />
-              ) : null}
-            </Box>
+                {players.isLoading ? <LoadingState label="Loading player market" /> : null}
+                <Box
+                  sx={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr',
+                    gap: 0.75,
+                  }}
+                >
+                  {marketPlayers.map((player) => (
+                    <PlayerRow
+                      key={player.uuid}
+                      player={player}
+                      selected={selectedIds.has(player.uuid)}
+                      disabled={
+                        !selectedIds.has(player.uuid) && squadEntries.length >= game.squadSize
+                      }
+                      disabledReason={selectionBlockReason(player)}
+                      onToggle={() => togglePlayer(player)}
+                      watched={watchlist.has(player.uuid)}
+                      onWatch={() =>
+                        setWatchlist((current) => {
+                          const next = new Set(current);
+                          if (next.has(player.uuid)) next.delete(player.uuid);
+                          else next.add(player.uuid);
+                          return next;
+                        })
+                      }
+                      onInspect={() => setPlayerDetail(player)}
+                    />
+                  ))}
+                </Box>
+                {(players.data?.length ?? 0) > visiblePlayers ? (
+                  <Box sx={{ textAlign: 'center', mt: 3 }}>
+                    <Button
+                      variant="outlined"
+                      onClick={() => setVisiblePlayers((count) => count + 24)}
+                    >
+                      Show more players
+                    </Button>
+                  </Box>
+                ) : null}
+                {!players.isLoading && players.data?.length === 0 ? (
+                  <EmptyState
+                    title="No players match these filters"
+                    description="Clear a filter or search another name."
+                  />
+                ) : null}
+              </AccordionDetails>
+            </Accordion>
             <Box
               className="instascore-panel fantasy-mobile-bench"
               sx={{ display: { xs: workspaceTab === 'bench' ? 'block' : 'none', md: 'none' } }}
@@ -737,6 +914,19 @@ export function FantasyDashboardPage() {
               {history.isLoading ? <LoadingState label="Loading squad history" /> : null}
               {history.isError ? (
                 <ErrorState description="Your saved gameweek squads could not be loaded." />
+              ) : null}
+              {(history.data?.length ?? 0) > 1 ? (
+                <Box className="fantasy-form-chart" aria-label="Gameweek points trend">
+                  {(history.data ?? []).map((week) => (
+                    <Box key={`chart-${week.gameweekUuid}`}>
+                      <span
+                        style={{ height: `${Math.max(8, Math.min(100, week.gameweekPoints))}%` }}
+                      />
+                      <small>{week.gameweekName}</small>
+                      <strong>{week.gameweekPoints}</strong>
+                    </Box>
+                  ))}
+                </Box>
               ) : null}
               <Box className="fantasy-history-grid">
                 {(history.data ?? []).map((week) => (
@@ -862,6 +1052,10 @@ export function FantasyDashboardPage() {
               targetRect={guideTargetRect}
               onBack={() => setGuideStep((current) => Math.max(0, (current ?? 0) - 1))}
               onNext={() => {
+                if (guideStep === 0 && (!state?.authenticated || teamName.trim().length < 3)) {
+                  if (!state?.authenticated) setAuthOpen(true);
+                  return;
+                }
                 if (guideStep >= fantasyGuideSteps.length - 1) {
                   window.localStorage.setItem('instascore-fantasy-guide-v1', 'complete');
                   setGuideStep(null);
@@ -869,6 +1063,7 @@ export function FantasyDashboardPage() {
                 }
                 setGuideStep(guideStep + 1);
               }}
+              blocked={guideStep === 0 && (!state?.authenticated || teamName.trim().length < 3)}
               onSkip={() => {
                 window.localStorage.setItem('instascore-fantasy-guide-v1', 'skipped');
                 setGuideStep(null);
@@ -883,11 +1078,159 @@ export function FantasyDashboardPage() {
             <Button
               variant="contained"
               disabled={!state?.authenticated || save.isPending || !isComplete || remaining < 0}
-              onClick={() => save.mutate(true)}
+              onClick={() => setReviewOpen(true)}
             >
               Submit team
             </Button>
           </Box>
+          <Box className="fantasy-mobile-heads">
+            <Button
+              aria-label="Open fantasy market governance"
+              onClick={() => setGovernanceOpen(true)}
+            >
+              §
+            </Button>
+            <Button aria-label="Open league banter" onClick={() => setBanterOpen(true)}>
+              💬
+            </Button>
+          </Box>
+          <Dialog
+            open={governanceOpen}
+            onClose={() => setGovernanceOpen(false)}
+            fullWidth
+            maxWidth="sm"
+          >
+            <DialogTitle sx={{ fontWeight: 1000 }}>Market governance</DialogTitle>
+            <DialogContent>
+              <FantasyGovernanceList />
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setGovernanceOpen(false)}>Close</Button>
+            </DialogActions>
+          </Dialog>
+          <AuthAccessDialog open={authOpen} onClose={() => setAuthOpen(false)} />
+          <FantasyBanter
+            gameUuid={activeGameUuid}
+            open={banterOpen}
+            onClose={() => setBanterOpen(false)}
+          />
+          <Dialog open={reviewOpen} onClose={() => setReviewOpen(false)} fullWidth maxWidth="sm">
+            <DialogTitle sx={{ fontWeight: 1000 }}>Review your gameweek team</DialogTitle>
+            <DialogContent>
+              <Stack spacing={1.25}>
+                <ReviewCheck
+                  ready={teamName.trim().length >= 3}
+                  label="Team identity"
+                  value={teamName || 'Missing team name'}
+                />
+                <ReviewCheck
+                  ready={isComplete}
+                  label="Squad and formation"
+                  value={`${starting.length}/${game.startingSize} starters · ${bench.length}/${game.benchSize} bench`}
+                />
+                <ReviewCheck
+                  ready={remaining >= 0}
+                  label="Budget"
+                  value={`${money(Math.max(0, remaining))} remaining`}
+                />
+                <ReviewCheck
+                  ready={hasCaptain && hasViceCaptain}
+                  label="Leadership"
+                  value={`${starting.find((entry) => entry.isCaptain)?.player?.name ?? 'Captain missing'} · ${starting.find((entry) => entry.isViceCaptain)?.player?.name ?? 'Vice-captain missing'}`}
+                />
+                <ReviewCheck
+                  ready={!squad.data?.gameweek.locked}
+                  label="Deadline"
+                  value={deadlineLabel(squad.data?.gameweek.deadlineAt)}
+                />
+                {readinessIssues.length ? (
+                  <Alert severity="warning">
+                    Resolve {readinessIssues.length} item{readinessIssues.length === 1 ? '' : 's'}{' '}
+                    before submission.
+                  </Alert>
+                ) : (
+                  <Alert severity="success">Your squad passes every submission check.</Alert>
+                )}
+              </Stack>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setReviewOpen(false)}>Keep editing</Button>
+              <Button
+                variant="contained"
+                disabled={readinessIssues.length > 0 || save.isPending}
+                onClick={() => {
+                  setReviewOpen(false);
+                  save.mutate(true);
+                }}
+              >
+                Confirm team
+              </Button>
+            </DialogActions>
+          </Dialog>
+          <Dialog
+            open={Boolean(playerDetail)}
+            onClose={() => setPlayerDetail(null)}
+            fullWidth
+            maxWidth="xs"
+          >
+            {playerDetail ? (
+              <>
+                <DialogTitle sx={{ fontWeight: 1000 }}>{playerDetail.player.name}</DialogTitle>
+                <DialogContent>
+                  <Stack alignItems="center" spacing={1.5}>
+                    <Avatar
+                      src={playerDetail.player.photoUrl ?? undefined}
+                      sx={{ width: 84, height: 84 }}
+                    >
+                      {playerDetail.player.name[0]}
+                    </Avatar>
+                    <Typography color="text.secondary">
+                      {playerDetail.team.name} · {playerDetail.position.name}
+                    </Typography>
+                    <Box className="fantasy-player-metrics">
+                      <span>
+                        <strong>{playerDetail.totalPoints}</strong>Points
+                      </span>
+                      <span>
+                        <strong>{playerDetail.ownershipPercent}%</strong>Owned
+                      </span>
+                      <span>
+                        <strong>{money(playerDetail.priceCents)}</strong>Price
+                      </span>
+                    </Box>
+                    <Chip
+                      color={playerDetail.status === 'available' ? 'success' : 'warning'}
+                      label={playerDetail.status}
+                    />
+                  </Stack>
+                </DialogContent>
+                <DialogActions>
+                  <Button
+                    onClick={() =>
+                      setWatchlist((current) => {
+                        const next = new Set(current);
+                        if (next.has(playerDetail.uuid)) next.delete(playerDetail.uuid);
+                        else next.add(playerDetail.uuid);
+                        return next;
+                      })
+                    }
+                  >
+                    {watchlist.has(playerDetail.uuid) ? 'Remove watchlist' : 'Add to watchlist'}
+                  </Button>
+                  <Button
+                    variant="contained"
+                    disabled={Boolean(selectionBlockReason(playerDetail))}
+                    onClick={() => {
+                      togglePlayer(playerDetail);
+                      setPlayerDetail(null);
+                    }}
+                  >
+                    {selectedIds.has(playerDetail.uuid) ? 'Remove' : 'Add player'}
+                  </Button>
+                </DialogActions>
+              </>
+            ) : null}
+          </Dialog>
         </Stack>
       ) : null}
     </PageScaffold>
@@ -1224,12 +1567,14 @@ function FantasyGuide({
   onBack,
   onNext,
   onSkip,
+  blocked,
 }: {
   step: number;
   targetRect: GuideTargetRect | null;
   onBack: () => void;
   onNext: () => void;
   onSkip: () => void;
+  blocked: boolean;
 }) {
   const item = fantasyGuideSteps[step];
   if (!item) return null;
@@ -1293,13 +1638,42 @@ function FantasyGuide({
                 </Button>
               ) : null}
               <Button variant="contained" size="small" onClick={onNext}>
-                {finalStep ? 'Start playing' : 'Next'}
+                {blocked ? 'Name your team first' : finalStep ? 'Start playing' : 'Next'}
               </Button>
             </Stack>
           </Stack>
         </Box>
       </Box>
     </Portal>
+  );
+}
+
+function FantasyGovernanceList() {
+  return (
+    <Box component="ol" className="fantasy-governance-list">
+      <li>
+        <strong>Season market:</strong> prices and eligibility are controlled by the league
+        administrator.
+      </li>
+      <li>
+        <strong>Fair squads:</strong> budget, position and real-team caps apply to everyone.
+      </li>
+      <li>
+        <strong>Deadline lock:</strong> picks, transfers and captaincy lock at the published
+        deadline.
+      </li>
+      <li>
+        <strong>Transfer cost:</strong> one free completed transfer per week; extras cost four
+        points.
+      </li>
+      <li>
+        <strong>Immutable history:</strong> every gameweek preserves the submitted lineup and score.
+      </li>
+      <li>
+        <strong>Respect the room:</strong> abuse, threats, spam and identity attacks can trigger
+        moderation or bans.
+      </li>
+    </Box>
   );
 }
 
@@ -1477,12 +1851,18 @@ function PlayerRow({
   disabled,
   disabledReason,
   onToggle,
+  watched = false,
+  onWatch,
+  onInspect,
 }: {
   player: FantasyPlayer;
   selected: boolean;
   disabled: boolean;
   disabledReason: string;
   onToggle: () => void;
+  watched?: boolean;
+  onWatch?: () => void;
+  onInspect?: () => void;
 }) {
   return (
     <Stack
@@ -1503,13 +1883,30 @@ function PlayerRow({
         {player.player.name.slice(0, 1)}
       </Avatar>
       <Box sx={{ minWidth: 0, flex: 1 }}>
-        <Typography fontWeight={900} noWrap fontSize=".88rem">
+        <Typography
+          fontWeight={900}
+          noWrap
+          fontSize=".88rem"
+          component={onInspect ? 'button' : 'span'}
+          onClick={onInspect}
+          className={onInspect ? 'fantasy-player-name-button' : undefined}
+        >
           {player.player.name}
         </Typography>
         <Typography color="text.secondary" variant="caption" noWrap display="block">
           {player.team.name} · {player.totalPoints} pts · {player.ownershipPercent}%
         </Typography>
       </Box>
+      {onWatch ? (
+        <Button
+          className="fantasy-watch-button"
+          size="small"
+          aria-label={`${watched ? 'Remove' : 'Add'} ${player.player.name} ${watched ? 'from' : 'to'} watchlist`}
+          onClick={onWatch}
+        >
+          {watched ? '★' : '☆'}
+        </Button>
+      ) : null}
       <Chip label={player.position.code} size="small" color="primary" variant="outlined" />
       <Typography fontWeight={950} fontSize=".88rem" sx={{ minWidth: 46, textAlign: 'right' }}>
         {money(player.priceCents)}
@@ -1526,6 +1923,46 @@ function PlayerRow({
       >
         {selected ? 'Remove' : compactBlockReason(disabledReason)}
       </Button>
+    </Stack>
+  );
+}
+
+function RankMovement({ rank, previousRank }: { rank: number; previousRank: number | null }) {
+  if (!previousRank || previousRank === rank)
+    return (
+      <Typography component="span" variant="caption" color="text.secondary">
+        —
+      </Typography>
+    );
+  const up = previousRank > rank;
+  return (
+    <Typography
+      component="span"
+      variant="caption"
+      color={up ? 'success.main' : 'error.main'}
+      fontWeight={900}
+    >
+      {up ? '↑' : '↓'}
+      {Math.abs(previousRank - rank)}
+    </Typography>
+  );
+}
+
+function ReviewCheck({ ready, label, value }: { ready: boolean; label: string; value: string }) {
+  return (
+    <Stack
+      direction="row"
+      gap={1.25}
+      alignItems="center"
+      className={`fantasy-review-check${ready ? ' is-ready' : ''}`}
+    >
+      <span>{ready ? '✓' : '!'}</span>
+      <Box>
+        <Typography fontWeight={900}>{label}</Typography>
+        <Typography variant="body2" color="text.secondary">
+          {value}
+        </Typography>
+      </Box>
     </Stack>
   );
 }

@@ -2,7 +2,7 @@
 /**
  * Plugin Name: InstaScore Platform
  * Description: Backend and application host for the InstaScore sports platform.
- * Version: 0.23.0-rc.9
+ * Version: 0.23.0-rc.10
  * Requires at least: 6.6
  * Requires PHP: 8.2
  * Author: InstaScore
@@ -14,8 +14,8 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'INSTASCORE_PLATFORM_VERSION', '0.23.0-rc.9' );
-define( 'INSTASCORE_DB_VERSION', 22 );
+define( 'INSTASCORE_PLATFORM_VERSION', '0.23.0-rc.10' );
+define( 'INSTASCORE_DB_VERSION', 23 );
 define( 'INSTASCORE_PLATFORM_FILE', __FILE__ );
 define( 'INSTASCORE_PLATFORM_PATH', plugin_dir_path( __FILE__ ) );
 define( 'INSTASCORE_PLATFORM_URL', plugin_dir_url( __FILE__ ) );

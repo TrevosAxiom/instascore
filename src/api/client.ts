@@ -246,6 +246,8 @@ export interface ApiClient {
     fixtureUuid: string,
     input: { body: string; parentUuid?: string },
   ) => Promise<ChatMessage>;
+  getFantasyChat: (gameUuid: string) => Promise<MatchChatRoom>;
+  postFantasyChat: (gameUuid: string, input: { body: string; parentUuid?: string }) => Promise<ChatMessage>;
   reactToChatMessage: (messageUuid: string, reaction: string) => Promise<{ updated: boolean }>;
   reportChatMessage: (messageUuid: string, reason: string) => Promise<{ reported: boolean }>;
   moderateChatMessage: (messageUuid: string) => Promise<{ moderated: boolean }>;
@@ -770,6 +772,12 @@ export function createApiClient(settings: BootstrapSettings): ApiClient {
     getMatchChat: (fixtureUuid) => request<MatchChatRoom>(`/fixtures/${fixtureUuid}/chat`),
     postMatchChat: (fixtureUuid, input) =>
       request<ChatMessage>(`/fixtures/${fixtureUuid}/chat`, {
+        method: 'POST',
+        body: JSON.stringify(input),
+      }),
+    getFantasyChat: (gameUuid) => request<MatchChatRoom>(`/fantasy/games/${gameUuid}/chat`),
+    postFantasyChat: (gameUuid, input) =>
+      request<ChatMessage>(`/fantasy/games/${gameUuid}/chat`, {
         method: 'POST',
         body: JSON.stringify(input),
       }),

@@ -45,7 +45,7 @@ describe('fantasy foundation UI', () => {
     expect(await screen.findByText('InstaScore Fantasy')).toBeInTheDocument();
     expect(await screen.findByText(/weekly performance table/i)).toBeInTheDocument();
     expect(screen.getByText('Touchdown Kings')).toBeInTheDocument();
-    expect(screen.getByText(/sign in only when you are ready/i)).toBeInTheDocument();
+    expect(screen.getByText(/any fantasy action will open secure login/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /save draft/i })).toBeDisabled();
   });
 
@@ -100,7 +100,7 @@ describe('fantasy foundation UI', () => {
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     expect(await screen.findByText(/My squad history/i)).toBeInTheDocument();
     expect(await screen.findByText(/Lagos Blitz Crew/)).toBeInTheDocument();
-    expect(await screen.findByText('74 pts')).toBeInTheDocument();
+    expect((await screen.findAllByText('74 pts')).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/coming soon/i)).toHaveLength(6);
     expect(screen.getByRole('button', { name: /show private leagues/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /show versus/i })).toBeInTheDocument();

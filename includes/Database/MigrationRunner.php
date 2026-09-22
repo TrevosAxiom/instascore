@@ -50,6 +50,7 @@ final class MigrationRunner {
 				new Version0020( $wpdb ),
 				new Version0021( $wpdb ),
 				new Version0022( $wpdb ),
+				new Version0023( $wpdb ),
 			)
 		);
 	}
