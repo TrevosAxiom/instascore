@@ -42,7 +42,8 @@ describe('MatchBanter', () => {
       body: 'Let us go!',
       guestName: 'Sideline Fan',
     });
-    expect(post.mock.calls[0]?.[1].guestToken).toMatch(
+    const postedInput = post.mock.calls[0]?.[1] as unknown as { guestToken: string };
+    expect(postedInput.guestToken).toMatch(
       /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
     );
     expect(screen.getByRole('button', { name: '🔥 reaction, 3' })).toHaveAttribute(
