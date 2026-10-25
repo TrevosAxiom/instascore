@@ -6,21 +6,21 @@ import { useApi } from '../../api/context';
 import { usePwa } from '../../pwa/PwaProvider';
 import type { Fixture, FixtureStream, LiveMatchState } from '../../types/api';
 import { BroadcastScoreOverlay } from './BroadcastScoreOverlay';
-import { MatchBanter } from './MatchBanter';
 
 export function YouTubeBroadcastPlayer({
   stream,
   fixture,
   liveState,
+  onOpenBanter,
 }: {
   stream: FixtureStream;
   fixture?: Fixture | undefined;
   liveState?: LiveMatchState | undefined;
+  onOpenBanter?: (() => void) | undefined;
 }) {
   const pwa = usePwa();
   const api = useApi();
   const [playerLoaded, setPlayerLoaded] = useState(false);
-  const [chatVisible, setChatVisible] = useState(false);
   const [overlayVisible, setOverlayVisible] = useState(true);
   const [miniPlayer, setMiniPlayer] = useState(false);
   const [online, setOnline] = useState(() => navigator.onLine);
@@ -154,7 +154,6 @@ export function YouTubeBroadcastPlayer({
               size="small"
               onClick={() => {
                 setMiniPlayer((value) => !value);
-                setChatVisible(false);
               }}
             >
               {miniPlayer ? 'Return to page' : 'Mini player'}
@@ -284,8 +283,8 @@ export function YouTubeBroadcastPlayer({
         </Box>
       </Box>
       {fixture && !miniPlayer ? (
-        <Button fullWidth onClick={() => setChatVisible(true)} sx={{ borderRadius: 0 }}>
-          Open match banter
+        <Button fullWidth onClick={onOpenBanter} sx={{ borderRadius: 0 }}>
+          Join match banter
         </Button>
       ) : null}
       {postMatchSponsor && isReplay && !miniPlayer ? (
@@ -297,13 +296,6 @@ export function YouTubeBroadcastPlayer({
             }
           />
         </Stack>
-      ) : null}
-      {fixture ? (
-        <MatchBanter
-          fixtureUuid={fixture.uuid}
-          open={chatVisible}
-          onClose={() => setChatVisible(false)}
-        />
       ) : null}
     </Paper>
   );

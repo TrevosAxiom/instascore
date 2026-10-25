@@ -19,6 +19,7 @@ import { ErrorState, LoadingState } from '../../components/AsyncStates';
 import { EntityAvatar } from '../../components/EntityAvatar';
 import { PageScaffold } from '../../components/PageScaffold';
 import { useLiveMatchStream } from '../../realtime/useLiveMatchStream';
+import type { Fixture } from '../../types/api';
 import { LiveScoreboard } from '../scoring/LiveScoreboard';
 import { MatchTimeline } from '../scoring/MatchTimeline';
 import { fixtureTitle, formatKickoff, statusLabel } from './fixtureFormat';
@@ -106,32 +107,15 @@ export function FixtureDetailPage() {
       {query.isError ? <ErrorState title="Fixture could not be loaded." /> : null}
       {fixture ? (
         <Stack spacing={2}>
-          {broadcast.data ? (
-            <YouTubeBroadcastPlayer
-              stream={broadcast.data}
-              fixture={fixture}
-              liveState={liveState}
-            />
-          ) : (
-            <Paper variant="outlined" sx={{ borderRadius: 3, overflow: 'hidden' }}>
-              <Button fullWidth size="large" onClick={() => setBanterOpen(true)} sx={{ py: 1.25 }}>
-                Open match banter
-              </Button>
-              <MatchBanter
-                fixtureUuid={fixture.uuid}
-                open={banterOpen}
-                onClose={() => setBanterOpen(false)}
-              />
-            </Paper>
-          )}
           <Card
             sx={{
               borderRadius: 4,
               color: '#fff5d6',
               background: 'linear-gradient(135deg,rgb(7,25,45),rgb(14,48,79))',
+              overflow: 'hidden',
             }}
           >
-            <CardContent sx={{ p: { xs: 2, md: 3 } }}>
+            <CardContent sx={{ p: { xs: 1.75, sm: 2.5, md: 3 } }}>
               <Stack direction="row" justifyContent="space-between" gap={1} flexWrap="wrap">
                 <Chip label={fixture.competition.name} color="primary" />
                 <Chip
@@ -144,8 +128,8 @@ export function FixtureDetailPage() {
                   display: 'grid',
                   gridTemplateColumns: '1fr auto 1fr',
                   alignItems: 'center',
-                  gap: 1,
-                  mt: 2,
+                  gap: { xs: 0.5, sm: 1.5 },
+                  mt: { xs: 1.25, sm: 2 },
                 }}
               >
                 {([fixture.homeTeam, fixture.awayTeam] as const).map((team, index) => (
@@ -161,16 +145,25 @@ export function FixtureDetailPage() {
                       src={team.logoUrl}
                       alt={`${team.name} logo`}
                       sx={{
-                        width: { xs: 58, sm: 78 },
-                        height: { xs: 58, sm: 78 },
+                        width: { xs: 54, sm: 78 },
+                        height: { xs: 54, sm: 78 },
                         bgcolor: '#fff',
                       }}
                     />
-                    <Typography fontWeight={950}>{team.name}</Typography>
+                    <Typography
+                      fontWeight={950}
+                      sx={{ fontSize: { xs: '.8rem', sm: '1rem' }, lineHeight: 1.15 }}
+                    >
+                      {team.name}
+                    </Typography>
                   </Stack>
                 ))}
                 <Stack alignItems="center" sx={{ gridColumn: 2, gridRow: 1 }}>
-                  <Typography variant="h2" fontWeight={950}>
+                  <Typography
+                    variant="h2"
+                    fontWeight={950}
+                    sx={{ fontSize: { xs: '2rem', sm: '3.75rem' }, whiteSpace: 'nowrap' }}
+                  >
                     {liveState ? `${liveState.score.home}–${liveState.score.away}` : 'VS'}
                   </Typography>
                   <Typography variant="caption" color="rgba(255,245,214,.72)">
@@ -178,9 +171,37 @@ export function FixtureDetailPage() {
                   </Typography>
                 </Stack>
               </Box>
+              <Stack
+                direction="row"
+                justifyContent="center"
+                gap={1}
+                flexWrap="wrap"
+                sx={{ mt: 2, color: 'rgba(255,245,214,.76)' }}
+              >
+                <Typography variant="caption" fontWeight={800}>
+                  {formatKickoff(fixture)}
+                </Typography>
+                <Typography variant="caption" aria-hidden="true">
+                  •
+                </Typography>
+                <Typography variant="caption" fontWeight={800}>
+                  {fixture.venue?.name ?? 'Venue TBC'}
+                </Typography>
+              </Stack>
             </CardContent>
           </Card>
-          <Paper variant="outlined" sx={{ borderRadius: 3, overflow: 'hidden' }}>
+          <Paper
+            variant="outlined"
+            sx={{
+              position: 'sticky',
+              top: { xs: 0, md: 72 },
+              zIndex: 20,
+              borderRadius: 3,
+              overflow: 'hidden',
+              bgcolor: 'background.paper',
+              boxShadow: '0 8px 24px rgba(7,25,45,.08)',
+            }}
+          >
             <Tabs
               value={tab}
               onChange={(_, value: number) => setTab(value)}
@@ -193,6 +214,18 @@ export function FixtureDetailPage() {
               ))}
             </Tabs>
           </Paper>
+          <Box id="live-stream" sx={{ scrollMarginTop: { xs: 76, md: 150 } }}>
+            {broadcast.data ? (
+              <YouTubeBroadcastPlayer
+                stream={broadcast.data}
+                fixture={fixture}
+                liveState={liveState}
+                onOpenBanter={() => setBanterOpen(true)}
+              />
+            ) : (
+              <StreamPreparationCard fixture={fixture} />
+            )}
+          </Box>
           {liveState ? (
             <Chip
               label={
@@ -295,8 +328,90 @@ export function FixtureDetailPage() {
               </CardContent>
             </Card>
           ) : null}
+          <Button
+            variant="contained"
+            color="primary"
+            aria-label="Open match banter"
+            onClick={() => setBanterOpen(true)}
+            sx={{
+              position: 'fixed',
+              zIndex: 1300,
+              right: { xs: 14, sm: 24 },
+              bottom: { xs: 82, sm: 24 },
+              minWidth: { xs: 58, sm: 132 },
+              width: { xs: 58, sm: 'auto' },
+              height: 58,
+              borderRadius: 999,
+              px: { xs: 0, sm: 2.25 },
+              boxShadow: '0 14px 36px rgba(7,25,45,.34)',
+              fontWeight: 950,
+              '&:hover': { transform: 'translateY(-2px)' },
+            }}
+          >
+            <Box component="span" aria-hidden="true" sx={{ fontSize: 23, mr: { xs: 0, sm: 1 } }}>
+              💬
+            </Box>
+            <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+              Match banter
+            </Box>
+          </Button>
+          <MatchBanter
+            fixtureUuid={fixture.uuid}
+            open={banterOpen}
+            onClose={() => setBanterOpen(false)}
+          />
         </Stack>
       ) : null}
     </PageScaffold>
+  );
+}
+
+function StreamPreparationCard({ fixture }: { fixture: Fixture }) {
+  return (
+    <Paper
+      variant="outlined"
+      sx={{
+        overflow: 'hidden',
+        borderRadius: 3,
+        color: '#fff5d6',
+        background:
+          'radial-gradient(circle at 85% 20%, rgba(243,198,67,.2), transparent 28%), rgb(7,25,45)',
+      }}
+    >
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: { xs: '1fr', md: 'minmax(0,1fr) auto' },
+          alignItems: 'center',
+          gap: 2,
+          p: { xs: 2, sm: 2.5 },
+        }}
+      >
+        <Stack spacing={0.75}>
+          <Stack direction="row" gap={1} alignItems="center" flexWrap="wrap">
+            <Chip size="small" label="LIVESTREAM" color="primary" />
+            <Chip
+              size="small"
+              label="Broadcast setup pending"
+              sx={{ color: '#fff5d6', borderColor: 'rgba(255,245,214,.28)' }}
+              variant="outlined"
+            />
+          </Stack>
+          <Typography variant="h5" fontWeight={950}>
+            Watch the action here
+          </Typography>
+          <Typography sx={{ color: 'rgba(255,245,214,.72)', maxWidth: 700 }}>
+            The Veo-to-YouTube broadcast will appear in this match centre when the production team
+            publishes it. Scores, plays and banter remain available alongside the video.
+          </Typography>
+        </Stack>
+        <Stack direction={{ xs: 'row', md: 'column' }} gap={0.75} alignItems={{ md: 'flex-end' }}>
+          <Typography fontWeight={950}>{formatKickoff(fixture)}</Typography>
+          <Typography variant="caption" sx={{ color: 'rgba(255,245,214,.62)' }}>
+            Stream URL not assigned yet
+          </Typography>
+        </Stack>
+      </Box>
+    </Paper>
   );
 }
