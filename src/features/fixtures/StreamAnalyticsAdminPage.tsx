@@ -2,6 +2,10 @@ import {
   Alert,
   Box,
   Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   Grid,
   MenuItem,
   Paper,
@@ -10,13 +14,14 @@ import {
   Typography,
 } from '@mui/material';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { useApi } from '../../api/context';
 import { ErrorState, LoadingState } from '../../components/AsyncStates';
 import { MediaUploadField } from '../../components/MediaUploadField';
 import { PageScaffold } from '../../components/PageScaffold';
-import type { MediaUpload } from '../../types/api';
+import type { Fixture, FixtureStreamInput, MediaUpload } from '../../types/api';
+import { fixtureTitle, formatKickoff } from './fixtureFormat';
 
 const emptyForm = {
   sponsorName: '',
@@ -29,19 +34,80 @@ const emptyForm = {
   endsAt: '',
 };
 
+const emptyStream: FixtureStreamInput = {
+  youtubeUrl: '',
+  title: '',
+  status: 'scheduled',
+  visibility: 'unlisted',
+  embedEnabled: true,
+  chatEnabled: false,
+  featured: false,
+};
+
 export function StreamAnalyticsAdminPage() {
   const api = useApi();
   const client = useQueryClient();
   const [form, setForm] = useState(emptyForm);
   const [logo, setLogo] = useState<MediaUpload | null>(null);
+  const [fixtureSearch, setFixtureSearch] = useState('');
+  const [fixtureCompetition, setFixtureCompetition] = useState('');
+  const [streamFixture, setStreamFixture] = useState<Fixture | null>(null);
+  const [streamForm, setStreamForm] = useState<FixtureStreamInput>(emptyStream);
   const report = useQuery({ queryKey: ['stream-analytics'], queryFn: api.getStreamAnalytics });
   const competitions = useQuery({
     queryKey: ['stream-sponsor-competitions'],
     queryFn: () => api.getCompetitions(new URLSearchParams({ per_page: '100' })),
   });
   const fixtures = useQuery({
-    queryKey: ['stream-sponsor-fixtures'],
-    queryFn: () => api.getAdminFixtures(new URLSearchParams({ per_page: '100' })),
+    queryKey: ['stream-fixtures', fixtureCompetition, fixtureSearch],
+    queryFn: () => {
+      const params = new URLSearchParams({ per_page: '100' });
+      if (fixtureCompetition) params.set('competition', fixtureCompetition);
+      if (fixtureSearch.trim()) params.set('search', fixtureSearch.trim());
+      return api.getAdminFixtures(params);
+    },
+  });
+  const existingStream = useQuery({
+    queryKey: ['admin-fixture-broadcast', streamFixture?.uuid],
+    queryFn: () => api.getAdminFixtureStream(streamFixture?.uuid ?? ''),
+    enabled: Boolean(streamFixture),
+  });
+  const openStream = (fixture: Fixture) => {
+    setStreamFixture(fixture);
+    setStreamForm({ ...emptyStream, title: fixtureTitle(fixture) });
+  };
+  useEffect(() => {
+    if (!streamFixture || existingStream.isLoading) return;
+    if (!existingStream.data) return;
+    setStreamForm({
+      youtubeUrl: existingStream.data.watchUrl,
+      title: existingStream.data.title,
+      status: existingStream.data.status,
+      visibility: existingStream.data.visibility,
+      embedEnabled: existingStream.data.embedEnabled,
+      chatEnabled: existingStream.data.chatEnabled,
+      featured: existingStream.data.featured,
+      ...(existingStream.data.scheduledStart
+        ? { scheduledStart: existingStream.data.scheduledStart }
+        : {}),
+    });
+  }, [existingStream.data, existingStream.isLoading, streamFixture]);
+  const saveStream = useMutation({
+    mutationFn: () => api.saveFixtureStream(streamFixture?.uuid ?? '', streamForm),
+    onSuccess: () => {
+      void client.invalidateQueries({ queryKey: ['admin-fixture-broadcast'] });
+      setStreamFixture(null);
+    },
+  });
+  const disableStream = useMutation({
+    mutationFn: () => api.disableFixtureStream(streamFixture?.uuid ?? ''),
+    onSuccess: () => {
+      void client.invalidateQueries({ queryKey: ['admin-fixture-broadcast'] });
+      setStreamFixture(null);
+    },
+  });
+  const visibleFixtures = (fixtures.data?.items ?? []).filter((fixture) => {
+    return !fixtureCompetition || fixture.competition.uuid === fixtureCompetition;
   });
   const create = useMutation({
     mutationFn: () => api.createStreamSponsor({ ...form, logoUrl: logo?.url ?? '' }),
@@ -61,14 +127,80 @@ export function StreamAnalyticsAdminPage() {
   return (
     <PageScaffold
       eyebrow="Livestream business"
-      title="Streaming analytics & sponsors"
-      description="Measure privacy-safe viewing and manage sponsor placements across matches and competitions."
+      title="Livestreams, analytics & sponsors"
+      description="Attach match broadcasts with a simple YouTube URL, then measure viewing and manage sponsor placements."
       status={`${summary?.sessions ?? 0} sessions`}
     >
       {report.isLoading ? <LoadingState label="Loading livestream report" /> : null}
       {report.isError ? (
         <ErrorState description="Livestream analytics could not be loaded." />
       ) : null}
+      <Paper variant="outlined" sx={{ p: 2, mb: 2.5 }}>
+        <Stack spacing={2}>
+          <Box>
+            <Typography variant="h5" fontWeight={950}>
+              Match livestreams
+            </Typography>
+            <Typography color="text.secondary">
+              Select any fixture and paste its public YouTube URL. API connection is not required.
+            </Typography>
+          </Box>
+          <Grid container spacing={1.25}>
+            <Grid size={{ xs: 12, md: 7 }}>
+              <TextField
+                fullWidth
+                label="Find a fixture"
+                value={fixtureSearch}
+                onChange={(event) => setFixtureSearch(event.target.value)}
+                placeholder="Search team, competition or round"
+              />
+            </Grid>
+            <Grid size={{ xs: 12, md: 5 }}>
+              <TextField
+                select
+                fullWidth
+                label="Competition"
+                value={fixtureCompetition}
+                onChange={(event) => setFixtureCompetition(event.target.value)}
+              >
+                <MenuItem value="">All competitions</MenuItem>
+                {(competitions.data?.items ?? []).map((competition) => (
+                  <MenuItem key={competition.uuid} value={competition.uuid}>
+                    {competition.name}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Grid>
+          </Grid>
+          {fixtures.isLoading ? <LoadingState label="Loading fixtures" /> : null}
+          <Stack spacing={1} sx={{ maxHeight: 440, overflowY: 'auto' }}>
+            {visibleFixtures.map((fixture) => (
+              <Paper key={fixture.uuid} variant="outlined" sx={{ p: 1.5 }}>
+                <Stack
+                  direction={{ xs: 'column', sm: 'row' }}
+                  justifyContent="space-between"
+                  alignItems={{ sm: 'center' }}
+                  gap={1}
+                >
+                  <Box>
+                    <Typography fontWeight={950}>{fixtureTitle(fixture)}</Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {fixture.competition.name} · {fixture.roundName || 'Fixture'} ·{' '}
+                      {formatKickoff(fixture)}
+                    </Typography>
+                  </Box>
+                  <Button variant="contained" size="small" onClick={() => openStream(fixture)}>
+                    Add URL
+                  </Button>
+                </Stack>
+              </Paper>
+            ))}
+            {!fixtures.isLoading && !visibleFixtures.length ? (
+              <Alert severity="info">No fixtures match these filters.</Alert>
+            ) : null}
+          </Stack>
+        </Stack>
+      </Paper>
       {report.data ? (
         <Stack spacing={2.5}>
           <Grid container spacing={1.25}>
@@ -371,6 +503,72 @@ export function StreamAnalyticsAdminPage() {
           </Paper>
         </Stack>
       ) : null}
+      <Dialog
+        open={Boolean(streamFixture)}
+        onClose={() => setStreamFixture(null)}
+        fullWidth
+        maxWidth="sm"
+      >
+        <DialogTitle>
+          Add livestream · {streamFixture ? fixtureTitle(streamFixture) : ''}
+        </DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ pt: 1 }}>
+            <Alert severity="info">
+              Paste the public YouTube link. No API connection is required.
+            </Alert>
+            <TextField
+              autoFocus
+              required
+              fullWidth
+              label="YouTube livestream URL"
+              placeholder="https://www.youtube.com/watch?v=..."
+              value={streamForm.youtubeUrl}
+              onChange={(event) =>
+                setStreamForm((current) => ({ ...current, youtubeUrl: event.target.value }))
+              }
+              helperText="YouTube watch, live, youtu.be, Shorts and embed links are supported."
+            />
+            <TextField
+              fullWidth
+              label="Title (optional)"
+              value={streamForm.title}
+              onChange={(event) =>
+                setStreamForm((current) => ({ ...current, title: event.target.value }))
+              }
+            />
+            {existingStream.data ? (
+              <Alert severity="success">
+                A livestream is already attached. Saving replaces its URL.
+              </Alert>
+            ) : null}
+            {saveStream.isError ? (
+              <Alert severity="error">
+                Use a valid public YouTube link or 11-character video ID.
+              </Alert>
+            ) : null}
+          </Stack>
+        </DialogContent>
+        <DialogActions sx={{ justifyContent: 'space-between', px: 3, pb: 2 }}>
+          <Button
+            color="error"
+            disabled={!existingStream.data || disableStream.isPending}
+            onClick={() => disableStream.mutate()}
+          >
+            Remove stream
+          </Button>
+          <Stack direction="row" gap={1}>
+            <Button onClick={() => setStreamFixture(null)}>Cancel</Button>
+            <Button
+              variant="contained"
+              disabled={!streamForm.youtubeUrl.trim() || saveStream.isPending}
+              onClick={() => saveStream.mutate()}
+            >
+              Save livestream
+            </Button>
+          </Stack>
+        </DialogActions>
+      </Dialog>
     </PageScaffold>
   );
 }

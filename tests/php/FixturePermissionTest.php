@@ -13,4 +13,9 @@ final class FixturePermissionTest extends TestCase {
 		$GLOBALS['instascore_test_capabilities'] = array( 'instascore_manage_fixtures' );
 		$this->assertTrue( FixturePermissions::manage_fixtures() );
 	}
+
+	public function test_wordpress_administrators_can_manage_fixtures(): void {
+		$GLOBALS['instascore_test_capabilities'] = array( 'manage_options' );
+		$this->assertTrue( FixturePermissions::manage_fixtures() );
+	}
 }

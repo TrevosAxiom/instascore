@@ -2,7 +2,7 @@
 Contributors: instascore
 Requires at least: 6.6
 Requires PHP: 8.2
-Stable tag: 0.23.0-rc.15
+Stable tag: 0.23.0-rc.16
 License: GPL-2.0-or-later
 
 WordPress backend and React application shell for InstaScore.
@@ -12,6 +12,12 @@ WordPress backend and React application shell for InstaScore.
 See README.md for the shortcode, development server and production build steps.
 
 == Changelog ==
+
+= 0.23.0-rc.16 =
+* Restored fixture-manager access for WordPress administrators.
+* Added direct YouTube URL creation and editing from each match centre.
+* Added fixture-first livestream management with competition and match search.
+* Enabled guest match banter delivery with protected guest identities and rate limits.
 
 = 0.23.0-rc.15 =
 * Fixed fantasy registration tabs being blocked by the guest interaction guard across React portals.

@@ -1,18 +1,24 @@
 import {
+  Alert,
   Box,
   Button,
   Card,
   CardContent,
   Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   Paper,
   Stack,
   Tab,
   Tabs,
+  TextField,
   Typography,
 } from '@mui/material';
-import { useQuery } from '@tanstack/react-query';
-import { useMemo, useState } from 'react';
-import { Link as RouterLink, useParams } from 'react-router';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useEffect, useMemo, useState } from 'react';
+import { useParams } from 'react-router';
 
 import { useApi } from '../../api/context';
 import { useAuth } from '../../app/auth-context';
@@ -20,7 +26,7 @@ import { ErrorState, LoadingState } from '../../components/AsyncStates';
 import { EntityAvatar } from '../../components/EntityAvatar';
 import { PageScaffold } from '../../components/PageScaffold';
 import { useLiveMatchStream } from '../../realtime/useLiveMatchStream';
-import type { Fixture } from '../../types/api';
+import type { Fixture, FixtureStreamInput } from '../../types/api';
 import { LiveScoreboard } from '../scoring/LiveScoreboard';
 import { MatchTimeline } from '../scoring/MatchTimeline';
 import { fixtureTitle, formatKickoff, statusLabel } from './fixtureFormat';
@@ -29,13 +35,25 @@ import { YouTubeBroadcastPlayer } from './YouTubeBroadcastPlayer';
 
 const flagTabs = ['Overview', 'Scoring plays', 'Team stats', 'Match info'];
 const generalTabs = ['Overview', 'Timeline', 'Team stats', 'Match info'];
+const emptyStream: FixtureStreamInput = {
+  youtubeUrl: '',
+  title: '',
+  status: 'scheduled',
+  visibility: 'unlisted',
+  embedEnabled: true,
+  chatEnabled: false,
+  featured: false,
+};
 
 export function FixtureDetailPage() {
   const api = useApi();
+  const queryClient = useQueryClient();
   const auth = useAuth();
   const { uuid = '' } = useParams();
   const [tab, setTab] = useState(0);
   const [banterOpen, setBanterOpen] = useState(false);
+  const [streamDialogOpen, setStreamDialogOpen] = useState(false);
+  const [streamForm, setStreamForm] = useState<FixtureStreamInput>(emptyStream);
   const query = useQuery({
     queryKey: ['fixture', uuid],
     queryFn: () => api.getFixture(uuid),
@@ -57,6 +75,46 @@ export function FixtureDetailPage() {
     enabled: Boolean(uuid),
     retry: false,
   });
+  const canManageStream = Boolean(auth.state?.user?.capabilities.manageFixtures);
+  const openStreamDialog = () => {
+    setStreamForm(
+      broadcast.data
+        ? {
+            youtubeUrl: broadcast.data.watchUrl,
+            title: broadcast.data.title,
+            status: broadcast.data.status,
+            visibility: broadcast.data.visibility,
+            embedEnabled: broadcast.data.embedEnabled,
+            chatEnabled: broadcast.data.chatEnabled,
+            featured: broadcast.data.featured,
+            ...(broadcast.data.scheduledStart
+              ? { scheduledStart: broadcast.data.scheduledStart }
+              : {}),
+          }
+        : { ...emptyStream, title: fixture ? fixtureTitle(fixture) : '' },
+    );
+    setStreamDialogOpen(true);
+  };
+  const saveStream = useMutation({
+    mutationFn: () => api.saveFixtureStream(uuid, streamForm),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['fixture', uuid, 'broadcast'] });
+      void queryClient.invalidateQueries({ queryKey: ['fixture', uuid] });
+      setStreamDialogOpen(false);
+    },
+  });
+  useEffect(() => {
+    if (!streamDialogOpen || !broadcast.data) return;
+    setStreamForm((current) =>
+      current.youtubeUrl
+        ? current
+        : {
+            ...current,
+            youtubeUrl: broadcast.data.watchUrl,
+            title: broadcast.data.title,
+          },
+    );
+  }, [broadcast.data, streamDialogOpen]);
   const liveState = stream.state ?? live.data;
   const isFlag = fixture?.sport.slug.includes('flag') ?? false;
   const tabs = isFlag ? flagTabs : generalTabs;
@@ -217,6 +275,13 @@ export function FixtureDetailPage() {
             </Tabs>
           </Paper>
           <Box id="live-stream" sx={{ scrollMarginTop: { xs: 76, md: 150 } }}>
+            {canManageStream && broadcast.data ? (
+              <Stack direction="row" justifyContent="flex-end" sx={{ mb: 1 }}>
+                <Button variant="outlined" size="small" onClick={openStreamDialog}>
+                  Edit livestream URL
+                </Button>
+              </Stack>
+            ) : null}
             {broadcast.data ? (
               <YouTubeBroadcastPlayer
                 stream={broadcast.data}
@@ -227,7 +292,8 @@ export function FixtureDetailPage() {
             ) : (
               <StreamPreparationCard
                 fixture={fixture}
-                canManageStream={Boolean(auth.state?.user?.capabilities.manageFixtures)}
+                canManageStream={canManageStream}
+                onAddStream={openStreamDialog}
               />
             )}
           </Box>
@@ -365,6 +431,63 @@ export function FixtureDetailPage() {
             open={banterOpen}
             onClose={() => setBanterOpen(false)}
           />
+          <Dialog
+            open={streamDialogOpen}
+            onClose={() => setStreamDialogOpen(false)}
+            fullWidth
+            maxWidth="sm"
+          >
+            <DialogTitle>
+              {broadcast.data ? 'Edit livestream' : 'Add livestream'} · {fixtureTitle(fixture)}
+            </DialogTitle>
+            <DialogContent>
+              <Stack spacing={2} sx={{ pt: 1 }}>
+                <Alert severity="info">
+                  Paste the public YouTube link and save. The video will appear on this match page
+                  immediately.
+                </Alert>
+                <TextField
+                  autoFocus
+                  required
+                  fullWidth
+                  type="url"
+                  label="YouTube livestream URL"
+                  placeholder="https://www.youtube.com/watch?v=..."
+                  value={streamForm.youtubeUrl}
+                  onChange={(event) =>
+                    setStreamForm((current) => ({
+                      ...current,
+                      youtubeUrl: event.target.value,
+                    }))
+                  }
+                  helperText="YouTube watch, live, youtu.be, Shorts and embed links are supported."
+                />
+                <TextField
+                  fullWidth
+                  label="Stream title (optional)"
+                  value={streamForm.title}
+                  onChange={(event) =>
+                    setStreamForm((current) => ({ ...current, title: event.target.value }))
+                  }
+                />
+                {saveStream.isError ? (
+                  <Alert severity="error">
+                    The livestream could not be saved. Check the YouTube link and try again.
+                  </Alert>
+                ) : null}
+              </Stack>
+            </DialogContent>
+            <DialogActions sx={{ px: 3, pb: 2 }}>
+              <Button onClick={() => setStreamDialogOpen(false)}>Cancel</Button>
+              <Button
+                variant="contained"
+                disabled={!streamForm.youtubeUrl.trim() || saveStream.isPending}
+                onClick={() => saveStream.mutate()}
+              >
+                {saveStream.isPending ? 'Saving…' : 'Save livestream'}
+              </Button>
+            </DialogActions>
+          </Dialog>
         </Stack>
       ) : null}
     </PageScaffold>
@@ -374,9 +497,11 @@ export function FixtureDetailPage() {
 function StreamPreparationCard({
   fixture,
   canManageStream,
+  onAddStream,
 }: {
   fixture: Fixture;
   canManageStream: boolean;
+  onAddStream: () => void;
 }) {
   return (
     <Paper
@@ -423,13 +548,8 @@ function StreamPreparationCard({
         >
           <Typography fontWeight={950}>{formatKickoff(fixture)}</Typography>
           {canManageStream ? (
-            <Button
-              component={RouterLink}
-              to={`/admin/fixtures?broadcast=${fixture.uuid}`}
-              variant="contained"
-              size="small"
-            >
-              Add YouTube livestream
+            <Button variant="contained" size="small" onClick={onAddStream}>
+              Add livestream URL
             </Button>
           ) : (
             <Typography variant="caption" sx={{ color: 'rgba(255,245,214,.62)' }}>

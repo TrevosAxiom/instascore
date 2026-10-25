@@ -31,7 +31,6 @@ import { EmptyState, ErrorState, LoadingState } from '../../components/AsyncStat
 import { PageScaffold } from '../../components/PageScaffold';
 import type { Fixture, FixtureStatus, FixtureStreamInput } from '../../types/api';
 import { fixtureTitle, formatKickoff, statusLabel } from './fixtureFormat';
-import { LiveControlRoom } from './LiveControlRoom';
 
 const fixtureSchema = z
   .object({
@@ -132,20 +131,6 @@ export function AdminFixturesPage() {
     queryKey: ['admin-fixture-broadcast', broadcastFixture?.uuid],
     queryFn: () => api.getAdminFixtureStream(broadcastFixture?.uuid ?? ''),
     enabled: Boolean(broadcastFixture),
-  });
-  const youtubeSettings = useQuery({
-    queryKey: ['youtube-streaming-settings'],
-    queryFn: api.getYouTubeStreamingSettings,
-  });
-  const streamHealth = useQuery({
-    queryKey: ['youtube-stream-health'],
-    queryFn: api.getYouTubeStreamHealth,
-    refetchInterval: 60_000,
-  });
-  const youtubeBroadcasts = useQuery({
-    queryKey: ['youtube-broadcasts'],
-    queryFn: api.getYouTubeBroadcasts,
-    enabled: Boolean(broadcastFixture && youtubeSettings.data?.connected),
   });
   useEffect(() => {
     if (!broadcastFixture || broadcast.isLoading) return;
@@ -287,28 +272,6 @@ export function AdminFixturesPage() {
         ))}
       </Grid>
 
-      {streamHealth.data?.connected ? (
-        <Alert
-          severity={streamHealth.data.failed || streamHealth.data.stale ? 'warning' : 'success'}
-        >
-          <Stack direction={{ xs: 'column', sm: 'row' }} alignItems={{ sm: 'center' }} gap={1}>
-            <Typography fontWeight={900} sx={{ flexGrow: 1 }}>
-              YouTube stream health
-            </Typography>
-            <Chip
-              size="small"
-              label={`${streamHealth.data.live} live`}
-              color={streamHealth.data.live ? 'error' : 'default'}
-            />
-            <Chip size="small" label={`${streamHealth.data.stale} stale`} />
-            <Chip size="small" label={`${streamHealth.data.failed} failed`} />
-          </Stack>
-          {streamHealth.data.stale || streamHealth.data.failed
-            ? 'Open the affected fixture broadcast and verify the Veo feed or run Sync broadcasts now in Settings.'
-            : 'Connected broadcasts are synchronizing normally.'}
-        </Alert>
-      ) : null}
-
       <Paper variant="outlined" sx={{ p: 2 }}>
         <Stack spacing={2}>
           <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" gap={1.5}>
@@ -321,7 +284,9 @@ export function AdminFixturesPage() {
               <Tab value="day" label="Match day" />
             </Tabs>
             <Stack direction={{ xs: 'column', sm: 'row' }} gap={1}>
-              <LiveControlRoom />
+              <Button component={RouterLink} to="/admin/streaming" variant="outlined">
+                Livestreams
+              </Button>
               <Button variant="outlined" onClick={downloadFixtureTemplate}>
                 Sample CSV
               </Button>
@@ -459,7 +424,7 @@ export function AdminFixturesPage() {
 
       {query.isLoading && <LoadingState label="Loading fixture schedule" />}
       {query.isError && <ErrorState title="Fixture schedule could not be loaded." />}
-      {!query.isLoading && fixtures.length === 0 && (
+      {!query.isLoading && !query.isError && fixtures.length === 0 && (
         <EmptyState
           title="No matching fixtures"
           description="Adjust the filters or create a new match."
@@ -756,55 +721,27 @@ export function AdminFixturesPage() {
         maxWidth="sm"
       >
         <DialogTitle>
-          YouTube broadcast · {broadcastFixture ? fixtureTitle(broadcastFixture) : ''}
+          Add livestream · {broadcastFixture ? fixtureTitle(broadcastFixture) : ''}
         </DialogTitle>
         <DialogContent>
           {broadcast.isLoading ? <LoadingState label="Loading broadcast settings" /> : null}
           {!broadcast.isLoading ? (
             <Stack spacing={2} sx={{ pt: 1 }}>
               <Alert severity="info">
-                Paste a YouTube watch, live, short or embed URL. InstaScore stores only the public
-                video ID—never a stream key.
+                Paste the public YouTube link and save. No YouTube account connection or API setup
+                is required.
               </Alert>
-              {youtubeSettings.data?.connected ? (
-                <TextField
-                  select
-                  label="Choose a channel broadcast"
-                  value=""
-                  helperText="Upcoming, active and completed broadcasts from the connected YouTube channel"
-                  onChange={(event) => {
-                    const selected = youtubeBroadcasts.data?.find(
-                      (item) => item.videoId === event.target.value,
-                    );
-                    if (!selected) return;
-                    setStreamForm((value) => ({
-                      ...value,
-                      youtubeUrl: `https://www.youtube.com/watch?v=${selected.videoId}`,
-                      title: selected.title,
-                      status: selected.status,
-                      visibility: selected.visibility,
-                      embedEnabled: selected.embedEnabled,
-                      ...(selected.scheduledStart
-                        ? { scheduledStart: selected.scheduledStart }
-                        : {}),
-                    }));
-                  }}
-                >
-                  {(youtubeBroadcasts.data ?? []).map((item) => (
-                    <MenuItem key={item.videoId} value={item.videoId}>
-                      {item.title} · {item.status.replaceAll('_', ' ')}
-                    </MenuItem>
-                  ))}
-                </TextField>
-              ) : null}
               <TextField
-                label="YouTube URL or video ID"
+                label="YouTube livestream URL"
                 value={streamForm.youtubeUrl}
                 onChange={(event) =>
                   setStreamForm((value) => ({ ...value, youtubeUrl: event.target.value }))
                 }
                 required
                 fullWidth
+                autoFocus
+                placeholder="https://www.youtube.com/watch?v=..."
+                helperText="Watch, live, youtu.be, Shorts and embed links are supported."
               />
               <TextField
                 label="Broadcast title"
