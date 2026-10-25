@@ -26,13 +26,25 @@ const room: MatchChatRoom = {
 };
 
 describe('MatchBanter', () => {
-  it('lets guests read the room but requires sign-in to participate', async () => {
+  it('lets guests read and post to the room with a persistent display name', async () => {
+    const post = vi.fn().mockResolvedValue(room.messages[0]);
     renderApp(<MatchBanter fixtureUuid={fixtureUuid} open onClose={() => undefined} />, {
-      api: { ...testApi, getMatchChat: vi.fn().mockResolvedValue(room) },
+      api: { ...testApi, getMatchChat: vi.fn().mockResolvedValue(room), postMatchChat: post },
     });
 
     expect(await screen.findByText('That defensive stop was massive!')).toBeInTheDocument();
-    expect(screen.getByText('Sign in to join the banter.')).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Guest name'), { target: { value: 'Sideline Fan' } });
+    fireEvent.change(screen.getByLabelText('Your banter'), { target: { value: 'Let us go!' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Send' }));
+    await waitFor(() => expect(post).toHaveBeenCalledTimes(1));
+    expect(post.mock.calls[0]?.[0]).toBe(fixtureUuid);
+    expect(post.mock.calls[0]?.[1]).toMatchObject({
+      body: 'Let us go!',
+      guestName: 'Sideline Fan',
+    });
+    expect(post.mock.calls[0]?.[1].guestToken).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+    );
     expect(screen.getByRole('button', { name: '🔥 reaction, 3' })).toHaveAttribute(
       'aria-disabled',
       'true',

@@ -866,7 +866,7 @@ export interface ChatReaction {
 export interface ChatMessage {
   uuid: string;
   body: string;
-  author: { uuid: string; displayName: string };
+  author: { uuid: string; displayName: string; isGuest?: boolean };
   parent: { uuid: string; displayName: string } | null;
   reactions: ChatReaction[];
   reportCount: number;

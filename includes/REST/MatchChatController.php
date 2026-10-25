@@ -10,7 +10,7 @@ final class MatchChatController {
 	public function register(): void {
 		register_rest_route( 'instascore/v1', '/fixtures/(?P<uuid>[0-9a-f-]{36})/chat', array(
 			array( 'methods' => 'GET', 'callback' => array( $this, 'room' ), 'permission_callback' => '__return_true' ),
-			array( 'methods' => 'POST', 'callback' => array( $this, 'post' ), 'permission_callback' => 'is_user_logged_in' ),
+			array( 'methods' => 'POST', 'callback' => array( $this, 'post' ), 'permission_callback' => '__return_true' ),
 		) );
 		register_rest_route( 'instascore/v1', '/fantasy/games/(?P<uuid>[0-9a-f-]{36})/chat', array(
 			array( 'methods' => 'GET', 'callback' => array( $this, 'fantasy_room' ), 'permission_callback' => '__return_true' ),

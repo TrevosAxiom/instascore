@@ -244,7 +244,7 @@ export interface ApiClient {
   getMatchChat: (fixtureUuid: string) => Promise<MatchChatRoom>;
   postMatchChat: (
     fixtureUuid: string,
-    input: { body: string; parentUuid?: string },
+    input: { body: string; parentUuid?: string; guestName?: string; guestToken?: string },
   ) => Promise<ChatMessage>;
   getFantasyChat: (gameUuid: string) => Promise<MatchChatRoom>;
   postFantasyChat: (

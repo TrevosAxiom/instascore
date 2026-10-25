@@ -33,6 +33,8 @@ export function MatchBanter({
   const client = useQueryClient();
   const [body, setBody] = useState('');
   const [replyTo, setReplyTo] = useState<ChatMessage | null>(null);
+  const [guestToken] = useState(guestSessionToken);
+  const [guestName, setGuestName] = useState(savedGuestName);
   const endRef = useRef<HTMLDivElement | null>(null);
   const room = useQuery({
     queryKey: ['match-chat', fixtureUuid],
@@ -43,8 +45,13 @@ export function MatchBanter({
   const refresh = () => void client.invalidateQueries({ queryKey: ['match-chat', fixtureUuid] });
   const post = useMutation({
     mutationFn: () =>
-      api.postMatchChat(fixtureUuid, { body, ...(replyTo ? { parentUuid: replyTo.uuid } : {}) }),
+      api.postMatchChat(fixtureUuid, {
+        body,
+        ...(replyTo ? { parentUuid: replyTo.uuid } : {}),
+        ...(!auth.state?.authenticated ? { guestName: guestName.trim(), guestToken } : {}),
+      }),
     onSuccess: () => {
+      if (!auth.state?.authenticated) saveGuestName(guestName.trim());
       setBody('');
       setReplyTo(null);
       refresh();
@@ -110,7 +117,7 @@ export function MatchBanter({
           ) : null}
           <Stack spacing={1.25}>
             {messages.map((message) => {
-              const own = message.author.uuid === auth.state?.user?.uuid;
+              const own = message.author.uuid === (auth.state?.user?.uuid ?? guestToken);
               return (
                 <Box
                   key={message.uuid}
@@ -162,11 +169,9 @@ export function MatchBanter({
                         />
                       );
                     })}
-                    {auth.state?.authenticated ? (
-                      <Button size="small" color="inherit" onClick={() => setReplyTo(message)}>
-                        Reply
-                      </Button>
-                    ) : null}
+                    <Button size="small" color="inherit" onClick={() => setReplyTo(message)}>
+                      Reply
+                    </Button>
                     {auth.state?.authenticated && !own ? (
                       <Button
                         size="small"
@@ -192,7 +197,7 @@ export function MatchBanter({
                         >
                           Hide
                         </Button>
-                        {!own ? (
+                        {!own && !message.author.isGuest ? (
                           <Button
                             size="small"
                             color="error"
@@ -212,21 +217,29 @@ export function MatchBanter({
         </Box>
         <Divider />
         <Box sx={{ p: 1.5, bgcolor: 'background.paper' }}>
-          {!auth.state?.authenticated ? (
-            <Alert
-              severity="info"
-              action={
-                <Button component={Link} to="/login" size="small">
-                  Sign in
-                </Button>
-              }
-            >
-              Sign in to join the banter.
-            </Alert>
-          ) : room.data?.banned ? (
+          {room.data?.banned ? (
             <Alert severity="warning">You are temporarily muted in this match room.</Alert>
           ) : (
             <Stack spacing={1}>
+              {!auth.state?.authenticated ? (
+                <>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    label="Guest name"
+                    value={guestName}
+                    inputProps={{ maxLength: 30 }}
+                    onChange={(event) => setGuestName(event.target.value)}
+                  />
+                  <Typography variant="caption" color="text.secondary">
+                    Posting as a guest.{' '}
+                    <Link to="/login" onClick={onClose}>
+                      Sign in
+                    </Link>{' '}
+                    to keep your identity across devices.
+                  </Typography>
+                </>
+              ) : null}
               {replyTo ? (
                 <Chip
                   label={`Replying to ${replyTo.author.displayName}`}
@@ -255,10 +268,14 @@ export function MatchBanter({
               ) : null}
               <Button
                 variant="contained"
-                disabled={!body.trim() || post.isPending}
+                disabled={
+                  !body.trim() ||
+                  post.isPending ||
+                  (!auth.state?.authenticated && guestName.trim().length < 2)
+                }
                 onClick={() => post.mutate()}
               >
-                Send
+                {post.isPending ? 'Sending…' : 'Send'}
               </Button>
             </Stack>
           )}
@@ -266,6 +283,37 @@ export function MatchBanter({
       </Stack>
     </Drawer>
   );
+}
+
+const guestTokenKey = 'instascore_match_banter_guest_token';
+const guestNameKey = 'instascore_match_banter_guest_name';
+
+function guestSessionToken() {
+  try {
+    const saved = window.localStorage.getItem(guestTokenKey);
+    if (saved) return saved;
+    const value = crypto.randomUUID();
+    window.localStorage.setItem(guestTokenKey, value);
+    return value;
+  } catch {
+    return crypto.randomUUID();
+  }
+}
+
+function savedGuestName() {
+  try {
+    return window.localStorage.getItem(guestNameKey) ?? '';
+  } catch {
+    return '';
+  }
+}
+
+function saveGuestName(value: string) {
+  try {
+    window.localStorage.setItem(guestNameKey, value);
+  } catch {
+    // Guest chat still works when storage is unavailable.
+  }
 }
 
 function relativeTime(value: string) {
