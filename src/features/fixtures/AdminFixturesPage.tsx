@@ -22,7 +22,7 @@ import {
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { Link as RouterLink } from 'react-router';
+import { Link as RouterLink, useSearchParams } from 'react-router';
 import { z } from 'zod';
 
 import { ApiError } from '../../api/client';
@@ -95,6 +95,7 @@ function localInputValue(value: string) {
 export function AdminFixturesPage() {
   const api = useApi();
   const client = useQueryClient();
+  const [urlParams, setUrlParams] = useSearchParams();
   const [view, setView] = useState<'list' | 'calendar' | 'day'>('list');
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Fixture | null>(null);
@@ -235,6 +236,16 @@ export function AdminFixturesPage() {
     setOpen(true);
   };
   const fixtures = query.data?.items ?? [];
+  useEffect(() => {
+    const requestedFixture = urlParams.get('broadcast');
+    if (!requestedFixture || broadcastFixture || !fixtures.length) return;
+    const fixture = fixtures.find((item) => item.uuid === requestedFixture);
+    if (!fixture) return;
+    setBroadcastFixture(fixture);
+    const nextParams = new URLSearchParams(urlParams);
+    nextParams.delete('broadcast');
+    setUrlParams(nextParams, { replace: true });
+  }, [broadcastFixture, fixtures, setUrlParams, urlParams]);
   const liveCount = fixtures.filter((item) =>
     ['live', 'halftime', 'interval'].includes(item.status),
   ).length;

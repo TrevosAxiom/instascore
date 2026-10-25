@@ -12,9 +12,10 @@ import {
 } from '@mui/material';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
-import { useParams } from 'react-router';
+import { Link as RouterLink, useParams } from 'react-router';
 
 import { useApi } from '../../api/context';
+import { useAuth } from '../../app/auth-context';
 import { ErrorState, LoadingState } from '../../components/AsyncStates';
 import { EntityAvatar } from '../../components/EntityAvatar';
 import { PageScaffold } from '../../components/PageScaffold';
@@ -31,6 +32,7 @@ const generalTabs = ['Overview', 'Timeline', 'Team stats', 'Match info'];
 
 export function FixtureDetailPage() {
   const api = useApi();
+  const auth = useAuth();
   const { uuid = '' } = useParams();
   const [tab, setTab] = useState(0);
   const [banterOpen, setBanterOpen] = useState(false);
@@ -223,7 +225,10 @@ export function FixtureDetailPage() {
                 onOpenBanter={() => setBanterOpen(true)}
               />
             ) : (
-              <StreamPreparationCard fixture={fixture} />
+              <StreamPreparationCard
+                fixture={fixture}
+                canManageStream={Boolean(auth.state?.user?.capabilities.manageFixtures)}
+              />
             )}
           </Box>
           {liveState ? (
@@ -366,7 +371,13 @@ export function FixtureDetailPage() {
   );
 }
 
-function StreamPreparationCard({ fixture }: { fixture: Fixture }) {
+function StreamPreparationCard({
+  fixture,
+  canManageStream,
+}: {
+  fixture: Fixture;
+  canManageStream: boolean;
+}) {
   return (
     <Paper
       variant="outlined"
@@ -401,15 +412,30 @@ function StreamPreparationCard({ fixture }: { fixture: Fixture }) {
             Watch the action here
           </Typography>
           <Typography sx={{ color: 'rgba(255,245,214,.72)', maxWidth: 700 }}>
-            The Veo-to-YouTube broadcast will appear in this match centre when the production team
-            publishes it. Scores, plays and banter remain available alongside the video.
+            Live coverage will appear here when the broadcast is ready. Follow the score, catch key
+            plays and join the match banter while you watch.
           </Typography>
         </Stack>
-        <Stack direction={{ xs: 'row', md: 'column' }} gap={0.75} alignItems={{ md: 'flex-end' }}>
+        <Stack
+          direction={{ xs: 'column', sm: 'row', md: 'column' }}
+          gap={0.75}
+          alignItems={{ xs: 'flex-start', md: 'flex-end' }}
+        >
           <Typography fontWeight={950}>{formatKickoff(fixture)}</Typography>
-          <Typography variant="caption" sx={{ color: 'rgba(255,245,214,.62)' }}>
-            Stream URL not assigned yet
-          </Typography>
+          {canManageStream ? (
+            <Button
+              component={RouterLink}
+              to={`/admin/fixtures?broadcast=${fixture.uuid}`}
+              variant="contained"
+              size="small"
+            >
+              Add YouTube livestream
+            </Button>
+          ) : (
+            <Typography variant="caption" sx={{ color: 'rgba(255,245,214,.62)' }}>
+              Check back before kickoff
+            </Typography>
+          )}
         </Stack>
       </Box>
     </Paper>
