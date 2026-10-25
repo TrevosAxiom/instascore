@@ -2,7 +2,7 @@
 Contributors: instascore
 Requires at least: 6.6
 Requires PHP: 8.2
-Stable tag: 0.23.0-rc.16
+Stable tag: 0.23.0-rc.17
 License: GPL-2.0-or-later
 
 WordPress backend and React application shell for InstaScore.
@@ -12,6 +12,9 @@ WordPress backend and React application shell for InstaScore.
 See README.md for the shortcode, development server and production build steps.
 
 == Changelog ==
+
+= 0.23.0-rc.17 =
+* Rebuilt the corrected fixture and livestream release package after CI validation.
 
 = 0.23.0-rc.16 =
 * Restored fixture-manager access for WordPress administrators.
